@@ -37,11 +37,15 @@ npm install solana-dex-parser
 
 ## Usage
 
+### Configuration Options
+
+The DexParser class doesn't require any configuration. It automatically detects the DEX protocol used in the transaction and applies the appropriate parsing logic.
+
 ### Basic Usage
 
 ```typescript
 import { Connection } from '@solana/web3.js';
-import { TransactionParser } from 'solana-dex-parser';
+import { DexParser } from 'solana-dex-parser';
 
 async function parseSwap() {
   // Setup connection
@@ -50,15 +54,62 @@ async function parseSwap() {
   // Get transaction
   const signature = 'your-transaction-signature';
  
-  const parser = new TransactionParser(connection);
+  const parser = new DexParser(connection);
   const trades = await parser.parseTransaction(signature);
   console.log("Trades:", trades);
 }
 ```
 
-### Advanced Usage
+### Common Use Cases
 
-See the [examples](./examples) directory for more advanced usage examples.
+1. Analyzing DEX trading activity:
+
+```typescript
+const signatures = ['sig1', 'sig2', 'sig3'];
+const allTrades = [];
+
+for (const signature of signatures) {
+  const parsedTransaction = await connection.getParsedTransaction(signature);
+  const trades = dexParser.parseTransaction(parsedTransaction);
+  allTrades.push(...trades);
+}
+
+console.log(`Total trades: ${allTrades.length}`);
+```
+
+2. Extracting token transfer information:
+
+```typescript
+import { TransferParser } from 'solana-dex-parser';
+
+const transferParser = new TransferParser();
+const parsedTransaction = await connection.getParsedTransaction(signature);
+const transfers = transferParser.parseTransfers(parsedTransaction);
+
+console.log(transfers);
+```
+
+3. Extracting Pumpfun events (create/trade/complete):
+
+```typescript
+import { PumpfunEventParser } from 'solana-dex-parser';
+
+const eventParser = new PumpfunEventParser();
+const parsedTransaction = await connection.getParsedTransaction(signature);
+const events = eventParser.parseTransfers(parsedTransaction); // PumpfunEvent[]
+
+console.log(events);
+
+```
+```typescript
+export interface PumpfunEvent {
+  type: "TRADE" | "CREATE" | "COMPLETE";
+  data: PumpfunTradeEvent | PumpfunCreateEvent | PumpfunCompleteEvent;
+  slot: number;
+  timestamp: number;
+  signature: string;
+}
+```
 
 ## Development
 
@@ -72,7 +123,7 @@ See the [examples](./examples) directory for more advanced usage examples.
 1. Clone the repository
 ```bash
 git clone https://github.com/cxcx-ai/solana-dex-parser.git
-cd solana-swap-ts
+cd solana-dex-parser
 ```
 
 2. Install dependencies

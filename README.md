@@ -55,9 +55,21 @@ async function parseSwap() {
   const signature = 'your-transaction-signature';
  
   const parser = new DexParser(connection);
+
+  // case 1, by signature
   const trades = await parser.parseTransaction(signature);
   console.log("Trades:", trades);
+
+  // case 2, by tx object
+  const tx = await this.connection.getParsedTransaction(signature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 0,
+  });
+
+  const trades2 = await parser.parseTrades(tx);
+  console.log("trades2:", trades);
 }
+
 ```
 
 ### Common Use Cases

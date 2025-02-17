@@ -39,13 +39,14 @@ export class DexParser {
 
   public async parseTransaction(signature: string): Promise<TradeInfo[]> {
     const tx = await this.connection.getParsedTransaction(signature, {
+      commitment: "confirmed",
       maxSupportedTransactionVersion: 0,
     });
     if (!tx) throw `Can't fetch transaction! ${signature}`;
     return this.parseTrades(tx);
   }
 
-  private parseTrades(tx: ParsedTransactionWithMeta): TradeInfo[] {
+  public parseTrades(tx: ParsedTransactionWithMeta): TradeInfo[] {
     const dexInfo = getDexInfo(tx);
     if (!dexInfo.programId) return [];
 

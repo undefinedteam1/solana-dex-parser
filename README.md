@@ -82,9 +82,17 @@ console.log(`Total trades: ${allTrades.length}`);
 ```typescript
 import { TransferParser } from 'solana-dex-parser';
 
+
+// Setup connection
+const connection = new Connection('https://api.mainnet-beta.solana.com');
+// Get transaction
+const signature = 'your-transaction-signature';
+const tx = await this.connection.getParsedTransaction(signature, {
+  maxSupportedTransactionVersion: 0,
+});
+
 const transferParser = new TransferParser();
-const parsedTransaction = await connection.getParsedTransaction(signature);
-const transfers = transferParser.parseTransfers(parsedTransaction);
+const transfers = transferParser.parseTransfers(tx);
 
 console.log(transfers);
 ```
@@ -93,10 +101,17 @@ console.log(transfers);
 
 ```typescript
 import { PumpfunEventParser } from 'solana-dex-parser';
+  
+// Setup connection
+const connection = new Connection('https://api.mainnet-beta.solana.com');
+// Get transaction
+const signature = 'your-transaction-signature';
+const tx = await this.connection.getParsedTransaction(signature, {
+  maxSupportedTransactionVersion: 0,
+});
 
-const eventParser = new PumpfunEventParser();
-const parsedTransaction = await connection.getParsedTransaction(signature);
-const events = eventParser.parseTransfers(parsedTransaction); // PumpfunEvent[]
+const eventParser = new PumpfunEventParser(tx);
+const events = eventParser.processEvents(); // PumpfunEvent[]
 
 console.log(events);
 

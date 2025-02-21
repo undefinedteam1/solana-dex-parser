@@ -1,6 +1,6 @@
 import { Connection, ParsedTransactionWithMeta } from "@solana/web3.js";
 import { DEX_PROGRAMS } from "./constants";
-import { DexInfo, TradeInfo } from "./types";
+import { DexInfo, PoolEvent, TradeInfo } from "./types";
 import { getDexInfo } from "./utils";
 import {
   MoonshotParser,
@@ -11,6 +11,9 @@ import {
   OrcaParser,
   JupiterParser,
 } from "./parsers";
+import { RaydiumLiquidityParser } from "./parsers/parser-raydium-liquidity";
+import { MeteoraLiquidityParser } from "./parsers/parser-meteora-liquidity";
+import { OrcaLiquidityParser } from "./parsers/parser-orca-liquidity";
 
 type ParserConstructor = new (
   tx: ParsedTransactionWithMeta,
@@ -18,6 +21,10 @@ type ParserConstructor = new (
 ) => {
   processTrades(): TradeInfo[];
   processInstructionTrades?(index: number): TradeInfo[];
+};
+
+type ParserLiquidityConstructor = new (tx: ParsedTransactionWithMeta) => {
+  processLiquidity(): PoolEvent[];
 };
 
 export class DexParser {
@@ -33,6 +40,18 @@ export class DexParser {
     [DEX_PROGRAMS.RAYDIUM_CPMM.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_V4.id]: RaydiumParser,
     [DEX_PROGRAMS.ORCA.id]: OrcaParser,
+  };
+
+  private readonly parseLiquidityMap: Record<
+    string,
+    ParserLiquidityConstructor
+  > = {
+    [DEX_PROGRAMS.METEORA.id]: MeteoraLiquidityParser,
+    [DEX_PROGRAMS.METEORA_POOLS.id]: MeteoraLiquidityParser,
+    [DEX_PROGRAMS.RAYDIUM_V4.id]: RaydiumLiquidityParser,
+    [DEX_PROGRAMS.RAYDIUM_CPMM.id]: RaydiumLiquidityParser,
+    [DEX_PROGRAMS.RAYDIUM_CL.id]: RaydiumLiquidityParser,
+    [DEX_PROGRAMS.ORCA.id]: OrcaLiquidityParser,
   };
 
   constructor(private connection: Connection) {}
@@ -72,6 +91,19 @@ export class DexParser {
     }
 
     return trades;
+  }
+
+  public parseLiquidity(tx: ParsedTransactionWithMeta): PoolEvent[] {
+    const dexInfo = getDexInfo(tx);
+    if (!dexInfo.programId) return [];
+
+    const events: PoolEvent[] = [];
+    const ParserLiquidityClass = this.parseLiquidityMap[dexInfo.programId];
+    if (ParserLiquidityClass) {
+      const parser = new ParserLiquidityClass(tx);
+      events.push(...parser.processLiquidity());
+    }
+    return events;
   }
 
   private parseInstructions(

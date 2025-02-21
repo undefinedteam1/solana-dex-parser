@@ -58,7 +58,7 @@ export const DEX_PROGRAMS = {
   },
   METEORA: {
     id: "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
-    name: "Meteora",
+    name: "Meteora", //DLMM
   },
   METEORA_POOLS: {
     id: "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB",
@@ -84,6 +84,10 @@ export const SYSTEM_PROGRAMS = [
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+];
+
+export const PUMPFUN_MIGRATORS = [
+  "39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg",
 ];
 
 // Known token addresses
@@ -120,5 +124,37 @@ export const DISCRIMINATORS = {
   MOONSHOT: {
     BUY: new Uint8Array([102, 6, 61, 18, 1, 218, 235, 234]),
     SELL: new Uint8Array([51, 230, 133, 164, 1, 127, 131, 173]),
+  },
+  RAYDIUM: {
+    CREATE: new Uint8Array([1, 254, 0, 0, 0, 0, 0, 0]),
+    ADD_LIQUIDITY: new Uint8Array([3, 245, 154, 82, 5, 0, 0, 0]),
+    REMOVE_LIQUIDITY: new Uint8Array([4, 18, 194, 31, 96, 8, 2, 0]),
+  },
+  RAYDIUM_CL: {
+    CREATE: new Uint8Array([77, 255, 174, 82, 125, 29, 201, 46]), // openPositionWithToken22Nft
+    ADD_LIQUIDITY: new Uint8Array([133, 29, 89, 223, 69, 238, 176, 10]), // increaseLiquidityV2
+    REMOVE_LIQUIDITY: new Uint8Array([58, 127, 188, 62, 79, 82, 196, 96]), // decreaseLiquidityV2
+  },
+  RAYDIUM_CPMM: {
+    CREATE: new Uint8Array([175, 175, 109, 31, 13, 152, 155, 237]), // initialize
+    ADD_LIQUIDITY: new Uint8Array([242, 35, 198, 137, 82, 225, 242, 182]), // deposit
+    REMOVE_LIQUIDITY: new Uint8Array([183, 18, 70, 156, 148, 109, 161, 34]), // withdraw
+  },
+  METEORA_DLMM: {
+    CREATE: new Uint8Array([7, 3, 150, 127, 148, 40, 61, 200]), // addLiquidityByStrategy
+    ADD_LIQUIDITY: new Uint8Array([7, 3, 150, 127, 148, 40, 61, 200]), // addLiquidityByStrategy
+    REMOVE_LIQUIDITY: new Uint8Array([26, 82, 102, 152, 240, 74, 105, 26]), // removeLiquidityByRange
+  },
+  METEORA_POOLS: {
+    CREATE: new Uint8Array([7, 166, 138, 171, 206, 171, 236, 244]), // initializePermissionlessConstantProductPoolWithConfig
+    ADD_LIQUIDITY: new Uint8Array([168, 227, 50, 62, 189, 171, 84, 176]), // addBalanceLiquidity
+    REMOVE_LIQUIDITY: new Uint8Array([133, 109, 44, 179, 56, 238, 114, 33]), // removeBalanceLiquidity
+  },
+  ORCA: {
+    CREATE: new Uint8Array([242, 29, 134, 48, 58, 110, 14, 60]), // openPositionWithMetadata
+    CREATE2: new Uint8Array([212, 47, 95, 92, 114, 102, 131, 250]), // openPositionWithTokenExtensions
+    ADD_LIQUIDITY: new Uint8Array([46, 156, 243, 118, 13, 205, 251, 178]), // increaseLiquidity
+    ADD_LIQUIDITY2: new Uint8Array([133, 29, 89, 223, 69, 238, 176, 10]), // increaseLiquidityV2
+    REMOVE_LIQUIDITY: new Uint8Array([160, 38, 208, 111, 104, 91, 44, 1]), // decreaseLiquidity
   },
 } as const;

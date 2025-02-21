@@ -27,7 +27,7 @@ export interface TransferInfo {
 }
 
 export interface TransferData {
-  type: "transfer" | "transferChecked";
+  type: "transfer" | "transferChecked" | string;
   info: {
     authority: string;
     destination: string;
@@ -91,6 +91,25 @@ export interface PumpfunEvent {
   signature: string;
 }
 
-export const convertToUiAmount = (amount: bigint, decimals: number) => {
-  return Number(amount) / Math.pow(10, decimals);
+export type PoolEventType = "CREATE" | "ADD" | "REMOVE" | "LOCK" | string;
+
+export interface PoolEvent {
+  user: string;
+  type: PoolEventType;
+  poolId: string; // AMM account address
+  poolLpMint?: string; // LP mint address
+  poolCoinMint?: string; // Token A mint address
+  poolPcMint?: string; // Token B mint address
+  coinAmount?: number; // Token A amount
+  pcAmount?: number; // Token B amount
+  lpAmount?: number; // Lp amount
+  programId?: string; // DEX program ID
+  amm?: string; // AMM type (e.g., 'Raydium v4', 'Jupiter')
+  slot: number;
+  timestamp: number;
+  signature: string;
+}
+
+export const convertToUiAmount = (amount: bigint, decimals?: number) => {
+  return Number(amount) / Math.pow(10, decimals || 9);
 };

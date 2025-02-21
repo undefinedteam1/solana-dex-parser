@@ -78,3 +78,9 @@ export const getTokenDecimals = (
 export const isSupportedToken = (mint: string): boolean => {
   return Object.values(TOKENS).includes(mint);
 };
+
+export const hexToUint8Array = (hex: string) => {
+  return new Uint8Array(
+    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
+  );
+};

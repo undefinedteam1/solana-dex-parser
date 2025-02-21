@@ -4,10 +4,10 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 
 ## Features
 
-- Parse swap transactions from multiple DEX protocols
+- Parse **Swap** transactions from multiple DEX protocols
 - Support for transfer and transfer-check instructions
 - Detailed swap information extraction
-- Built-in error handling and validation
+- Support **Liquidity** events (create, add, remove)
 - TypeScript type definitions
 - Comprehensive test coverage
 
@@ -41,7 +41,7 @@ npm install solana-dex-parser
 
 The DexParser class doesn't require any configuration. It automatically detects the DEX protocol used in the transaction and applies the appropriate parsing logic.
 
-### Basic Usage
+### Basic Usage > Swap (Buy and Sell)
 
 ```typescript
 import { Connection } from '@solana/web3.js';
@@ -68,6 +68,30 @@ async function parseSwap() {
 
   const trades2 = await parser.parseTrades(tx);
   console.log("trades2:", trades);
+}
+
+```
+
+### Liquidity Usage
+
+```typescript
+import { Connection } from '@solana/web3.js';
+import { DexParser } from 'solana-dex-parser';
+
+async function parseLiquidityEvents() {
+  // Setup connection
+  const connection = new Connection('https://api.mainnet-beta.solana.com');
+  
+  // Get transaction
+  const signature = 'your-transaction-signature';
+  const tx = await this.connection.getParsedTransaction(signature, {
+    maxSupportedTransactionVersion: 0,
+  });
+ 
+  // Parse events
+  const parser = new DexParser(connection);
+  const events = await parser.parseLiquidity(tx);
+  console.log("events:", events);
 }
 
 ```

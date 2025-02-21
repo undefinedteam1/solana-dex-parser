@@ -55,6 +55,48 @@ export const processTransfer = (
   };
 };
 
+export const isExtraAction = (
+  instruction: ParsedInstruction,
+  type: string,
+): boolean => {
+  return (
+    instruction.program === "spl-token" &&
+    instruction.programId.equals(TOKEN_PROGRAM_ID) &&
+    instruction.parsed.type === type
+  );
+};
+
+export const processExtraAction = (
+  instruction: ParsedInstruction,
+  splTokenMap: Map<string, TokenInfo>,
+  splDecimalsMap: Map<string, number>,
+  type: string,
+): TransferData | null => {
+  const { info } = instruction.parsed;
+  if (!info) return null;
+
+  const mint = info.mint || splTokenMap.get(info.destination)?.mint;
+  if (!mint) return null;
+
+  const decimals = splDecimalsMap.get(mint);
+  if (typeof decimals === "undefined") return null;
+
+  return {
+    type: type,
+    info: {
+      authority: info.authority || info.mintAuthority || "",
+      destination: info.destination || "",
+      mint,
+      source: info.source || "",
+      tokenAmount: {
+        amount: info.amount,
+        decimals,
+        uiAmount: convertToUiAmount(info.amount, decimals),
+      },
+    },
+  };
+};
+
 export const processTransferCheck = (
   instruction: ParsedInstruction,
   splDecimalsMap: Map<string, number>,
@@ -203,4 +245,61 @@ export const getTransferTokenInfo = (
         decimals: transfer.info.tokenAmount.decimals,
       }
     : null;
+};
+
+export const processTransferInnerInstruction = (
+  txWithMeta: ParsedTransactionWithMeta,
+  instructionIndex: number,
+  splTokenMap: Map<string, TokenInfo>,
+  splDecimalsMap: Map<string, number>,
+  extraTypes?: string[],
+): TransferData[] => {
+  const innerInstructions = txWithMeta.meta?.innerInstructions;
+  if (!innerInstructions) return [];
+
+  return innerInstructions
+    .filter((set) => set.index === instructionIndex)
+    .flatMap((set) =>
+      set.instructions
+        .map((instruction) =>
+          processTransferInstruction(
+            instruction as ParsedInstruction,
+            splTokenMap,
+            splDecimalsMap,
+            extraTypes,
+          ),
+        )
+        .filter((transfer): transfer is TransferData => transfer !== null),
+    );
+};
+
+export const processTransferInstruction = (
+  instruction: ParsedInstruction,
+  splTokenMap: Map<string, TokenInfo>,
+  splDecimalsMap: Map<string, number>,
+  extraTypes?: string[],
+): TransferData | null => {
+  if (isTransfer(instruction)) {
+    return processTransfer(instruction, splTokenMap, splDecimalsMap);
+  }
+  if (isTransferCheck(instruction)) {
+    return processTransferCheck(instruction, splDecimalsMap);
+  }
+  if (extraTypes) {
+    const actions = extraTypes
+      .map((it) => {
+        if (isExtraAction(instruction, it)) {
+          return processExtraAction(
+            instruction,
+            splTokenMap,
+            splDecimalsMap,
+            it,
+          );
+        }
+      })
+      .filter((it) => !!it);
+    return actions.length > 0 ? actions[0] : null;
+  }
+
+  return null;
 };

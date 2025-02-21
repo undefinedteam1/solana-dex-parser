@@ -20,6 +20,7 @@ export interface JupiterSwapEvent {
 export interface JupiterSwapEventData extends JupiterSwapEvent {
   inputMintDecimals: number;
   outputMintDecimals: number;
+  idx: string;
 }
 
 // Borsh class definition for Jupiter events
@@ -76,6 +77,7 @@ export interface JupiterSwapInfo {
   tokenIn: Map<string, bigint>;
   tokenOut: Map<string, bigint>;
   decimals: Map<string, number>;
+  idx: string;
 }
 
 export class JupiterParser {
@@ -136,9 +138,10 @@ export class JupiterParser {
               instruction as PartiallyDecodedInstruction,
             ),
           )
-          .map((instruction) =>
+          .map((instruction, idx) =>
             this.parseJupiterRouteEventInstruction(
               instruction as PartiallyDecodedInstruction,
+              `${instructionIndex}-${idx}`,
             ),
           )
           .filter(
@@ -165,6 +168,7 @@ export class JupiterParser {
 
   private parseJupiterRouteEventInstruction(
     instruction: PartiallyDecodedInstruction,
+    idx: string,
   ): JupiterSwapEventData | null {
     try {
       const decodedData = bs58.decode(instruction.data.toString());
@@ -184,6 +188,7 @@ export class JupiterParser {
           this.splDecimalsMap.get(swapEvent.inputMint.toBase58()) || 0,
         outputMintDecimals:
           this.splDecimalsMap.get(swapEvent.outputMint.toBase58()) || 0,
+        idx,
       };
     } catch (error) {
       throw `Failed to parse Jupiter route event: ${error instanceof Error ? error.message : "Unknown error"}`;
@@ -200,6 +205,7 @@ export class JupiterParser {
       tokenIn: new Map(),
       tokenOut: new Map(),
       decimals: new Map(),
+      idx: "",
     };
 
     for (const jupiterEvent of events) {
@@ -224,6 +230,8 @@ export class JupiterParser {
         outputMint,
         jupiterEvent.outputMintDecimals,
       );
+
+      intermediateInfo.idx = jupiterEvent.idx;
     }
 
     // Remove intermediate tokens
@@ -294,6 +302,7 @@ export class JupiterParser {
       slot: this.txWithMeta.slot,
       timestamp: this.txWithMeta.blockTime || 0,
       signature: this.txWithMeta.transaction.signatures[0],
+      idx: intermediateInfo.idx,
     };
   }
 

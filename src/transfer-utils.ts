@@ -27,6 +27,7 @@ export const isTransfer = (instruction: ParsedInstruction): boolean => {
 
 export const processTransfer = (
   instruction: ParsedInstruction,
+  idx: string,
   splTokenMap: Map<string, TokenInfo>,
   splDecimalsMap: Map<string, number>,
 ): TransferData | null => {
@@ -52,6 +53,7 @@ export const processTransfer = (
         uiAmount: convertToUiAmount(info.amount, decimals),
       },
     },
+    idx: idx,
   };
 };
 
@@ -68,6 +70,7 @@ export const isExtraAction = (
 
 export const processExtraAction = (
   instruction: ParsedInstruction,
+  idx: string,
   splTokenMap: Map<string, TokenInfo>,
   splDecimalsMap: Map<string, number>,
   type: string,
@@ -94,11 +97,13 @@ export const processExtraAction = (
         uiAmount: convertToUiAmount(info.amount, decimals),
       },
     },
+    idx: idx,
   };
 };
 
 export const processTransferCheck = (
   instruction: ParsedInstruction,
+  idx: string,
   splDecimalsMap: Map<string, number>,
 ): TransferData | null => {
   const { info } = instruction.parsed;
@@ -120,6 +125,7 @@ export const processTransferCheck = (
         uiAmount: convertToUiAmount(info.amount, decimals),
       },
     },
+    idx,
   };
 };
 
@@ -166,6 +172,7 @@ export const processSwapData = (
     slot: txWithMeta.slot,
     timestamp: txWithMeta.blockTime || 0,
     signature: txWithMeta.transaction.signatures[0],
+    idx: transfers[0].idx,
   };
 };
 
@@ -261,9 +268,10 @@ export const processTransferInnerInstruction = (
     .filter((set) => set.index === instructionIndex)
     .flatMap((set) =>
       set.instructions
-        .map((instruction) =>
+        .map((instruction, idx) =>
           processTransferInstruction(
             instruction as ParsedInstruction,
+            `${instructionIndex}-${idx}`,
             splTokenMap,
             splDecimalsMap,
             extraTypes,
@@ -275,15 +283,16 @@ export const processTransferInnerInstruction = (
 
 export const processTransferInstruction = (
   instruction: ParsedInstruction,
+  idx: string,
   splTokenMap: Map<string, TokenInfo>,
   splDecimalsMap: Map<string, number>,
   extraTypes?: string[],
 ): TransferData | null => {
   if (isTransfer(instruction)) {
-    return processTransfer(instruction, splTokenMap, splDecimalsMap);
+    return processTransfer(instruction, idx, splTokenMap, splDecimalsMap);
   }
   if (isTransferCheck(instruction)) {
-    return processTransferCheck(instruction, splDecimalsMap);
+    return processTransferCheck(instruction, idx, splDecimalsMap);
   }
   if (extraTypes) {
     const actions = extraTypes
@@ -291,6 +300,7 @@ export const processTransferInstruction = (
         if (isExtraAction(instruction, it)) {
           return processExtraAction(
             instruction,
+            idx,
             splTokenMap,
             splDecimalsMap,
             it,

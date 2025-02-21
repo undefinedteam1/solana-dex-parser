@@ -27,7 +27,7 @@ export class DefaultParser {
     const { preBalances, postBalances } = getBalanceChanges(tx);
     const trades: TradeInfo[] = [];
     const signer = tx.transaction.message.accountKeys[0].pubkey.toBase58();
-    Object.entries(postBalances).forEach(([owner, mints]) => {
+    Object.entries(postBalances).forEach(([owner, mints], index: number) => {
       const changes = this.getSignificantChanges(
         mints,
         preBalances[owner] || {},
@@ -38,7 +38,14 @@ export class DefaultParser {
 
       if (signer != owner) return;
 
-      const trade = this.createTradeInfo(token1, token2, owner, tx, dexInfo);
+      const trade = this.createTradeInfo(
+        token1,
+        token2,
+        owner,
+        tx,
+        dexInfo,
+        index,
+      );
       if (trade) trades.push(trade);
     });
 
@@ -63,6 +70,7 @@ export class DefaultParser {
     owner: string,
     tx: ParsedTransactionWithMeta,
     dexInfo: { programId?: string; amm?: string },
+    index: number,
   ): TradeInfo | null {
     const baseTradeInfo = {
       user: owner,
@@ -71,6 +79,7 @@ export class DefaultParser {
       slot: tx.slot,
       timestamp: tx.blockTime || 0,
       signature: tx.transaction.signatures[0],
+      idx: index.toString(),
     };
 
     if (token1.diff < 0 && token2.diff > 0) {

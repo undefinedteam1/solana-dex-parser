@@ -54,9 +54,10 @@ export class MoonshotParser {
           (instruction, index) =>
             instructionIndex == index && this.isTrade(instruction),
         )
-        .map((instruction) =>
+        .map((instruction, index) =>
           this.parseTradeInstruction(
             instruction as PartiallyDecodedInstruction,
+            `${instructionIndex}-${index}`,
           ),
         )
         .filter((transfer): transfer is TradeInfo => transfer !== null),
@@ -70,9 +71,10 @@ export class MoonshotParser {
           .filter((set) => set.index === instructionIndex)
           .flatMap((set) =>
             set.instructions
-              .map((instruction) =>
+              .map((instruction, index) =>
                 this.parseTradeInstruction(
                   instruction as PartiallyDecodedInstruction,
+                  `${instructionIndex}-${index}`,
                 ),
               )
               .filter((transfer): transfer is TradeInfo => transfer !== null),
@@ -107,7 +109,10 @@ export class MoonshotParser {
     return CollateralType.SOL;
   }
 
-  private parseTradeInstruction(instruction: any): TradeInfo | null {
+  private parseTradeInstruction(
+    instruction: any,
+    idx: string,
+  ): TradeInfo | null {
     if (!("data" in instruction)) return null;
 
     const decodedData = base58Decode(instruction.data);
@@ -140,6 +145,7 @@ export class MoonshotParser {
       collateralAmount,
       moonshotTokenMint,
       collateralMint,
+      idx,
     );
   }
 
@@ -177,6 +183,7 @@ export class MoonshotParser {
     collateralAmount: TokenAmount,
     moonshotTokenMint: string,
     collateralMint: string,
+    idx: string,
   ): TradeInfo {
     return {
       type: tradeType,
@@ -204,6 +211,7 @@ export class MoonshotParser {
       slot: this.txWithMeta.slot,
       timestamp: this.txWithMeta.blockTime || 0,
       signature: this.txWithMeta.transaction.signatures[0],
+      idx,
     };
   }
 

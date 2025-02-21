@@ -1,5 +1,4 @@
 import {
-  PublicKey,
   ParsedTransactionWithMeta,
   PartiallyDecodedInstruction,
 } from "@solana/web3.js";
@@ -7,6 +6,7 @@ import { Buffer } from "buffer";
 import base58 from "bs58";
 import { DEX_PROGRAMS, DISCRIMINATORS } from "../constants";
 import {
+  convertToUiAmount,
   DexInfo,
   PumpfunCompleteEvent,
   PumpfunCreateEvent,
@@ -45,14 +45,19 @@ export class PumpfunEventParser {
       .filter((set) => set.index === instructionIndex)
       .flatMap((set) =>
         set.instructions
-          .flatMap((ix) => {
+          .flatMap((ix, idx: number) => {
             const events: PumpfunEvent[] = [];
             if (this.isPumpFunCreateEvent(ix as PartiallyDecodedInstruction)) {
               const event = this.parseCreateEvent(
                 ix as PartiallyDecodedInstruction,
               );
               if (event) {
-                events.push({ type: "CREATE", data: event, ...txMeta });
+                events.push({
+                  type: "CREATE",
+                  data: event,
+                  ...txMeta,
+                  idx: `${instructionIndex}-${idx}`,
+                });
               }
             }
             if (this.isPumpFunTradeEvent(ix as PartiallyDecodedInstruction)) {
@@ -60,7 +65,12 @@ export class PumpfunEventParser {
                 ix as PartiallyDecodedInstruction,
               );
               if (event) {
-                events.push({ type: "TRADE", data: event, ...txMeta });
+                events.push({
+                  type: "TRADE",
+                  data: event,
+                  ...txMeta,
+                  idx: `${instructionIndex}-${idx}`,
+                });
               }
             }
 
@@ -71,7 +81,12 @@ export class PumpfunEventParser {
                 ix as PartiallyDecodedInstruction,
               );
               if (event) {
-                events.push({ type: "COMPLETE", data: event, ...txMeta });
+                events.push({
+                  type: "COMPLETE",
+                  data: event,
+                  ...txMeta,
+                  idx: `${instructionIndex}-${idx}`,
+                });
               }
             }
             return events;
@@ -111,14 +126,14 @@ export class PumpfunEventParser {
     const reader = new BinaryReader(data);
 
     return {
-      mint: new PublicKey(reader.readFixedArray(32)),
-      solAmount: reader.readU64(),
-      tokenAmount: reader.readU64(),
+      mint: base58.encode(reader.readFixedArray(32)),
+      solAmount: convertToUiAmount(reader.readU64()),
+      tokenAmount: convertToUiAmount(reader.readU64(), 6),
       isBuy: reader.readU8() === 1,
-      user: new PublicKey(reader.readFixedArray(32)),
+      user: base58.encode(reader.readFixedArray(32)),
       timestamp: reader.readI64(),
-      virtualSolReserves: reader.readU64(),
-      virtualTokenReserves: reader.readU64(),
+      virtualSolReserves: convertToUiAmount(reader.readU64()),
+      virtualTokenReserves: convertToUiAmount(reader.readU64(), 6),
     };
   }
 
@@ -155,9 +170,9 @@ export class PumpfunEventParser {
       name: reader.readString(),
       symbol: reader.readString(),
       uri: reader.readString(),
-      mint: new PublicKey(reader.readFixedArray(32)),
-      bondingCurve: new PublicKey(reader.readFixedArray(32)),
-      user: new PublicKey(reader.readFixedArray(32)),
+      mint: base58.encode(reader.readFixedArray(32)),
+      bondingCurve: base58.encode(reader.readFixedArray(32)),
+      user: base58.encode(reader.readFixedArray(32)),
     };
   }
 
@@ -191,9 +206,9 @@ export class PumpfunEventParser {
   private decodeCompleteEvent(data: Buffer): PumpfunCompleteEvent {
     const reader = new BinaryReader(data);
     return {
-      user: new PublicKey(reader.readFixedArray(32)),
-      mint: new PublicKey(reader.readFixedArray(32)),
-      bondingCurve: new PublicKey(reader.readFixedArray(32)),
+      user: base58.encode(reader.readFixedArray(32)),
+      mint: base58.encode(reader.readFixedArray(32)),
+      bondingCurve: base58.encode(reader.readFixedArray(32)),
       timestamp: reader.readI64(),
     };
   }

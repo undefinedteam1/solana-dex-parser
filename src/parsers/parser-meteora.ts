@@ -63,8 +63,11 @@ export class MeteoraParser {
       .filter((set) => set.index === instructionIndex)
       .flatMap((set) =>
         set.instructions
-          .map((instruction) =>
-            this.processTransferInstruction(instruction as ParsedInstruction),
+          .map((instruction, index) =>
+            this.processTransferInstruction(
+              instruction as ParsedInstruction,
+              `${instructionIndex}-${index}`,
+            ),
           )
           .filter((transfer): transfer is TransferData => transfer !== null),
       );
@@ -72,13 +75,15 @@ export class MeteoraParser {
 
   private processTransferInstruction(
     instruction: ParsedInstruction,
+    idx: string,
   ): TransferData | null {
     if (isTransferCheck(instruction)) {
-      return processTransferCheck(instruction, this.splDecimalsMap);
+      return processTransferCheck(instruction, idx, this.splDecimalsMap);
     }
     if (isTransfer(instruction)) {
       return processTransfer(
         instruction,
+        idx,
         this.splTokenMap,
         this.splDecimalsMap,
       );

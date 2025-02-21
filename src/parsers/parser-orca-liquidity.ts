@@ -13,6 +13,7 @@ import {
 import { TokenInfoExtractor } from "../token-extractor";
 import { processTransferInnerInstruction } from "../transfer-utils";
 import base58 from "bs58";
+import { getPoolEventBase } from "../utils";
 
 export class OrcaLiquidityParser {
   private readonly splTokenMap: Map<string, TokenInfo>;
@@ -87,11 +88,26 @@ class OrcaPoolParser {
 
       switch (instructionType) {
         case "ADD":
-          return this.parseAddLiquidityEvent(instruction, data, transfers);
+          return this.parseAddLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
         case "ADD2":
-          return this.parseAdd2LiquidityEvent(instruction, data, transfers);
+          return this.parseAdd2LiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
         case "REMOVE":
-          return this.parseRemoveLiquidityEvent(instruction, data, transfers);
+          return this.parseRemoveLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
       }
 
       return null;
@@ -103,21 +119,21 @@ class OrcaPoolParser {
 
   private parseAddLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [poolPc, poolCoin] = transfers;
     const coinMint = poolCoin?.info.mint;
     const pcMint = poolPc?.info.mint;
-
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "ADD",
+      ...getPoolEventBase("ADD", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[0].toString(),
       poolCoinMint: coinMint,
       poolPcMint: pcMint,
-
       coinAmount:
         poolCoin?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
@@ -135,30 +151,26 @@ class OrcaPoolParser {
           data.readBigUInt64LE(8),
           this.splDecimalsMap.get(instruction.accounts[1].toString()),
         ) || 0,
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 
   private parseAdd2LiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [poolPc, poolCoin] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[8].toBase58();
     const pcMint = poolPc?.info.mint || instruction.accounts[7].toBase58();
-
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "ADD",
+      ...getPoolEventBase("ADD", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[0].toString(),
       poolCoinMint: coinMint,
       poolPcMint: pcMint,
-
       coinAmount:
         poolCoin?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
@@ -176,25 +188,22 @@ class OrcaPoolParser {
           data.readBigUInt64LE(8),
           this.splDecimalsMap.get(instruction.accounts[1].toString()),
         ) || 0,
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 
   private parseRemoveLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [poolPc, poolCoin] = transfers;
     const coinMint = poolCoin?.info.mint;
     const pcMint = poolPc?.info.mint;
-
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "REMOVE",
+      ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[0].toString(),
       poolCoinMint: coinMint,
@@ -215,10 +224,6 @@ class OrcaPoolParser {
         data.readBigUInt64LE(8),
         this.splDecimalsMap.get(instruction.accounts[1].toString()),
       ),
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 }

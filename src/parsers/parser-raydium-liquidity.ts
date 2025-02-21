@@ -13,6 +13,7 @@ import {
 import { TokenInfoExtractor } from "../token-extractor";
 import { processTransferInnerInstruction } from "../transfer-utils";
 import base58 from "bs58";
+import { getPoolEventBase } from "../utils";
 
 export class RaydiumLiquidityParser {
   private readonly splTokenMap: Map<string, TokenInfo>;
@@ -103,11 +104,21 @@ class RaydiumV4PoolParser {
 
       switch (instructionType) {
         case "CREATE":
-          return this.parseCreateEvent(instruction, data, transfers);
+          return this.parseCreateEvent(instruction, index, data, transfers);
         case "ADD":
-          return this.parseAddLiquidityEvent(instruction, data, transfers);
+          return this.parseAddLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
         case "REMOVE":
-          return this.parseRemoveLiquidityEvent(instruction, data, transfers);
+          return this.parseRemoveLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
       }
 
       return null;
@@ -119,20 +130,21 @@ class RaydiumV4PoolParser {
 
   private parseCreateEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [poolCoin, poolPc] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[8].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[9].toString();
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "CREATE",
+      ...getPoolEventBase("CREATE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[4].toString(),
       poolLpMint: instruction.accounts[7].toString(),
       poolCoinMint: coinMint,
       poolPcMint: pcMint,
-
       // initialize2:
       // - 8 byte offset 1: DISCRIMINATORS
       // - 8 byte offset 1: nonce
@@ -152,23 +164,21 @@ class RaydiumV4PoolParser {
           data.readBigUInt64LE(10),
           this.splDecimalsMap.get(pcMint),
         ),
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 
   private parseAddLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent | null {
     const [poolCoin, poolPc] = transfers;
+    const programId = instruction.programId.toBase58();
     if (transfers.length >= 2) {
       return {
-        user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-        type: "ADD",
+        ...getPoolEventBase("ADD", this.txWithMeta, programId),
+        idx: index.toString(),
         poolId: instruction.accounts[1].toString(),
         poolLpMint: instruction.accounts[5].toString(),
 
@@ -186,11 +196,6 @@ class RaydiumV4PoolParser {
             data.readBigUInt64LE(9),
             this.splDecimalsMap.get(poolPc?.info.mint),
           ),
-
-        programId: instruction.programId.toBase58(),
-        slot: this.txWithMeta.slot,
-        timestamp: this.txWithMeta.blockTime || 0,
-        signature: this.txWithMeta.transaction.signatures[0],
       };
     }
     return null;
@@ -198,14 +203,16 @@ class RaydiumV4PoolParser {
 
   private parseRemoveLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const lpAmount = convertToUiAmount(data.readBigUInt64LE(1).toString());
     const [poolCoin, poolPc] = transfers;
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "REMOVE",
+      ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[1].toString(),
       poolLpMint: instruction.accounts[5].toString(),
       poolCoinMint: poolCoin?.info.mint,
@@ -213,10 +220,6 @@ class RaydiumV4PoolParser {
       coinAmount: poolCoin?.info.tokenAmount.uiAmount || 0,
       pcAmount: poolPc?.info.tokenAmount.uiAmount || 0,
       lpAmount: lpAmount,
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 }
@@ -264,11 +267,21 @@ class RaydiumCLPoolParser {
 
       switch (instructionType) {
         case "CREATE":
-          return this.parseCreateEvent(instruction, data, transfers);
+          return this.parseCreateEvent(instruction, index, data, transfers);
         case "ADD":
-          return this.parseAddLiquidityEvent(instruction, data, transfers);
+          return this.parseAddLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
         case "REMOVE":
-          return this.parseRemoveLiquidityEvent(instruction, data, transfers);
+          return this.parseRemoveLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
       }
 
       return null;
@@ -280,16 +293,17 @@ class RaydiumCLPoolParser {
 
   private parseCreateEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [poolPc, poolCoin] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[19].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[18].toString();
-
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "CREATE",
+      ...getPoolEventBase("CREATE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[4].toString(),
       poolLpMint: instruction.accounts[4].toString(),
       poolCoinMint: coinMint,
@@ -310,29 +324,25 @@ class RaydiumCLPoolParser {
           this.splDecimalsMap.get(pcMint),
         ),
       lpAmount: 0,
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 
   private parseAddLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent | null {
     const [poolPc, poolCoin] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[14].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[13].toString();
-
+    const programId = instruction.programId.toBase58();
     if (transfers.length >= 2) {
       return {
-        user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-        type: "ADD",
+        ...getPoolEventBase("ADD", this.txWithMeta, programId),
+        idx: index.toString(),
         poolId: instruction.accounts[2].toString(),
         poolLpMint: instruction.accounts[2].toString(),
-
         poolCoinMint: coinMint,
         poolPcMint: pcMint,
         // amount1
@@ -354,10 +364,6 @@ class RaydiumCLPoolParser {
             data.readBigUInt64LE(8),
             this.splDecimalsMap.get(pcMint),
           ) || 0,
-        programId: instruction.programId.toBase58(),
-        slot: this.txWithMeta.slot,
-        timestamp: this.txWithMeta.blockTime || 0,
-        signature: this.txWithMeta.transaction.signatures[0],
       };
     }
     return null;
@@ -365,15 +371,17 @@ class RaydiumCLPoolParser {
 
   private parseRemoveLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [poolPc, poolCoin] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[15].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[14].toString();
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "REMOVE",
+      ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[3].toString(),
       poolLpMint: instruction.accounts[3].toString(),
       poolCoinMint: coinMint,
@@ -391,10 +399,6 @@ class RaydiumCLPoolParser {
           this.splDecimalsMap.get(pcMint),
         ), // amount 0
       lpAmount: convertToUiAmount(data.readBigUInt64LE(8).toString()),
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 }
@@ -443,11 +447,21 @@ class RaydiumCPMMPoolParser {
 
       switch (instructionType) {
         case "CREATE":
-          return this.parseCreateEvent(instruction, data, transfers);
+          return this.parseCreateEvent(instruction, index, data, transfers);
         case "ADD":
-          return this.parseAddLiquidityEvent(instruction, data, transfers);
+          return this.parseAddLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
         case "REMOVE":
-          return this.parseRemoveLiquidityEvent(instruction, data, transfers);
+          return this.parseRemoveLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
       }
 
       return null;
@@ -459,16 +473,17 @@ class RaydiumCPMMPoolParser {
 
   private parseCreateEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [poolCoin, poolPc, lpCoin] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[4].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[5].toString();
-
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "CREATE",
+      ...getPoolEventBase("CREATE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[3].toString(),
       poolLpMint: instruction.accounts[6].toString(),
       poolCoinMint: coinMint,
@@ -487,29 +502,25 @@ class RaydiumCPMMPoolParser {
           this.splDecimalsMap.get(pcMint),
         ),
       lpAmount: lpCoin?.info.tokenAmount.uiAmount || 0,
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 
   private parseAddLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent | null {
     const [poolCoin, poolPc, lpCoin] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[10].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[11].toString();
-
+    const programId = instruction.programId.toBase58();
     if (transfers.length >= 2) {
       return {
-        user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-        type: "ADD",
+        ...getPoolEventBase("ADD", this.txWithMeta, programId),
+        idx: index.toString(),
         poolId: instruction.accounts[2].toString(),
         poolLpMint: instruction.accounts[12].toString(),
-
         poolCoinMint: coinMint,
         poolPcMint: pcMint,
         coinAmount:
@@ -527,10 +538,6 @@ class RaydiumCPMMPoolParser {
         lpAmount:
           lpCoin?.info.tokenAmount.uiAmount ||
           convertToUiAmount(data.readBigUInt64LE(8)),
-        programId: instruction.programId.toBase58(),
-        slot: this.txWithMeta.slot,
-        timestamp: this.txWithMeta.blockTime || 0,
-        signature: this.txWithMeta.transaction.signatures[0],
       };
     }
     return null;
@@ -538,15 +545,17 @@ class RaydiumCPMMPoolParser {
 
   private parseRemoveLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [lpCoin, poolCoin, poolPc] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[10].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[11].toString();
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "REMOVE",
+      ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[2].toString(),
       poolLpMint: instruction.accounts[12].toString(),
       poolCoinMint: coinMint,
@@ -566,10 +575,6 @@ class RaydiumCPMMPoolParser {
       lpAmount:
         lpCoin?.info.tokenAmount.uiAmount ||
         convertToUiAmount(data.readBigUInt64LE(8).toString()),
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 }

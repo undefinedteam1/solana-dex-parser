@@ -13,7 +13,7 @@ import {
 import { TokenInfoExtractor } from "../token-extractor";
 import { processTransferInnerInstruction } from "../transfer-utils";
 import base58 from "bs58";
-import { isSupportedToken } from "../utils";
+import { getPoolEventBase, isSupportedToken } from "../utils";
 
 export class MeteoraLiquidityParser {
   private readonly splTokenMap: Map<string, TokenInfo>;
@@ -95,9 +95,19 @@ class MeteoraDLMMPoolParser {
 
       switch (instructionType) {
         case "ADD":
-          return this.parseAddLiquidityEvent(instruction, data, transfers);
+          return this.parseAddLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
         case "REMOVE":
-          return this.parseRemoveLiquidityEvent(instruction, data, transfers);
+          return this.parseRemoveLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
       }
 
       return null;
@@ -109,20 +119,21 @@ class MeteoraDLMMPoolParser {
 
   private parseAddLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
     const [poolPc, poolCoin] = transfers;
     const coinMint = poolCoin?.info.mint || instruction.accounts[8].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[7].toString();
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "ADD",
+      ...getPoolEventBase("ADD", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[1].toString(),
       poolLpMint: instruction.accounts[1].toString(),
       poolCoinMint: coinMint,
       poolPcMint: pcMint,
-
       coinAmount:
         poolCoin?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
@@ -135,15 +146,12 @@ class MeteoraDLMMPoolParser {
           data.readBigUInt64LE(8),
           this.splDecimalsMap.get(pcMint),
         ),
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 
   private parseRemoveLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
@@ -154,22 +162,18 @@ class MeteoraDLMMPoolParser {
         poolPc = undefined;
       }
     }
-
     const coinMint = poolCoin?.info.mint || instruction.accounts[8].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[7].toString();
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "REMOVE",
+      ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[1].toString(),
       poolLpMint: instruction.accounts[1].toString(),
       poolCoinMint: coinMint,
       poolPcMint: pcMint,
       coinAmount: poolCoin?.info.tokenAmount.uiAmount || 0,
       pcAmount: poolPc?.info.tokenAmount.uiAmount || 0,
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 }
@@ -218,11 +222,26 @@ class MeteoraPoolsPoolParser {
 
       switch (instructionType) {
         case "CREATE":
-          return this.parseCreateLiquidityEvent(instruction, data, transfers);
+          return this.parseCreateLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
         case "ADD":
-          return this.parseAddLiquidityEvent(instruction, data, transfers);
+          return this.parseAddLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
         case "REMOVE":
-          return this.parseRemoveLiquidityEvent(instruction, data, transfers);
+          return this.parseRemoveLiquidityEvent(
+            instruction,
+            index,
+            data,
+            transfers,
+          );
       }
 
       return null;
@@ -234,6 +253,7 @@ class MeteoraPoolsPoolParser {
 
   private parseCreateLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
@@ -243,10 +263,10 @@ class MeteoraPoolsPoolParser {
     const [, , lpCoin] = transfers.filter((it) => it.type == "mintTo");
     const coinMint = poolCoin?.info.mint || instruction.accounts[4].toString();
     const pcMint = poolPc?.info.mint || instruction.accounts[3].toString();
-
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "CREATE",
+      ...getPoolEventBase("CREATE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[2].toString(),
       poolCoinMint: coinMint,
@@ -265,15 +285,12 @@ class MeteoraPoolsPoolParser {
           this.splDecimalsMap.get(pcMint),
         ),
       lpAmount: lpCoin?.info.tokenAmount.uiAmount || 0,
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 
   private parseAddLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
@@ -283,15 +300,14 @@ class MeteoraPoolsPoolParser {
     const [, , lpCoin] = transfers.filter((it) => it.type == "mintTo");
     const coinMint = poolCoin?.info.mint;
     const pcMint = poolPc?.info.mint;
-
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "ADD",
+      ...getPoolEventBase("ADD", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[1].toString(),
       poolCoinMint: coinMint,
       poolPcMint: pcMint,
-
       coinAmount:
         poolCoin?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
@@ -310,15 +326,12 @@ class MeteoraPoolsPoolParser {
           data.readBigUInt64LE(8),
           this.splDecimalsMap.get(instruction.accounts[1].toString()),
         ),
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 
   private parseRemoveLiquidityEvent(
     instruction: PartiallyDecodedInstruction,
+    index: number,
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
@@ -328,10 +341,10 @@ class MeteoraPoolsPoolParser {
     const [, , lpCoin] = transfers.filter((it) => it.type == "burn");
     const coinMint = poolCoin?.info.mint;
     const pcMint = poolPc?.info.mint;
-
+    const programId = instruction.programId.toBase58();
     return {
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
-      type: "REMOVE",
+      ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
+      idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[1].toString(),
       poolCoinMint: coinMint,
@@ -354,10 +367,6 @@ class MeteoraPoolsPoolParser {
           data.readBigUInt64LE(8),
           this.splDecimalsMap.get(instruction.accounts[1].toString()),
         ),
-      programId: instruction.programId.toBase58(),
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
     };
   }
 }

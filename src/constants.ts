@@ -6,11 +6,11 @@ export const DEX_PROGRAMS = {
   },
   JUPITER_DCA: {
     id: "DCAK36VfExkPdAkYUQg6ewgxyinvcEyPLyHjRbmveKFw",
-    name: "Jupiter DCA",
+    name: "JupiterDCA",
   },
   PUMP_FUN: {
     id: "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
-    name: "PumpFun",
+    name: "Pumpfun",
   },
   PHOENIX: {
     id: "PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY",
@@ -20,7 +20,7 @@ export const DEX_PROGRAMS = {
   // Trading Bot Programs
   BANANA_GUN: {
     id: "BANANAjs7FJiPQqJTGFzkZJndT9o7UmKiYYGaJz6frGu",
-    name: "Banana Gun",
+    name: "BananaGun",
   },
   MINTECH: {
     id: "minTcHYRLVPubRK8nt6sqe2ZpWrGDLQoNLipDJCGocY",
@@ -42,19 +42,19 @@ export const DEX_PROGRAMS = {
   // DEX Protocol Programs
   RAYDIUM_V4: {
     id: "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
-    name: "Raydium v4",
+    name: "Raydiumv4",
   },
   RAYDIUM_AMM: {
     id: "routeUGWgWzqBWFcrCfv8tritsqukccJPu3q5GPP3xS",
-    name: "Raydium AMM",
+    name: "RaydiumRoute",
   },
   RAYDIUM_CPMM: {
     id: "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C",
-    name: "Raydium CPMM",
+    name: "RaydiumCPMM",
   },
   RAYDIUM_CL: {
     id: "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK",
-    name: "Raydium CL",
+    name: "RaydiumCL",
   },
   METEORA: {
     id: "LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo",
@@ -62,7 +62,7 @@ export const DEX_PROGRAMS = {
   },
   METEORA_POOLS: {
     id: "Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB",
-    name: "Meteora Pools",
+    name: "MeteoraPools",
   },
   MOONSHOT: {
     id: "MoonCVVNZFSYkqNXP6bxHLPL6QQJiMagDL3qcqUQTrG",
@@ -74,7 +74,7 @@ export const DEX_PROGRAMS = {
   },
   OKX_DEX: {
     id: "6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma",
-    name: "OKX DEX",
+    name: "OKX",
   },
 };
 

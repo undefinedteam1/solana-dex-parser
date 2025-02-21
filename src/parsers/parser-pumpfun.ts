@@ -1,8 +1,8 @@
 import { ParsedTransactionWithMeta } from "@solana/web3.js";
 import { DEX_PROGRAMS, TOKENS } from "../constants";
 import {
-  convertToUiAmount,
   DexInfo,
+  PumpfunEvent,
   PumpfunTradeEvent,
   TradeInfo,
   TradeType,
@@ -22,8 +22,7 @@ export class PumpfunParser {
   public processTrades(): TradeInfo[] {
     const events = this.eventParser
       .processEvents()
-      .filter((it) => it.type == "TRADE")
-      .flatMap((it) => it.data as PumpfunTradeEvent);
+      .filter((it) => it.type == "TRADE");
     return events.length > 0 ? this.processSwapData(events) : [];
   }
 
@@ -32,46 +31,41 @@ export class PumpfunParser {
     return this.processSwapData(events);
   }
 
-  private parseInnerInstructions(
-    instructionIndex: number,
-  ): PumpfunTradeEvent[] {
+  private parseInnerInstructions(instructionIndex: number): PumpfunEvent[] {
     return this.eventParser
       .parseInnerInstructions(instructionIndex)
-      .filter((it) => it.type == "TRADE")
-      .flatMap((it) => it.data as PumpfunTradeEvent);
+      .filter((it) => it.type == "TRADE");
   }
 
-  private processSwapData(events: PumpfunTradeEvent[]): TradeInfo[] {
+  private processSwapData(events: PumpfunEvent[]): TradeInfo[] {
     if (!events.length) return [];
     return events.map((event) => this.createTradeInfo(event));
   }
 
-  private createTradeInfo(event: PumpfunTradeEvent): TradeInfo {
+  private createTradeInfo(data: PumpfunEvent): TradeInfo {
+    const event = data.data as PumpfunTradeEvent;
     const tradeType: TradeType = event.isBuy ? "BUY" : "SELL";
     const isBuy = tradeType === "BUY";
 
     return {
       type: tradeType,
       inputToken: {
-        mint: isBuy ? event.mint.toBase58() : TOKENS.SOL,
-        amount: isBuy
-          ? convertToUiAmount(event.tokenAmount, 6)
-          : convertToUiAmount(event.solAmount, 9),
+        mint: isBuy ? event.mint : TOKENS.SOL,
+        amount: isBuy ? event.tokenAmount : event.solAmount,
         decimals: isBuy ? 6 : 9,
       },
       outputToken: {
-        mint: isBuy ? TOKENS.SOL : event.mint.toBase58(),
-        amount: isBuy
-          ? convertToUiAmount(event.solAmount, 9)
-          : convertToUiAmount(event.tokenAmount, 6),
+        mint: isBuy ? TOKENS.SOL : event.mint,
+        amount: isBuy ? event.solAmount : event.tokenAmount,
         decimals: isBuy ? 9 : 6,
       },
-      user: event.user.toBase58(),
+      user: event.user,
       programId: DEX_PROGRAMS.PUMP_FUN.id,
       amm: DEX_PROGRAMS.PUMP_FUN.name,
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
+      slot: data.slot,
+      timestamp: data.timestamp,
+      signature: data.signature,
+      idx: data.idx,
     };
   }
 }

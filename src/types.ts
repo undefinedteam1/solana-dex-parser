@@ -1,5 +1,3 @@
-import { PublicKey } from "@solana/web3.js";
-
 export interface DexInfo {
   programId?: string;
   amm?: string;
@@ -39,6 +37,7 @@ export interface TransferData {
       uiAmount: number;
     };
   };
+  idx: string;
 }
 
 export type TradeType = "BUY" | "SELL";
@@ -54,32 +53,33 @@ export interface TradeInfo {
   slot: number;
   timestamp: number;
   signature: string;
+  idx: string; // instruction indexes
 }
 
 export interface PumpfunTradeEvent {
-  mint: PublicKey;
-  solAmount: bigint;
-  tokenAmount: bigint;
+  mint: string;
+  solAmount: number;
+  tokenAmount: number;
   isBuy: boolean;
-  user: PublicKey;
+  user: string;
   timestamp: bigint;
-  virtualSolReserves: bigint;
-  virtualTokenReserves: bigint;
+  virtualSolReserves: number;
+  virtualTokenReserves: number;
 }
 
 export interface PumpfunCreateEvent {
   name: string;
   symbol: string;
   uri: string;
-  mint: PublicKey;
-  bondingCurve: PublicKey;
-  user: PublicKey;
+  mint: string;
+  bondingCurve: string;
+  user: string;
 }
 
 export interface PumpfunCompleteEvent {
-  user: PublicKey;
-  mint: PublicKey;
-  bondingCurve: PublicKey;
+  user: string;
+  mint: string;
+  bondingCurve: string;
   timestamp: bigint;
 }
 
@@ -89,13 +89,21 @@ export interface PumpfunEvent {
   slot: number;
   timestamp: number;
   signature: string;
+  idx: string; // instruction indexes
 }
 
 export type PoolEventType = "CREATE" | "ADD" | "REMOVE" | "LOCK" | string;
-
-export interface PoolEvent {
+export interface PoolEventBase {
   user: string;
   type: PoolEventType;
+  programId?: string; // DEX program ID
+  amm?: string; // AMM type (e.g., 'Raydiumv4', 'Jupiter')
+  slot: number;
+  timestamp: number;
+  signature: string;
+  idx: string; // instruction indexes
+}
+export interface PoolEvent extends PoolEventBase {
   poolId: string; // AMM account address
   poolLpMint?: string; // LP mint address
   poolCoinMint?: string; // Token A mint address
@@ -103,11 +111,6 @@ export interface PoolEvent {
   coinAmount?: number; // Token A amount
   pcAmount?: number; // Token B amount
   lpAmount?: number; // Lp amount
-  programId?: string; // DEX program ID
-  amm?: string; // AMM type (e.g., 'Raydium v4', 'Jupiter')
-  slot: number;
-  timestamp: number;
-  signature: string;
 }
 
 export const convertToUiAmount = (amount: bigint, decimals?: number) => {

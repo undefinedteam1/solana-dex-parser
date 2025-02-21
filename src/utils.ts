@@ -1,6 +1,13 @@
 import { ParsedTransactionWithMeta } from "@solana/web3.js";
 import { SYSTEM_PROGRAMS, DEX_PROGRAMS, TOKENS } from "./constants";
-import { DexInfo } from "./types";
+import { DexInfo, PoolEventType } from "./types";
+
+export const getProgramName = (programId: string): string => {
+  const dexProgram = Object.values(DEX_PROGRAMS).find(
+    (dex) => dex.id === programId,
+  );
+  return dexProgram ? dexProgram.name : "Unknown";
+};
 
 export const getDexInfo = (tx: ParsedTransactionWithMeta): DexInfo => {
   const instructions = tx.transaction.message.instructions;
@@ -77,6 +84,22 @@ export const getTokenDecimals = (
 
 export const isSupportedToken = (mint: string): boolean => {
   return Object.values(TOKENS).includes(mint);
+};
+
+export const getPoolEventBase = (
+  type: PoolEventType,
+  tx: ParsedTransactionWithMeta,
+  programId: string,
+) => {
+  return {
+    user: tx.transaction.message.accountKeys[0].pubkey.toBase58(),
+    type,
+    programId,
+    amm: getProgramName(programId),
+    slot: tx.slot,
+    timestamp: tx.blockTime!,
+    signature: tx.transaction.signatures[0],
+  };
 };
 
 export const hexToUint8Array = (hex: string) => {

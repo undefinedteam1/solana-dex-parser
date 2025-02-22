@@ -11,7 +11,10 @@ import {
   TransferData,
 } from "../types";
 import { TokenInfoExtractor } from "../token-extractor";
-import { processTransferInnerInstruction } from "../transfer-utils";
+import {
+  getLPTransfers,
+  processTransferInnerInstruction,
+} from "../transfer-utils";
 import base58 from "bs58";
 import { getPoolEventBase, isSupportedToken } from "../utils";
 
@@ -123,29 +126,19 @@ class MeteoraDLMMPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[8].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[7].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const token0Mint = token0?.info.mint || instruction.accounts[7].toString();
+    const token1Mint = token1?.info.mint || instruction.accounts[8].toString();
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("ADD", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[1].toString(),
       poolLpMint: instruction.accounts[1].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(
-          data.readBigUInt64LE(16),
-          this.splDecimalsMap.get(coinMint),
-        ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(
-          data.readBigUInt64LE(8),
-          this.splDecimalsMap.get(pcMint),
-        ),
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
+      token0Amount: token0?.info.tokenAmount.uiAmount || 0,
+      token1Amount: token1?.info.tokenAmount.uiAmount || 0,
     };
   }
 
@@ -155,25 +148,26 @@ class MeteoraDLMMPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    let [poolPc, poolCoin]: any[] = transfers;
+    let [token0, token1]: any[] = getLPTransfers(transfers);
     if (transfers.length == 1) {
       if (isSupportedToken(transfers[0].info.mint)) {
-        poolCoin = transfers[0];
-        poolPc = undefined;
+        token1 = transfers[0];
+        token0 = undefined;
       }
     }
-    const coinMint = poolCoin?.info.mint || instruction.accounts[8].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[7].toString();
+
+    const token0Mint = token0?.info.mint || instruction.accounts[7].toString();
+    const token1Mint = token1?.info.mint || instruction.accounts[8].toString();
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[1].toString(),
       poolLpMint: instruction.accounts[1].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount: poolCoin?.info.tokenAmount.uiAmount || 0,
-      pcAmount: poolPc?.info.tokenAmount.uiAmount || 0,
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
+      token0Amount: token0?.info.tokenAmount.uiAmount || 0,
+      token1Amount: token1?.info.tokenAmount.uiAmount || 0,
     };
   }
 }
@@ -257,34 +251,32 @@ class MeteoraPoolsPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers.filter((it) =>
-      it.type.includes("transfer"),
-    );
-    const [, , lpCoin] = transfers.filter((it) => it.type == "mintTo");
-    const coinMint = poolCoin?.info.mint || instruction.accounts[4].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[3].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const [, , lpToken] = transfers.filter((it) => it.type == "mintTo");
+    const token0Mint = token0?.info.mint || instruction.accounts[3].toString();
+    const token1Mint = token1?.info.mint || instruction.accounts[4].toString();
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("CREATE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[2].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
 
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(16),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token0Mint),
         ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(8),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token1Mint),
         ),
-      lpAmount: lpCoin?.info.tokenAmount.uiAmount || 0,
+      lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
     };
   }
 
@@ -294,34 +286,33 @@ class MeteoraPoolsPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers.filter((it) =>
-      it.type.includes("transfer"),
-    );
-    const [, , lpCoin] = transfers.filter((it) => it.type == "mintTo");
-    const coinMint = poolCoin?.info.mint;
-    const pcMint = poolPc?.info.mint;
+    const [token0, token1] = getLPTransfers(transfers);
+    const [, , lpToken] = transfers.filter((it) => it.type == "mintTo");
+
+    const token0Mint = token0?.info.mint;
+    const token1Mint = token1?.info.mint;
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("ADD", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[1].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(24),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token0Mint),
         ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(16),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token1Mint),
         ),
       lpAmount:
-        lpCoin?.info.tokenAmount.uiAmount ||
+        lpToken?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(8),
           this.splDecimalsMap.get(instruction.accounts[1].toString()),
@@ -335,34 +326,32 @@ class MeteoraPoolsPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers.filter((it) =>
-      it.type.includes("transfer"),
-    );
-    const [, , lpCoin] = transfers.filter((it) => it.type == "burn");
-    const coinMint = poolCoin?.info.mint;
-    const pcMint = poolPc?.info.mint;
+    const [token0, token1] = getLPTransfers(transfers);
+    const [, , lpToken] = transfers.filter((it) => it.type == "burn");
+    const token0Mint = token0?.info.mint;
+    const token1Mint = token1?.info.mint;
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[1].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(24),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token0Mint),
         ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(16),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token1Mint),
         ),
       lpAmount:
-        lpCoin?.info.tokenAmount.uiAmount ||
+        lpToken?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(8),
           this.splDecimalsMap.get(instruction.accounts[1].toString()),

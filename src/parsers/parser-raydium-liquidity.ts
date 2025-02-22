@@ -11,7 +11,10 @@ import {
   TransferData,
 } from "../types";
 import { TokenInfoExtractor } from "../token-extractor";
-import { processTransferInnerInstruction } from "../transfer-utils";
+import {
+  getLPTransfers,
+  processTransferInnerInstruction,
+} from "../transfer-utils";
 import base58 from "bs58";
 import { getPoolEventBase } from "../utils";
 
@@ -71,8 +74,7 @@ class RaydiumV4PoolParser {
   ) {}
 
   public getPoolAction(data: any): PoolEventType | null {
-    const instructionType = data.slice(0, 8);
-
+    const instructionType = data.slice(0, 1);
     if (instructionType.equals(DISCRIMINATORS.RAYDIUM.CREATE)) {
       return "CREATE";
     } else if (instructionType.equals(DISCRIMINATORS.RAYDIUM.ADD_LIQUIDITY)) {
@@ -100,6 +102,7 @@ class RaydiumV4PoolParser {
         index,
         this.splTokenMap,
         this.splDecimalsMap,
+        ["mintTo", "burn"],
       );
 
       switch (instructionType) {
@@ -134,36 +137,19 @@ class RaydiumV4PoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolCoin, poolPc] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[8].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[9].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const lpToken = transfers.find((it) => it.type == "mintTo");
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("CREATE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[4].toString(),
-      poolLpMint: instruction.accounts[7].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      // initialize2:
-      // - 8 byte offset 1: DISCRIMINATORS
-      // - 8 byte offset 1: nonce
-      // - 64 byte offset 8: openTime
-      // - 64 byte offset 8: pcAmount
-      // - 64 byte offset 8: coinAmount
-      // - others...
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(
-          data.readBigUInt64LE(18),
-          this.splDecimalsMap.get(coinMint),
-        ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(
-          data.readBigUInt64LE(10),
-          this.splDecimalsMap.get(pcMint),
-        ),
+      poolLpMint: lpToken?.info.mint || instruction.accounts[7].toString(),
+      token0Mint: token0?.info.mint,
+      token1Mint: token1?.info.mint,
+      token0Amount: token0?.info.tokenAmount.uiAmount || 0,
+      token1Amount: token1?.info.tokenAmount.uiAmount || 0,
+      lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
     };
   }
 
@@ -173,32 +159,21 @@ class RaydiumV4PoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent | null {
-    const [poolCoin, poolPc] = transfers;
+    const [token0, token1] = getLPTransfers(transfers);
+    const lpToken = transfers.find((it) => it.type == "mintTo");
     const programId = instruction.programId.toBase58();
-    if (transfers.length >= 2) {
-      return {
-        ...getPoolEventBase("ADD", this.txWithMeta, programId),
-        idx: index.toString(),
-        poolId: instruction.accounts[1].toString(),
-        poolLpMint: instruction.accounts[5].toString(),
+    return {
+      ...getPoolEventBase("ADD", this.txWithMeta, programId),
+      idx: index.toString(),
+      poolId: instruction.accounts[1].toString(),
+      poolLpMint: lpToken?.info.mint || instruction.accounts[5].toString(),
 
-        poolCoinMint: poolCoin?.info.mint,
-        poolPcMint: poolPc?.info.mint,
-        coinAmount:
-          poolCoin?.info.tokenAmount.uiAmount ||
-          convertToUiAmount(
-            data.readBigUInt64LE(1),
-            this.splDecimalsMap.get(poolCoin?.info.mint),
-          ),
-        pcAmount:
-          poolPc?.info.tokenAmount.uiAmount ||
-          convertToUiAmount(
-            data.readBigUInt64LE(9),
-            this.splDecimalsMap.get(poolPc?.info.mint),
-          ),
-      };
-    }
-    return null;
+      token0Mint: token0?.info.mint,
+      token1Mint: token1?.info.mint,
+      token0Amount: token0?.info.tokenAmount.uiAmount || 0,
+      token1Amount: token1?.info.tokenAmount.uiAmount || 0,
+      lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
+    };
   }
 
   private parseRemoveLiquidityEvent(
@@ -207,19 +182,19 @@ class RaydiumV4PoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const lpAmount = convertToUiAmount(data.readBigUInt64LE(1).toString());
-    const [poolCoin, poolPc] = transfers;
+    const [token0, token1] = getLPTransfers(transfers);
+    const lpToken = transfers.find((it) => it.type == "burn");
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[1].toString(),
-      poolLpMint: instruction.accounts[5].toString(),
-      poolCoinMint: poolCoin?.info.mint,
-      poolPcMint: poolPc?.info.mint,
-      coinAmount: poolCoin?.info.tokenAmount.uiAmount || 0,
-      pcAmount: poolPc?.info.tokenAmount.uiAmount || 0,
-      lpAmount: lpAmount,
+      poolLpMint: lpToken?.info.mint || instruction.accounts[5].toString(),
+      token0Mint: token0?.info.mint,
+      token1Mint: token1?.info.mint,
+      token0Amount: token0?.info.tokenAmount.uiAmount || 0,
+      token1Amount: token1?.info.tokenAmount.uiAmount || 0,
+      lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
     };
   }
 }
@@ -297,31 +272,31 @@ class RaydiumCLPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[19].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[18].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const token1Mint = token1?.info.mint || instruction.accounts[19].toString();
+    const token0Mint = token0?.info.mint || instruction.accounts[18].toString();
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("CREATE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[4].toString(),
       poolLpMint: instruction.accounts[4].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
 
       // amount 1
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(48),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token1Mint),
         ),
       // amount 0
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(40),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token0Mint),
         ),
       lpAmount: 0,
     };
@@ -333,9 +308,9 @@ class RaydiumCLPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent | null {
-    const [poolPc, poolCoin] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[14].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[13].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const token0Mint = token0?.info.mint || instruction.accounts[13].toString();
+    const token1Mint = token1?.info.mint || instruction.accounts[14].toString();
     const programId = instruction.programId.toBase58();
     if (transfers.length >= 2) {
       return {
@@ -343,27 +318,21 @@ class RaydiumCLPoolParser {
         idx: index.toString(),
         poolId: instruction.accounts[2].toString(),
         poolLpMint: instruction.accounts[2].toString(),
-        poolCoinMint: coinMint,
-        poolPcMint: pcMint,
-        // amount1
-        coinAmount:
-          poolCoin?.info.tokenAmount.uiAmount ||
+        token0Mint: token0Mint,
+        token1Mint: token1Mint,
+        token0Amount:
+          token0?.info.tokenAmount.uiAmount ||
           convertToUiAmount(
             data.readBigUInt64LE(32),
-            this.splDecimalsMap.get(coinMint),
+            this.splDecimalsMap.get(token0Mint),
           ),
-        // amount0
-        pcAmount:
-          poolPc?.info.tokenAmount.uiAmount ||
+        token1Amount:
+          token1?.info.tokenAmount.uiAmount ||
           convertToUiAmount(
             data.readBigUInt64LE(24),
-            this.splDecimalsMap.get(pcMint),
+            this.splDecimalsMap.get(token1Mint),
           ),
-        lpAmount:
-          convertToUiAmount(
-            data.readBigUInt64LE(8),
-            this.splDecimalsMap.get(pcMint),
-          ) || 0,
+        lpAmount: convertToUiAmount(data.readBigUInt64LE(8)) || 0,
       };
     }
     return null;
@@ -375,29 +344,29 @@ class RaydiumCLPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[15].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[14].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const token0Mint = token0?.info.mint || instruction.accounts[14].toString();
+    const token1Mint = token1?.info.mint || instruction.accounts[15].toString();
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[3].toString(),
       poolLpMint: instruction.accounts[3].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(32),
-          this.splDecimalsMap.get(coinMint),
-        ), // amount1
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+          this.splDecimalsMap.get(token0Mint),
+        ),
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(24),
-          this.splDecimalsMap.get(pcMint),
-        ), // amount 0
+          this.splDecimalsMap.get(token1Mint),
+        ),
       lpAmount: convertToUiAmount(data.readBigUInt64LE(8).toString()),
     };
   }
@@ -477,31 +446,29 @@ class RaydiumCPMMPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolCoin, poolPc, lpCoin] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[4].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[5].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const lpToken = transfers.find((it) => it.type == "mintTo");
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("CREATE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[3].toString(),
-      poolLpMint: instruction.accounts[6].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      poolLpMint: lpToken?.info.mint || instruction.accounts[6].toString(),
+      token0Mint: token0?.info.mint,
+      token1Mint: token1?.info.mint,
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(8),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token0?.info.mint),
         ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(16),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token1?.info.mint),
         ),
-      lpAmount: lpCoin?.info.tokenAmount.uiAmount || 0,
+      lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
     };
   }
 
@@ -511,9 +478,8 @@ class RaydiumCPMMPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent | null {
-    const [poolCoin, poolPc, lpCoin] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[10].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[11].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const lpToken = transfers.find((it) => it.type == "mintTo");
     const programId = instruction.programId.toBase58();
     if (transfers.length >= 2) {
       return {
@@ -521,22 +487,22 @@ class RaydiumCPMMPoolParser {
         idx: index.toString(),
         poolId: instruction.accounts[2].toString(),
         poolLpMint: instruction.accounts[12].toString(),
-        poolCoinMint: coinMint,
-        poolPcMint: pcMint,
-        coinAmount:
-          poolCoin?.info.tokenAmount.uiAmount ||
+        token0Mint: token0?.info.mint,
+        token1Mint: token1?.info.mint,
+        token0Amount:
+          token0?.info.tokenAmount.uiAmount ||
           convertToUiAmount(
             data.readBigUInt64LE(16),
-            this.splDecimalsMap.get(coinMint),
+            this.splDecimalsMap.get(token0?.info.mint),
           ),
-        pcAmount:
-          poolPc?.info.tokenAmount.uiAmount ||
+        token1Amount:
+          token1?.info.tokenAmount.uiAmount ||
           convertToUiAmount(
             data.readBigUInt64LE(24),
-            this.splDecimalsMap.get(pcMint),
+            this.splDecimalsMap.get(token1?.info.mint),
           ),
         lpAmount:
-          lpCoin?.info.tokenAmount.uiAmount ||
+          lpToken?.info.tokenAmount.uiAmount ||
           convertToUiAmount(data.readBigUInt64LE(8)),
       };
     }
@@ -549,31 +515,30 @@ class RaydiumCPMMPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [lpCoin, poolCoin, poolPc] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[10].toString();
-    const pcMint = poolPc?.info.mint || instruction.accounts[11].toString();
+    const [token0, token1] = getLPTransfers(transfers);
+    const lpToken = transfers.find((it) => it.type == "burn");
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[2].toString(),
       poolLpMint: instruction.accounts[12].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Mint: token0?.info.mint,
+      token1Mint: token1?.info.mint,
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(16),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token0?.info.mint),
         ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(24),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token1?.info.mint),
         ),
       lpAmount:
-        lpCoin?.info.tokenAmount.uiAmount ||
+        lpToken?.info.tokenAmount.uiAmount ||
         convertToUiAmount(data.readBigUInt64LE(8).toString()),
     };
   }

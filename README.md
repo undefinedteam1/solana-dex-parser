@@ -61,13 +61,13 @@ async function parseSwap() {
   console.log("Trades:", trades);
 
   // case 2, by tx object
-  const tx = await this.connection.getParsedTransaction(signature, {
+  const tx = await connection.getParsedTransaction(signature, {
     commitment: "confirmed",
     maxSupportedTransactionVersion: 0,
   });
 
   const trades2 = await parser.parseTrades(tx);
-  console.log("trades2:", trades);
+  console.log("trades2:", trades2);
 }
 
 ```
@@ -84,7 +84,7 @@ async function parseLiquidityEvents() {
   
   // Get transaction
   const signature = 'your-transaction-signature';
-  const tx = await this.connection.getParsedTransaction(signature, {
+  const tx = await connection.getParsedTransaction(signature, {
     maxSupportedTransactionVersion: 0,
   });
  
@@ -123,7 +123,7 @@ import { TransferParser } from 'solana-dex-parser';
 const connection = new Connection('https://api.mainnet-beta.solana.com');
 // Get transaction
 const signature = 'your-transaction-signature';
-const tx = await this.connection.getParsedTransaction(signature, {
+const tx = await connection.getParsedTransaction(signature, {
   maxSupportedTransactionVersion: 0,
 });
 
@@ -142,7 +142,7 @@ import { PumpfunEventParser } from 'solana-dex-parser';
 const connection = new Connection('https://api.mainnet-beta.solana.com');
 // Get transaction
 const signature = 'your-transaction-signature';
-const tx = await this.connection.getParsedTransaction(signature, {
+const tx = await connection.getParsedTransaction(signature, {
   maxSupportedTransactionVersion: 0,
 });
 

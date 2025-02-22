@@ -92,7 +92,13 @@ export interface PumpfunEvent {
   idx: string; // instruction indexes
 }
 
-export type PoolEventType = "CREATE" | "ADD" | "REMOVE" | "LOCK" | string;
+export type PoolEventType =
+  | "CREATE"
+  | "ADD"
+  | "REMOVE"
+  | "LOCK"
+  | "CREATE2"
+  | "ADD2";
 export interface PoolEventBase {
   user: string;
   type: PoolEventType;
@@ -104,13 +110,40 @@ export interface PoolEventBase {
   idx: string; // instruction indexes
 }
 export interface PoolEvent extends PoolEventBase {
-  poolId: string; // AMM account address
-  poolLpMint?: string; // LP mint address
-  poolCoinMint?: string; // Token A mint address
-  poolPcMint?: string; // Token B mint address
-  coinAmount?: number; // Token A amount
-  pcAmount?: number; // Token B amount
-  lpAmount?: number; // Lp amount
+  /**
+   * AMM pool address (market)
+   */
+  poolId: string;
+
+  /**
+   * LP mint address
+   */
+  poolLpMint?: string;
+
+  /**
+   * Token A mint address (TOKEN)
+   */
+  token0Mint?: string;
+
+  /**
+   * Token A amount (TOKEN)
+   */
+  token0Amount?: number;
+
+  /**
+   * Token B mint address (SOL/USDC/USDT)
+   */
+  token1Mint?: string;
+
+  /**
+   * Token B amount (SOL/USDC/USDT)
+   */
+  token1Amount?: number;
+
+  /**
+   * Lp amount
+   */
+  lpAmount?: number;
 }
 
 export const convertToUiAmount = (amount: bigint, decimals?: number) => {

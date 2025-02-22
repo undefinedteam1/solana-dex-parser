@@ -11,7 +11,10 @@ import {
   TransferData,
 } from "../types";
 import { TokenInfoExtractor } from "../token-extractor";
-import { processTransferInnerInstruction } from "../transfer-utils";
+import {
+  getLPTransfers,
+  processTransferInnerInstruction,
+} from "../transfer-utils";
 import base58 from "bs58";
 import { getPoolEventBase } from "../utils";
 
@@ -123,28 +126,28 @@ class OrcaPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers;
-    const coinMint = poolCoin?.info.mint;
-    const pcMint = poolPc?.info.mint;
+    const [token0, token1] = getLPTransfers(transfers);
+    const token0Mint = token0?.info.mint;
+    const token1Mint = token1?.info.mint;
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("ADD", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[0].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(32),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token0Mint),
         ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(24),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token1Mint),
         ),
       lpAmount:
         convertToUiAmount(
@@ -160,28 +163,28 @@ class OrcaPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers;
-    const coinMint = poolCoin?.info.mint || instruction.accounts[8].toBase58();
-    const pcMint = poolPc?.info.mint || instruction.accounts[7].toBase58();
+    const [token0, token1] = getLPTransfers(transfers);
+    const token0Mint = token0?.info.mint || instruction.accounts[7].toBase58();
+    const token1Mint = token1?.info.mint || instruction.accounts[8].toBase58();
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("ADD", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[0].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(32),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token0Mint),
         ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(24),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token1Mint),
         ),
       lpAmount:
         convertToUiAmount(
@@ -197,28 +200,28 @@ class OrcaPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [poolPc, poolCoin] = transfers;
-    const coinMint = poolCoin?.info.mint;
-    const pcMint = poolPc?.info.mint;
+    const [token0, token1] = getLPTransfers(transfers);
+    const token0Mint = token0?.info.mint;
+    const token1Mint = token1?.info.mint;
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
       idx: index.toString(),
       poolId: instruction.accounts[0].toString(),
       poolLpMint: instruction.accounts[0].toString(),
-      poolCoinMint: coinMint,
-      poolPcMint: pcMint,
-      coinAmount:
-        poolCoin?.info.tokenAmount.uiAmount ||
+      token0Mint: token0Mint,
+      token1Mint: token1Mint,
+      token0Amount:
+        token0?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(32),
-          this.splDecimalsMap.get(coinMint),
+          this.splDecimalsMap.get(token0Mint),
         ),
-      pcAmount:
-        poolPc?.info.tokenAmount.uiAmount ||
+      token1Amount:
+        token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(
           data.readBigUInt64LE(24),
-          this.splDecimalsMap.get(pcMint),
+          this.splDecimalsMap.get(token1Mint),
         ),
       lpAmount: convertToUiAmount(
         data.readBigUInt64LE(8),

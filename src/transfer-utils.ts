@@ -8,6 +8,7 @@ import {
   TradeInfo,
   DexInfo,
 } from "./types";
+import { isSupportedToken } from "./utils";
 
 export const isTransferCheck = (instruction: ParsedInstruction): boolean => {
   return (
@@ -312,4 +313,24 @@ export const processTransferInstruction = (
   }
 
   return null;
+};
+
+/**
+ * Sort and get LP tokens
+ * make sure token0 is SPL Token, token1 is SOL/USDC/USDT
+ * @param transfers
+ * @returns
+ */
+export const getLPTransfers = (transfers: TransferData[]) => {
+  const tokens = transfers.filter((it) => it.type.includes("transfer"));
+  if (tokens.length == 2) {
+    if (
+      tokens[0].info.mint == TOKENS.SOL ||
+      (isSupportedToken(tokens[0].info.mint) &&
+        tokens[1].info.mint != TOKENS.SOL)
+    ) {
+      return [tokens[1], tokens[0]];
+    }
+  }
+  return tokens;
 };

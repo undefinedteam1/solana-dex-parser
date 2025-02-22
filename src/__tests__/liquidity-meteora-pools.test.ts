@@ -1,48 +1,50 @@
 import { Connection } from "@solana/web3.js";
 import dotenv from "dotenv";
-import { OrcaLiquidityParser } from "../parsers/parser-orca-liquidity";
+import { MeteoraLiquidityParser } from "../parsers/parser-meteora-liquidity";
 
 dotenv.config();
 
 const tests = {
+  CREATE: [
+    {
+      signature:
+        "2GWLwbEjyR7moFYK5JfapbsDBrBz3298BVWsAebhUECPaXjLbTZ6DkbEN34BF57jdGot7GkwDnrzszFB3H9AJxmS",
+      type: "CREATE",
+      desc: "Meteora Pools Program: initializePermissionlessConstantProductPoolWithConfig",
+      name: "STRIKE",
+      poolId: "BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb",
+      token0Mint: "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw",
+      token0Amount: 100000000,
+      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Amount: 2740,
+    },
+  ],
   ADD: [
     {
       signature:
-        "3mZcyeDJysgs79nLcvtN4XQ6iepyERqG93P2F2ZYgUX4ZF1Yr1XFBMKR8DHd7z4gN2EmvAqMc3KhQTQpGMbtvhF7",
+        "LaocVd6PpfdH1KTdQuRTf5WwnUzmyf3gdAy16xro747nzrhpgXg1oxFrpgBk31tPh24ksVAyiSkNW7vncoKTGyH",
       type: "ADD",
-      desc: " Whirlpools Program: increaseLiquidity",
-      name: "JUP",
-      poolId: "C1MgLojNLWBKADvu9BHdtgzz1oZX4dZ5zGdGcgvvW8Wz",
-      token0Mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
-      token0Amount: 6931.015285,
-      token1Mint: "So11111111111111111111111111111111111111112",
-      token1Amount: 45.407996732,
-    },
-    {
-      signature:
-        "4Kv6gQgdSsCPSxRApiCNMHFE1dKKGVugrJTzdzSYX5a2aXho4o7jaQDSHLH3RTsr5aVwpkzWL1o5mSCyDtHeZKZr",
-      type: "ADD",
-      desc: "Whirlpools Program: increaseLiquidityV2",
+      desc: "Meteora Pools Program: addBalanceLiquidity",
       name: "STRIKE",
-      poolId: "Djf5NYkwhdipTW3ZScPeUkjf7BLtDdxLvEGtNyWMtw3d",
+      poolId: "BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb",
       token0Mint: "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw",
-      token0Amount: 2000000,
+      token0Amount: 720.780405,
       token1Mint: "So11111111111111111111111111111111111111112",
-      token1Amount: 6.315579644,
+      token1Amount: 0.029097874,
     },
   ],
   REMOVE: [
     {
       signature:
-        "23zkGAorUC3aHSk7zJYiUvvs6gEXPPzp8xRiWfACzkrqBEaQrKiH9QCgrmwSTD6hxKKEjryEGbEvurt6xSBpuBMC",
+        "2xEAewTjtSHgpEHHzaNjHiuoMHNZQXz5vySXHCSL8omujjvaxq9JsfGWjusz43ndmzcu5riESKm1UH4riWDX9v1v",
       type: "REMOVE",
-      desc: "Whirlpools Program: decreaseLiquidity",
-      name: "JUP",
-      poolId: "C1MgLojNLWBKADvu9BHdtgzz1oZX4dZ5zGdGcgvvW8Wz",
-      token0Mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
-      token0Amount: 106.470976,
+      desc: " Meteora Pools Program: removeBalanceLiquidity",
+      name: "STRIKE",
+      poolId: "BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb",
+      token0Mint: "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw",
+      token0Amount: 14938.609562,
       token1Mint: "So11111111111111111111111111111111111111112",
-      token1Amount: 0.475676716,
+      token1Amount: 0.578534516,
     },
   ],
 };
@@ -58,7 +60,7 @@ describe("Liquidity", () => {
     connection = new Connection(rpcUrl);
   });
 
-  describe("Orca", () => {
+  describe("Meteora Pools", () => {
     Object.values(tests)
       .flat()
       .forEach((test) => {
@@ -66,7 +68,7 @@ describe("Liquidity", () => {
           const tx = await connection.getParsedTransaction(test.signature, {
             maxSupportedTransactionVersion: 0,
           });
-          const parser = new OrcaLiquidityParser(tx!);
+          const parser = new MeteoraLiquidityParser(tx!);
           const events = parser.processLiquidity();
           expect(events.length).toEqual(1);
           expect(events[0].type).toEqual(test.type);

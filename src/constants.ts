@@ -126,9 +126,9 @@ export const DISCRIMINATORS = {
     SELL: new Uint8Array([51, 230, 133, 164, 1, 127, 131, 173]),
   },
   RAYDIUM: {
-    CREATE: new Uint8Array([1, 254, 0, 0, 0, 0, 0, 0]),
-    ADD_LIQUIDITY: new Uint8Array([3, 245, 154, 82, 5, 0, 0, 0]),
-    REMOVE_LIQUIDITY: new Uint8Array([4, 18, 194, 31, 96, 8, 2, 0]),
+    CREATE: new Uint8Array([1]),
+    ADD_LIQUIDITY: new Uint8Array([3]),
+    REMOVE_LIQUIDITY: new Uint8Array([4]),
   },
   RAYDIUM_CL: {
     CREATE: new Uint8Array([77, 255, 174, 82, 125, 29, 201, 46]), // openPositionWithToken22Nft

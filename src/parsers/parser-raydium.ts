@@ -1,5 +1,5 @@
 import { ParsedInstruction, ParsedTransactionWithMeta } from "@solana/web3.js";
-import { DEX_PROGRAMS } from "../constants";
+import { DEX_PROGRAMS, DISCRIMINATORS } from "../constants";
 import { DexInfo, TokenInfo, TradeInfo, TransferData } from "../types";
 import { TokenInfoExtractor } from "../token-extractor";
 import {
@@ -8,7 +8,10 @@ import {
   isTransferCheck,
   processTransferCheck,
   processSwapData,
+  processTransferInnerInstruction,
+  processTransferInstruction,
 } from "../transfer-utils";
+import base58 from "bs58";
 
 export class RaydiumParser {
   private readonly splTokenMap: Map<string, TokenInfo>;
@@ -26,7 +29,7 @@ export class RaydiumParser {
   public processTrades(): TradeInfo[] {
     return this.txWithMeta.transaction.message.instructions.reduce(
       (trades: TradeInfo[], instruction: any, index: number) => {
-        if (this.isRaydiumInstruction(instruction)) {
+        if (this.isTradeInstruction(instruction)) {
           const instructionTrades = this.processInstructionTrades(index);
           trades.push(...instructionTrades);
         }
@@ -38,7 +41,12 @@ export class RaydiumParser {
 
   public processInstructionTrades(instructionIndex: number): TradeInfo[] {
     try {
-      const transfers = this.processRaydiumSwaps(instructionIndex);
+      const transfers = processTransferInnerInstruction(
+        this.txWithMeta,
+        instructionIndex,
+        this.splTokenMap,
+        this.splDecimalsMap
+      );
       return transfers.length
         ? [processSwapData(this.txWithMeta, transfers, this.dexInfo)]
         : [];
@@ -48,49 +56,29 @@ export class RaydiumParser {
     }
   }
 
-  private isRaydiumInstruction(instruction: any): boolean {
+  public isTradeInstruction(instruction: any): boolean {
     const programId = instruction.programId.toBase58();
-    return [
-      DEX_PROGRAMS.RAYDIUM_V4.id,
-      DEX_PROGRAMS.RAYDIUM_AMM.id,
-      DEX_PROGRAMS.RAYDIUM_CL.id,
-      DEX_PROGRAMS.RAYDIUM_CPMM,
-    ].includes(programId);
+    return (
+      [
+        DEX_PROGRAMS.RAYDIUM_V4.id,
+        DEX_PROGRAMS.RAYDIUM_AMM.id,
+        DEX_PROGRAMS.RAYDIUM_CL.id,
+        DEX_PROGRAMS.RAYDIUM_CPMM.id,
+      ].includes(programId) && this.isLiquidityEvent(instruction) == false
+    );
   }
 
-  private processRaydiumSwaps(instructionIndex: number): TransferData[] {
-    const innerInstructions = this.txWithMeta.meta?.innerInstructions;
-    if (!innerInstructions) return [];
-
-    return innerInstructions
-      .filter((set) => set.index === instructionIndex)
-      .flatMap((set) =>
-        set.instructions
-          .map((instruction, index) =>
-            this.processTransferInstruction(
-              instruction as ParsedInstruction,
-              `${instructionIndex}-${index}`,
-            ),
-          )
-          .filter((transfer): transfer is TransferData => transfer !== null),
-      );
-  }
-
-  private processTransferInstruction(
-    instruction: ParsedInstruction,
-    idx: string,
-  ): TransferData | null {
-    if (isTransfer(instruction)) {
-      return processTransfer(
-        instruction,
-        idx,
-        this.splTokenMap,
-        this.splDecimalsMap,
-      );
-    }
-    if (isTransferCheck(instruction)) {
-      return processTransferCheck(instruction, idx, this.splDecimalsMap);
-    }
-    return null;
+  private isLiquidityEvent(instruction: any): boolean {
+    const data = base58.decode(instruction.data as string);
+    const a = Object.values(DISCRIMINATORS.RAYDIUM).find((it) =>
+      data.slice(0, 1).equals(it),
+    );
+    const b = Object.values(DISCRIMINATORS.RAYDIUM_CL).flatMap((it) => Object.values(it)).find((it) =>
+      data.slice(0, 8).equals(it),
+    );
+    const c = Object.values(DISCRIMINATORS.RAYDIUM_CPMM).find((it) =>
+      data.slice(0, 8).equals(it),
+    );
+    return a != undefined || b != undefined || c != undefined;
   }
 }

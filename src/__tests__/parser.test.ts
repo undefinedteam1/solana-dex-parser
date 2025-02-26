@@ -54,8 +54,10 @@ describe("Parser", () => {
 
   describe("Dex", () => {
     describe("parseTransaction", () => {
-      // ["2XYu86VrUXiwNNj8WvngcXGytrCsSrpay69Rt3XBz9YZvCQcZJLjvDfh9UWETFtFW47vi4xG2CkiarRJwSe6VekE"].forEach(async (signature) => {
-      Object.values(TEST_TRANSACTIONS).forEach(async (signature) => {
+      [
+        "2mNBApzw9HXF3TJXsLoBtSxc3DqC6XVYbtwchmyUA9mvt9oVamYzpHa9axF62y9aNnXMzyKTzpfCcsHNsLgUcSnE",
+      ].forEach(async (signature) => {
+      // Object.values(TEST_TRANSACTIONS).forEach(async (signature) => {
         it(signature, async () => {
           const parser = new DexParser(connection);
 
@@ -65,5 +67,23 @@ describe("Parser", () => {
         });
       });
     });
+
+    // describe("parseLiquidity", () => {
+    //   [
+    //     "iB88JSVjSC13vJF9eigdgxVeWxb8RfAN8ggb2ndZCtQu2zHgiQaLkuiei2w8BGyMKGhDjFxjNxSVreAA4MaUsXs",
+    //   ].forEach(async (signature) => {
+    //     // Object.values(TEST_TRANSACTIONS).forEach(async (signature) => {
+    //     it(signature, async () => {
+    //       const tx = await connection.getParsedTransaction(signature, {
+    //         maxSupportedTransactionVersion: 0,
+    //       });
+
+    //       // Parse events
+    //       const parser = new DexParser(connection);
+    //       const events = await parser.parseLiquidity(tx!);
+    //       expect(events.length).toBeGreaterThan(0);
+    //     });
+    //   });
+    // });
   });
 });

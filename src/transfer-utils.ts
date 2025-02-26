@@ -1,5 +1,5 @@
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { ParsedInstruction, ParsedTransactionWithMeta } from "@solana/web3.js";
+import { ParsedInstruction, ParsedTransactionWithMeta, PublicKey } from "@solana/web3.js";
 import { TOKENS, DEX_PROGRAMS } from "./constants";
 import {
   TokenInfo,
@@ -141,7 +141,9 @@ export const processSwapData = (
 
   const uniqueTokens = extractUniqueTokens(transfers);
   if (uniqueTokens.length < 2) {
-    throw new Error("Insufficient unique tokens for swap");
+    throw new Error(
+      `Insufficient unique tokens for swap > ${txWithMeta.transaction.signatures[0]}`,
+    );
   }
 
   const { inputToken, outputToken } = calculateTokenAmounts(
@@ -248,10 +250,10 @@ export const getTransferTokenInfo = (
 ): TokenInfo | null => {
   return transfer?.info
     ? {
-        mint: transfer.info.mint,
-        amount: transfer.info.tokenAmount.uiAmount,
-        decimals: transfer.info.tokenAmount.decimals,
-      }
+      mint: transfer.info.mint,
+      amount: transfer.info.tokenAmount.uiAmount,
+      decimals: transfer.info.tokenAmount.decimals,
+    }
     : null;
 };
 
@@ -269,14 +271,17 @@ export const processTransferInnerInstruction = (
     .filter((set) => set.index === instructionIndex)
     .flatMap((set) =>
       set.instructions
-        .map((instruction, idx) =>
-          processTransferInstruction(
+        .map((instruction, idx) => {
+          const items = processTransferInstruction(
             instruction as ParsedInstruction,
             `${instructionIndex}-${idx}`,
             splTokenMap,
             splDecimalsMap,
-            extraTypes,
-          ),
+            extraTypes
+          );
+
+          return items;
+        }
         )
         .filter((transfer): transfer is TransferData => transfer !== null),
     );
@@ -289,6 +294,7 @@ export const processTransferInstruction = (
   splDecimalsMap: Map<string, number>,
   extraTypes?: string[],
 ): TransferData | null => {
+
   if (isTransfer(instruction)) {
     return processTransfer(instruction, idx, splTokenMap, splDecimalsMap);
   }
@@ -318,6 +324,12 @@ export const processTransferInstruction = (
 /**
  * Sort and get LP tokens
  * make sure token0 is SPL Token, token1 is SOL/USDC/USDT
+ * SOL,USDT
+ * SOL,DDD
+ * USDC,USDT/DDD
+ * USDT,USDC
+ * USDC,SOL
+ * USDT,SOL
  * @param transfers
  * @returns
  */
@@ -327,7 +339,7 @@ export const getLPTransfers = (transfers: TransferData[]) => {
     if (
       tokens[0].info.mint == TOKENS.SOL ||
       (isSupportedToken(tokens[0].info.mint) &&
-        tokens[1].info.mint != TOKENS.SOL)
+        !isSupportedToken(tokens[1].info.mint))
     ) {
       return [tokens[1], tokens[0]];
     }

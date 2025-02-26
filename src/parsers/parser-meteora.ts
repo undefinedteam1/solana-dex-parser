@@ -1,5 +1,5 @@
 import { ParsedInstruction, ParsedTransactionWithMeta } from "@solana/web3.js";
-import { DEX_PROGRAMS } from "../constants";
+import { DEX_PROGRAMS, DISCRIMINATORS } from "../constants";
 import { DexInfo, TokenInfo, TradeInfo, TransferData } from "../types";
 import { TokenInfoExtractor } from "../token-extractor";
 import {
@@ -9,6 +9,7 @@ import {
   processTransfer,
   processTransferCheck,
 } from "../transfer-utils";
+import base58 from "bs58";
 
 export class MeteoraParser {
   private readonly splTokenMap: Map<string, TokenInfo>;
@@ -26,7 +27,7 @@ export class MeteoraParser {
   public processTrades(): TradeInfo[] {
     return this.txWithMeta.transaction.message.instructions.reduce(
       (trades: TradeInfo[], instruction: any, index: number) => {
-        if (this.isMeteoraInstruction(instruction)) {
+        if (this.isTradeInstruction(instruction)) {
           const instructionTrades = this.processInstructionTrades(index);
           trades.push(...instructionTrades);
         }
@@ -48,11 +49,27 @@ export class MeteoraParser {
     }
   }
 
-  private isMeteoraInstruction(instruction: any): boolean {
+  public isTradeInstruction(instruction: any): boolean {
+    console.log('isTradeInstruction', this.isLiquidityEvent(instruction), instruction);
     const programId = instruction.programId.toBase58();
-    return [DEX_PROGRAMS.METEORA.id, DEX_PROGRAMS.METEORA_POOLS.id].includes(
-      programId,
+    return (
+      [DEX_PROGRAMS.METEORA.id, DEX_PROGRAMS.METEORA_POOLS.id].includes(
+        programId,
+      ) && this.isLiquidityEvent(instruction) == false
     );
+  }
+
+  private isLiquidityEvent(instruction: any): boolean {
+    const instructionType = base58
+      .decode(instruction.data as string)
+      .slice(0, 8);
+    const a = Object.values(DISCRIMINATORS.METEORA_DLMM).flatMap((it) => Object.values(it)).find((it) =>
+      instructionType.equals(it),
+    );
+    const b = Object.values(DISCRIMINATORS.METEORA_POOLS).find((it) =>
+      instructionType.equals(it),
+    );
+    return a != undefined || b != undefined;
   }
 
   private processMeteoraSwaps(instructionIndex: number): TransferData[] {
@@ -60,7 +77,7 @@ export class MeteoraParser {
     if (!innerInstructions) return [];
 
     return innerInstructions
-      .filter((set) => set.index === instructionIndex)
+      .filter((set) => set.index == instructionIndex)
       .flatMap((set) =>
         set.instructions
           .map((instruction, index) =>

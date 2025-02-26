@@ -29,33 +29,10 @@ export class RaydiumLiquidityParser {
   }
 
   public processLiquidity(): PoolEvent[] {
-    return this.txWithMeta.transaction.message.instructions.reduce(
+    const items = this.txWithMeta.transaction.message.instructions.reduce(
       (events: PoolEvent[], instruction: any, index: number) => {
-        let event: PoolEvent | null = null;
-        const programId = instruction.programId.toBase58();
-        switch (programId) {
-          case DEX_PROGRAMS.RAYDIUM_V4.id:
-            event = new RaydiumV4PoolParser(
-              this.txWithMeta,
-              this.splTokenMap,
-              this.splDecimalsMap,
-            ).parseRaydiumInstruction(instruction, index);
-            break;
-          case DEX_PROGRAMS.RAYDIUM_CL.id:
-            event = new RaydiumCLPoolParser(
-              this.txWithMeta,
-              this.splTokenMap,
-              this.splDecimalsMap,
-            ).parseRaydiumInstruction(instruction, index);
-            break;
-          case DEX_PROGRAMS.RAYDIUM_CPMM.id:
-            event = new RaydiumCPMMPoolParser(
-              this.txWithMeta,
-              this.splTokenMap,
-              this.splDecimalsMap,
-            ).parseRaydiumInstruction(instruction, index);
-            break;
-        }
+
+        const event = this.processInstruction(instruction, index);
         if (event) {
           events.push(event);
         }
@@ -63,6 +40,78 @@ export class RaydiumLiquidityParser {
       },
       [],
     );
+
+    if (items.length == 0) {
+      // try innerInstructions
+      return this.processInnerInstructions();
+    }
+    return items;
+  }
+
+  private processInnerInstructions(): PoolEvent[] {
+    try {
+      const events: PoolEvent[] = [];
+      this.txWithMeta.transaction.message.instructions.forEach(
+        (instruction: any, outerIndex: number) => {
+          events.push(...this.processInnerInstruction(outerIndex));
+        },
+      );
+      return events;
+    } catch (error) {
+      console.error("Error processing Meteora trades:", error);
+      return [];
+    }
+  }
+
+  private processInnerInstruction(outerIndex: number): PoolEvent[] {
+    const innerInstructions = this.txWithMeta.meta?.innerInstructions;
+    if (!innerInstructions) return [];
+
+    return innerInstructions
+      .filter((set) => set.index === outerIndex)
+      .flatMap((set) =>
+        set.instructions
+          .map((instruction, innerIndex) => {
+            return this.processInstruction(
+              instruction,
+              outerIndex,
+              innerIndex
+            )
+          }
+          )
+          .filter((event): event is PoolEvent => event !== null),
+      );
+  }
+
+  private processInstruction(instruction: any, outerIndex: number, innerIndex?: number) {
+    let event: PoolEvent | null = null;
+    const programId = instruction.programId.toBase58();
+
+    switch (programId) {
+      case DEX_PROGRAMS.RAYDIUM_V4.id:
+        event = new RaydiumV4PoolParser(
+          this.txWithMeta,
+          this.splTokenMap,
+          this.splDecimalsMap,
+        ).parseRaydiumInstruction(instruction, outerIndex, innerIndex);
+        break;
+      case DEX_PROGRAMS.RAYDIUM_CL.id:
+        event = new RaydiumCLPoolParser(
+          this.txWithMeta,
+          this.splTokenMap,
+          this.splDecimalsMap,
+        ).parseRaydiumInstruction(instruction, outerIndex, innerIndex);
+        break;
+      case DEX_PROGRAMS.RAYDIUM_CPMM.id:
+        event = new RaydiumCPMMPoolParser(
+          this.txWithMeta,
+          this.splTokenMap,
+          this.splDecimalsMap,
+        ).parseRaydiumInstruction(instruction, outerIndex, innerIndex);
+        break;
+    }
+
+    return event;
   }
 }
 
@@ -71,7 +120,7 @@ class RaydiumV4PoolParser {
     private readonly txWithMeta: ParsedTransactionWithMeta,
     private readonly splTokenMap: Map<string, TokenInfo>,
     private readonly splDecimalsMap: Map<string, number>,
-  ) {}
+  ) { }
 
   public getPoolAction(data: any): PoolEventType | null {
     const instructionType = data.slice(0, 1);
@@ -90,6 +139,7 @@ class RaydiumV4PoolParser {
   public parseRaydiumInstruction(
     instruction: PartiallyDecodedInstruction,
     index: number,
+    innerIndex?: number
   ): PoolEvent | null {
     try {
       const data = base58.decode(instruction.data as string);
@@ -97,13 +147,15 @@ class RaydiumV4PoolParser {
 
       if (!instructionType) return null;
 
+      const curIdx = innerIndex == undefined ? index.toString() : `${index}-${innerIndex}`;
+      const accounts = instruction.accounts.map((it) => it.toBase58());
       const transfers = processTransferInnerInstruction(
         this.txWithMeta,
         index,
         this.splTokenMap,
         this.splDecimalsMap,
         ["mintTo", "burn"],
-      );
+      ).filter((it) => accounts.includes(it.info.destination) && it.idx >= curIdx);
 
       switch (instructionType) {
         case "CREATE":
@@ -204,28 +256,27 @@ class RaydiumCLPoolParser {
     private readonly txWithMeta: ParsedTransactionWithMeta,
     private readonly splTokenMap: Map<string, TokenInfo>,
     private readonly splDecimalsMap: Map<string, number>,
-  ) {}
+  ) { }
 
-  public getPoolAction(data: any): PoolEventType | null {
+  public getPoolAction(data: any): { name: string, type: PoolEventType } | null {
     const instructionType = data.slice(0, 8);
 
-    if (instructionType.equals(DISCRIMINATORS.RAYDIUM_CL.CREATE)) {
-      return "CREATE";
-    } else if (
-      instructionType.equals(DISCRIMINATORS.RAYDIUM_CL.ADD_LIQUIDITY)
-    ) {
-      return "ADD";
-    } else if (
-      instructionType.equals(DISCRIMINATORS.RAYDIUM_CL.REMOVE_LIQUIDITY)
-    ) {
-      return "REMOVE";
-    }
+    const create = Object.entries(DISCRIMINATORS.RAYDIUM_CL.CREATE).find((it) => instructionType.equals(it[1]));
+    if (create) return { name: create[0], type: 'CREATE' };
+
+    const add = Object.entries(DISCRIMINATORS.RAYDIUM_CL.ADD_LIQUIDITY).find((it) => instructionType.equals(it[1]));
+    if (add) return { name: add[0], type: 'ADD' };
+
+    const remove = Object.entries(DISCRIMINATORS.RAYDIUM_CL.REMOVE_LIQUIDITY).find((it) => instructionType.equals(it[1]));
+    if (remove) return { name: remove[0], type: 'REMOVE' };
+
     return null;
   }
 
   public parseRaydiumInstruction(
     instruction: PartiallyDecodedInstruction,
     index: number,
+    innerIndex?: number
   ): PoolEvent | null {
     try {
       const data = base58.decode(instruction.data as string);
@@ -233,16 +284,19 @@ class RaydiumCLPoolParser {
 
       if (!instructionType) return null;
 
+      const curIdx = innerIndex == undefined ? index.toString() : `${index}-${innerIndex}`;
+      const accounts = instruction.accounts.map((it) => it.toBase58());
       const transfers = processTransferInnerInstruction(
         this.txWithMeta,
         index,
         this.splTokenMap,
         this.splDecimalsMap,
-      );
+      ).filter((it) => accounts.includes(it.info.destination) && it.idx >= curIdx);
 
-      switch (instructionType) {
+      switch (instructionType.type) {
         case "CREATE":
-          return this.parseCreateEvent(instruction, index, data, transfers);
+          const poolAccountIdx = ['openPosition', 'openPositionV2'].includes(instructionType.name) ? 5 : 4;
+          return this.parseCreateEvent(instruction, index, data, transfers, poolAccountIdx);
         case "ADD":
           return this.parseAddLiquidityEvent(
             instruction,
@@ -271,33 +325,33 @@ class RaydiumCLPoolParser {
     index: number,
     data: any,
     transfers: TransferData[],
+    poolAccountIdx: number,
   ): PoolEvent {
     const [token0, token1] = getLPTransfers(transfers);
-    const token1Mint = token1?.info.mint || instruction.accounts[19].toString();
-    const token0Mint = token0?.info.mint || instruction.accounts[18].toString();
+    const token1Mint = token1?.info.mint;// || instruction.accounts[19].toString();
+    const token0Mint = token0?.info.mint;//|| instruction.accounts[18].toString();
     const programId = instruction.programId.toBase58();
+
     return {
       ...getPoolEventBase("CREATE", this.txWithMeta, programId),
       idx: index.toString(),
-      poolId: instruction.accounts[4].toString(),
-      poolLpMint: instruction.accounts[4].toString(),
+      poolId: instruction.accounts[poolAccountIdx].toString(),
+      poolLpMint: instruction.accounts[poolAccountIdx].toString(),
       token0Mint: token0Mint,
       token1Mint: token1Mint,
 
-      // amount 1
       token0Amount:
-        token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(
-          data.readBigUInt64LE(48),
-          this.splDecimalsMap.get(token1Mint),
-        ),
-      // amount 0
+        token0?.info.tokenAmount.uiAmount || 0,
+      // convertToUiAmount(
+      //   data.readBigUInt64LE(48),
+      //   this.splDecimalsMap.get(token1Mint),
+      // ),
       token1Amount:
-        token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(
-          data.readBigUInt64LE(40),
-          this.splDecimalsMap.get(token0Mint),
-        ),
+        token1?.info.tokenAmount.uiAmount || 0,
+      // convertToUiAmount(
+      //   data.readBigUInt64LE(40),
+      //   this.splDecimalsMap.get(token0Mint),
+      // ),
       lpAmount: 0,
     };
   }
@@ -345,8 +399,8 @@ class RaydiumCLPoolParser {
     transfers: TransferData[],
   ): PoolEvent {
     const [token0, token1] = getLPTransfers(transfers);
-    const token0Mint = token0?.info.mint || instruction.accounts[14].toString();
-    const token1Mint = token1?.info.mint || instruction.accounts[15].toString();
+    const token0Mint = token0?.info.mint;// || instruction.accounts[14].toString();
+    const token1Mint = token1?.info.mint;// || instruction.accounts[15].toString();
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("REMOVE", this.txWithMeta, programId),
@@ -377,7 +431,7 @@ class RaydiumCPMMPoolParser {
     private readonly txWithMeta: ParsedTransactionWithMeta,
     private readonly splTokenMap: Map<string, TokenInfo>,
     private readonly splDecimalsMap: Map<string, number>,
-  ) {}
+  ) { }
 
   public getPoolAction(data: any): PoolEventType | null {
     const instructionType = data.slice(0, 8);
@@ -399,6 +453,7 @@ class RaydiumCPMMPoolParser {
   public parseRaydiumInstruction(
     instruction: PartiallyDecodedInstruction,
     index: number,
+    innerIndex?: number
   ): PoolEvent | null {
     try {
       const data = base58.decode(instruction.data as string);
@@ -406,13 +461,15 @@ class RaydiumCPMMPoolParser {
 
       if (!instructionType) return null;
 
+      const curIdx = innerIndex == undefined ? index.toString() : `${index}-${innerIndex}`;
+      const accounts = instruction.accounts.map((it) => it.toBase58());
       const transfers = processTransferInnerInstruction(
         this.txWithMeta,
         index,
         this.splTokenMap,
         this.splDecimalsMap,
         ["mintTo", "burn"],
-      );
+      ).filter((it) => accounts.includes(it.info.destination) && it.idx >= curIdx);
 
       switch (instructionType) {
         case "CREATE":

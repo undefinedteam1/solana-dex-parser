@@ -35,7 +35,7 @@ export class MoonshotParser {
     const instructions = this.txWithMeta.transaction.message.instructions;
 
     instructions.forEach((it: any, index: number) => {
-      if (this.isTrade(it)) {
+      if (this.isTradeInstruction(it)) {
         trades.push(...this.processInstructionTrades(index));
       }
     });
@@ -52,7 +52,7 @@ export class MoonshotParser {
       ...instructions
         .filter(
           (instruction, index) =>
-            instructionIndex == index && this.isTrade(instruction),
+            instructionIndex == index && this.isTradeInstruction(instruction),
         )
         .map((instruction, index) =>
           this.parseTradeInstruction(
@@ -85,7 +85,7 @@ export class MoonshotParser {
     return trades;
   }
 
-  private isTrade(instruction: any): boolean {
+  public isTradeInstruction(instruction: any): boolean {
     const programId =
       instruction.programId ||
       this.txWithMeta.transaction.message.accountKeys[

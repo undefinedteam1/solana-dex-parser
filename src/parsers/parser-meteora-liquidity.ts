@@ -29,26 +29,9 @@ export class MeteoraLiquidityParser {
   }
 
   public processLiquidity(): PoolEvent[] {
-    return this.txWithMeta.transaction.message.instructions.reduce(
+    const items = this.txWithMeta.transaction.message.instructions.reduce(
       (events: PoolEvent[], instruction: any, index: number) => {
-        let event: PoolEvent | null = null;
-        const programId = instruction.programId.toBase58();
-        switch (programId) {
-          case DEX_PROGRAMS.METEORA.id:
-            event = new MeteoraDLMMPoolParser(
-              this.txWithMeta,
-              this.splTokenMap,
-              this.splDecimalsMap,
-            ).parseInstruction(instruction, index);
-            break;
-          case DEX_PROGRAMS.METEORA_POOLS.id:
-            event = new MeteoraPoolsPoolParser(
-              this.txWithMeta,
-              this.splTokenMap,
-              this.splDecimalsMap,
-            ).parseInstruction(instruction, index);
-            break;
-        }
+        const event = this.processInstruction(instruction, index);
         if (event) {
           events.push(event);
         }
@@ -56,6 +39,69 @@ export class MeteoraLiquidityParser {
       },
       [],
     );
+
+    if (items.length == 0) {
+      // try innerInstructions
+      return this.processInnerInstructions();
+    }
+
+    return items;
+  }
+
+  private processInnerInstructions(): PoolEvent[] {
+    try {
+      const events: PoolEvent[] = [];
+      this.txWithMeta.transaction.message.instructions.forEach(
+        (instruction: any, outerIndex: number) => {
+          events.push(...this.processInnerInstruction(outerIndex));
+        },
+      );
+      return events;
+    } catch (error) {
+      console.error("Error processing Meteora trades:", error);
+      return [];
+    }
+  }
+
+  private processInnerInstruction(outerIndex: number): PoolEvent[] {
+    const innerInstructions = this.txWithMeta.meta?.innerInstructions;
+    if (!innerInstructions) return [];
+
+    return innerInstructions
+      .filter((set) => set.index === outerIndex)
+      .flatMap((set) =>
+        set.instructions
+          .map((instruction, innerIndex) =>
+            this.processInstruction(
+              instruction,
+              outerIndex,
+              innerIndex
+            ),
+          )
+          .filter((event): event is PoolEvent => event !== null),
+      );
+  }
+
+  private processInstruction(instruction: any, outerIndex: number, innerIndex?: number) {
+    let event: PoolEvent | null = null;
+    const programId = instruction.programId.toBase58();
+    switch (programId) {
+      case DEX_PROGRAMS.METEORA.id:
+        event = new MeteoraDLMMPoolParser(
+          this.txWithMeta,
+          this.splTokenMap,
+          this.splDecimalsMap,
+        ).parseInstruction(instruction, outerIndex, innerIndex);
+        break;
+      case DEX_PROGRAMS.METEORA_POOLS.id:
+        event = new MeteoraPoolsPoolParser(
+          this.txWithMeta,
+          this.splTokenMap,
+          this.splDecimalsMap,
+        ).parseInstruction(instruction, outerIndex, innerIndex);
+        break;
+    }
+    return event;
   }
 }
 
@@ -64,37 +110,39 @@ class MeteoraDLMMPoolParser {
     private readonly txWithMeta: ParsedTransactionWithMeta,
     private readonly splTokenMap: Map<string, TokenInfo>,
     private readonly splDecimalsMap: Map<string, number>,
-  ) {}
+  ) { }
 
   public getPoolAction(data: any): PoolEventType | null {
     const instructionType = data.slice(0, 8);
 
-    if (instructionType.equals(DISCRIMINATORS.METEORA_DLMM.ADD_LIQUIDITY)) {
+    if (Object.values(DISCRIMINATORS.METEORA_DLMM.ADD_LIQUIDITY).find((it) => instructionType.equals(it))) {
       return "ADD";
-    } else if (
-      instructionType.equals(DISCRIMINATORS.METEORA_DLMM.REMOVE_LIQUIDITY)
-    ) {
+    } else if (Object.values(DISCRIMINATORS.METEORA_DLMM.REMOVE_LIQUIDITY).find((it) => instructionType.equals(it))) {
       return "REMOVE";
     }
+
     return null;
   }
 
   public parseInstruction(
     instruction: PartiallyDecodedInstruction,
     index: number,
+    innerIndex?: number
   ): PoolEvent | null {
     try {
       const data = base58.decode(instruction.data as string);
       const instructionType = this.getPoolAction(data);
-
+  
       if (!instructionType) return null;
 
+      const curIdx = innerIndex == undefined ? index.toString() : `${index}-${innerIndex}`;
+      const accounts = instruction.accounts.map((it) => it.toBase58());
       const transfers = processTransferInnerInstruction(
         this.txWithMeta,
         index,
         this.splTokenMap,
         this.splDecimalsMap,
-      );
+      ).filter((it) => accounts.includes(it.info.destination) && it.idx >= curIdx);
 
       switch (instructionType) {
         case "ADD":
@@ -126,9 +174,15 @@ class MeteoraDLMMPoolParser {
     data: any,
     transfers: TransferData[],
   ): PoolEvent {
-    const [token0, token1] = getLPTransfers(transfers);
-    const token0Mint = token0?.info.mint || instruction.accounts[7].toString();
-    const token1Mint = token1?.info.mint || instruction.accounts[8].toString();
+    let [token0, token1]: any[] = getLPTransfers(transfers);
+    if (transfers.length == 1) {
+      if (isSupportedToken(transfers[0].info.mint)) {
+        token1 = transfers[0];
+        token0 = undefined;
+      }
+    }
+    const token0Mint = token0?.info.mint; // || instruction.accounts[7].toString();
+    const token1Mint = token1?.info.mint;// || instruction.accounts[8].toString();
     const programId = instruction.programId.toBase58();
     return {
       ...getPoolEventBase("ADD", this.txWithMeta, programId),
@@ -155,7 +209,6 @@ class MeteoraDLMMPoolParser {
         token0 = undefined;
       }
     }
-
     const token0Mint = token0?.info.mint || instruction.accounts[7].toString();
     const token1Mint = token1?.info.mint || instruction.accounts[8].toString();
     const programId = instruction.programId.toBase58();
@@ -177,7 +230,7 @@ class MeteoraPoolsPoolParser {
     private readonly txWithMeta: ParsedTransactionWithMeta,
     private readonly splTokenMap: Map<string, TokenInfo>,
     private readonly splDecimalsMap: Map<string, number>,
-  ) {}
+  ) { }
 
   public getPoolAction(data: any): PoolEventType | null {
     const instructionType = data.slice(0, 8);
@@ -199,6 +252,7 @@ class MeteoraPoolsPoolParser {
   public parseInstruction(
     instruction: PartiallyDecodedInstruction,
     index: number,
+    innerIndex?: number
   ): PoolEvent | null {
     try {
       const data = base58.decode(instruction.data as string);
@@ -206,13 +260,15 @@ class MeteoraPoolsPoolParser {
 
       if (!instructionType) return null;
 
+      const curIdx = innerIndex == undefined ? index.toString() : `${index}-${innerIndex}`;
+      const accounts = instruction.accounts.map((it) => it.toBase58());
       const transfers = processTransferInnerInstruction(
         this.txWithMeta,
         index,
         this.splTokenMap,
         this.splDecimalsMap,
         ["mintTo", "burn"],
-      );
+      ).filter((it) => accounts.includes(it.info.destination) && it.idx >= curIdx);
 
       switch (instructionType) {
         case "CREATE":

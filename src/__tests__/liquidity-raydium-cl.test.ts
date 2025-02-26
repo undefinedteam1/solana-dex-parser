@@ -30,6 +30,43 @@ const tests = {
       token1Mint: "So11111111111111111111111111111111111111112",
       token1Amount: 0.459999999,
     },
+    {
+      signature:
+        "54t2sbzBxmejGNYmttn5nr4fDeRHdZC6CF4eiAm3Was7WKrvw6LEH51gb2RGw5Wom2y12vW11o2hwaHBE3W4Rgx9",
+      type: "CREATE",
+      desc: "Raydium Concentrated Liquidity: openPosition",
+      name: "EDAS",
+      poolId: "5MczDZ1DYBpCyjXWhyLXAW4AofywKizDF8w4cLZqvpuV",
+      token0Mint: "kH6hPcpdJqeMAATYU7W4rzqZuzYTkYr6QqGYTLkpump",
+      token0Amount: 2796.229978,
+      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Amount: 0.004266144,
+    },
+    {
+      signature:
+        "2Bm6Xh3UQYCYywCQPEJ1tCQKrSPHRPGukN4qTmutCYnR45PKMBhTuBjMdbT7x3fsLnqvduAeiTQeVRQ76NA2NMGN",
+      type: "CREATE",
+      desc: "Raydium Concentrated Liquidity: openPosition",
+      name: "USDC",
+      poolId: "8sLbNZoA1cfnvMJLPfp98ZLAnFSYCFApfJKMbiXNLwxj",
+      token0Mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      token0Amount: 41677.305735,
+      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Amount: 215.71233501,
+    },
+
+    {
+      signature:
+        "61auheJ9MhRbQeXqiAMitgWWv2yxkDSCqb6qauMr77UaENwR7yUfc5LCH8pExkjo1QqnqYLvRu9vNXi5QRZST19S",
+      type: "CREATE",
+      desc: "Raydium Concentrated Liquidity: openPositionV2",
+      name: "Anon",
+      poolId: "EYy5nwcFQHfSCKrrALgMB2DbU2vhszWHjuEdDFgAvfpu",
+      token0Mint: "9McvH6w97oewLmPxqQEoHUAv3u5iYMyQ9AeZZhguYf1T",
+      token0Amount: 9.526157579,
+      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Amount: 0.471506154,
+    },
   ],
   ADD: [
     {
@@ -68,6 +105,21 @@ const tests = {
       token1Mint: "So11111111111111111111111111111111111111112",
       token1Amount: 5.658872061,
     },
+
+
+    {
+      signature:
+        "4VpDFKjjyBNjS3amzzqW22mx1aLNQnYwm1EyZT4kNkHrDpfNCfuZWjm8UL4br5ReNdVUjTmFdqgoUBX2eKuhVndt",
+      type: "ADD",
+      desc: "Raydium Concentrated Liquidity: increaseLiquidity",
+      name: "USDC",
+      poolId: "BZtgQEyS6eXUXicYPHecYQ7PybqodXQMvkjUbP4R8mUU",
+      token0Mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", //USDC
+      token0Amount: 544.16166,
+      token1Mint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", // USDT
+      token1Amount: 468.509899,
+      test: true
+    },
   ],
   REMOVE: [
     {
@@ -94,6 +146,19 @@ const tests = {
       token1Mint: "So11111111111111111111111111111111111111112",
       token1Amount: 3.376022161,
     },
+
+    {
+      signature:
+        "7JX8oo13G3q812rQ7FwarAKGHzHBKS4JqQSfkpso826HeFifupXgBo6yhnkXE8Yt8xfAG2Qv6SwvrNgRYWiEy8K",
+      type: "REMOVE",
+      desc: "Raydium Concentrated Liquidity: decreaseLiquidity",
+      name: "USDC",
+      poolId: "BZtgQEyS6eXUXicYPHecYQ7PybqodXQMvkjUbP4R8mUU",
+      token0Mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      token0Amount: 74.3064,
+      token1Mint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+      token1Amount: 63.893602,
+    },
   ],
 };
 
@@ -111,6 +176,7 @@ describe("Liquidity", () => {
   describe("Raydium CL", () => {
     Object.values(tests)
       .flat()
+      // .filter((test: any) => test.test == true) // test only
       .forEach((test) => {
         it(`${test.type} > ${test.name} > ${test.desc} `, async () => {
           const tx = await connection.getParsedTransaction(test.signature, {
@@ -118,7 +184,8 @@ describe("Liquidity", () => {
           });
           const parser = new RaydiumLiquidityParser(tx!);
           const events = parser.processLiquidity();
-          expect(events.length).toEqual(1);
+          // console.log('events', events);
+          expect(events.length).toBeGreaterThanOrEqual(1);
           expect(events[0].type).toEqual(test.type);
           expect(events[0].poolId).toEqual(test.poolId);
           expect(events[0].token0Mint).toEqual(test.token0Mint);

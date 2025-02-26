@@ -31,6 +31,11 @@ export class PumpfunParser {
     return this.processSwapData(events);
   }
 
+  public isTradeInstruction(instruction: any): boolean {
+    const programId = instruction.programId.toBase58();
+    return DEX_PROGRAMS.PUMP_FUN.id == programId;
+  }
+
   private parseInnerInstructions(instructionIndex: number): PumpfunEvent[] {
     return this.eventParser
       .parseInnerInstructions(instructionIndex)

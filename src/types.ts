@@ -1,3 +1,17 @@
+export interface ParseConfig {
+  /**
+   * if true, will try to parse unknown DEXes
+   * @default false
+   */
+  tryUnknowDEX?: boolean;
+
+  /**
+   * if set, will only parse transactions from these programIds
+   * @default undefined
+   */
+  programIds?: string[];
+}
+
 export interface DexInfo {
   programId?: string;
   amm?: string;
@@ -94,11 +108,13 @@ export interface PumpfunEvent {
 
 export type PoolEventType =
   | "CREATE"
-  | "ADD"
-  | "REMOVE"
-  | "LOCK"
   | "CREATE2"
-  | "ADD2";
+  | "ADD"
+  | "ADD2"
+  | "REMOVE"
+  | "REMOVE2"
+  | "LOCK";
+
 export interface PoolEventBase {
   user: string;
   type: PoolEventType;

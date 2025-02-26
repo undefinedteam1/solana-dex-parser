@@ -1,6 +1,6 @@
 import { Connection, ParsedTransactionWithMeta } from "@solana/web3.js";
 import { DEX_PROGRAMS } from "./constants";
-import { DexInfo, PoolEvent, TradeInfo } from "./types";
+import { DexInfo, ParseConfig, PoolEvent, TradeInfo } from "./types";
 import { getDexInfo } from "./utils";
 import {
   MoonshotParser,
@@ -21,6 +21,7 @@ type ParserConstructor = new (
 ) => {
   processTrades(): TradeInfo[];
   processInstructionTrades?(index: number): TradeInfo[];
+  isTradeInstruction(instruction: any): boolean;
 };
 
 type ParserLiquidityConstructor = new (tx: ParsedTransactionWithMeta) => {
@@ -56,18 +57,27 @@ export class DexParser {
 
   constructor(private connection: Connection) {}
 
-  public async parseTransaction(signature: string): Promise<TradeInfo[]> {
+  public async parseTransaction(
+    signature: string,
+    config?: ParseConfig,
+  ): Promise<TradeInfo[]> {
     const tx = await this.connection.getParsedTransaction(signature, {
       commitment: "confirmed",
       maxSupportedTransactionVersion: 0,
     });
     if (!tx) throw `Can't fetch transaction! ${signature}`;
-    return this.parseTrades(tx);
+    return this.parseTrades(tx, config);
   }
 
-  public parseTrades(tx: ParsedTransactionWithMeta): TradeInfo[] {
+  public parseTrades(
+    tx: ParsedTransactionWithMeta,
+    config?: ParseConfig,
+  ): TradeInfo[] {
     const dexInfo = getDexInfo(tx);
     if (!dexInfo.programId) return [];
+
+    if (config?.programIds && !config.programIds.includes(dexInfo.programId))
+      return [];
 
     const trades: TradeInfo[] = [];
     const ParserClass = this.parserMap[dexInfo.programId];
@@ -84,7 +94,7 @@ export class DexParser {
       trades.push(...this.parseInstructions(tx, dexInfo, false));
     }
 
-    if (trades.length === 0) {
+    if (trades.length === 0 && config?.tryUnknowDEX == true) {
       trades.push(
         ...new DefaultParser(tx).parseTradesByBalanceChanges(tx, dexInfo),
       );
@@ -118,7 +128,7 @@ export class DexParser {
       (instruction: any, index: number) => {
         if (dexInfo.programId !== instruction.programId.toBase58()) return;
 
-        const processInstruction = (programId: string) => {
+        const processInstruction = (programId: string, isInner: boolean) => {
           if (processedProtocols.has(programId)) return;
           processedProtocols.add(programId);
 
@@ -127,7 +137,14 @@ export class DexParser {
 
           const parser = new ParserClass(tx, dexInfo);
           if (parser.processInstructionTrades) {
-            trades.push(...parser.processInstructionTrades(index));
+            if (
+              isInner ||
+              (!isInner &&
+                parser.isTradeInstruction &&
+                parser.isTradeInstruction(instruction))
+            ) {
+              trades.push(...parser.processInstructionTrades(index));
+            }
           }
         };
 
@@ -139,11 +156,14 @@ export class DexParser {
             .filter((set) => set.index === index)
             .forEach((set) => {
               set.instructions.forEach((innerInstruction) => {
-                processInstruction(innerInstruction.programId.toBase58());
+                processInstruction(
+                  innerInstruction.programId.toBase58(),
+                  isInner,
+                );
               });
             });
         } else {
-          processInstruction(instruction.programId.toBase58());
+          processInstruction(instruction.programId.toBase58(), isInner);
         }
       },
     );

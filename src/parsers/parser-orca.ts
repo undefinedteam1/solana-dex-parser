@@ -24,7 +24,7 @@ export class OrcaParser {
   public processTrades(): TradeInfo[] {
     return this.txWithMeta.transaction.message.instructions.reduce(
       (trades: TradeInfo[], instruction: any, index: number) => {
-        if (this.isOrcaInstruction(instruction)) {
+        if (this.isTradeInstruction(instruction)) {
           const instructionTrades = this.processInstructionTrades(index);
           trades.push(...instructionTrades);
         }
@@ -46,7 +46,7 @@ export class OrcaParser {
     }
   }
 
-  private isOrcaInstruction(instruction: any): boolean {
+  public isTradeInstruction(instruction: any): boolean {
     const programId = instruction.programId.toBase58();
     return DEX_PROGRAMS.ORCA.id == programId;
   }

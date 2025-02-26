@@ -94,11 +94,7 @@ export class JupiterParser {
   public processTrades(): TradeInfo[] {
     return this.txWithMeta.transaction.message.instructions.reduce(
       (trades: TradeInfo[], instruction: any, index: number) => {
-        if (
-          [DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(
-            instruction.programId.toBase58(),
-          )
-        ) {
+        if (this.isTradeInstruction(instruction)) {
           const instructionTrades = this.processInstructionTrades(index);
           trades.push(...instructionTrades);
         }
@@ -121,6 +117,12 @@ export class JupiterParser {
       );
       return [];
     }
+  }
+
+  public isTradeInstruction(instruction: any): boolean {
+    return [DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(
+      instruction.programId.toBase58(),
+    );
   }
 
   private processJupiterSwaps(
@@ -197,7 +199,7 @@ export class JupiterParser {
 
   private processSwapData(events: JupiterSwapEventData[]): TradeInfo | null {
     if (events.length === 0) {
-      throw "No events provided";
+      return null; // throw "No events provided";
     }
 
     const intermediateInfo: JupiterSwapInfo = {

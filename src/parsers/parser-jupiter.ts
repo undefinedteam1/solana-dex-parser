@@ -218,10 +218,7 @@ export class JupiterParser {
 
   private convertToSwapInfo(intermediateInfo: JupiterSwapInfo): TradeInfo | null {
     if (intermediateInfo.tokenIn.size !== 1 || intermediateInfo.tokenOut.size !== 1) {
-      console.error(
-        `Invalid swap: expected 1 input and 1 output token, got ${intermediateInfo.tokenIn.size} input(s) and ${intermediateInfo.tokenOut.size} output(s)`
-      );
-      return null;
+      throw `Invalid swap: expected 1 input and 1 output token, got ${intermediateInfo.tokenIn.size} input(s) and ${intermediateInfo.tokenOut.size} output(s)`;
     }
 
     const [inMintEntry] = Array.from(intermediateInfo.tokenIn.entries());

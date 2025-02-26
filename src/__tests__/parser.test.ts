@@ -1,4 +1,4 @@
-import { Connection } from '@solana/web3.js';
+import { Connection, ParsedNoneModeBlockResponse, ParsedTransaction, ParsedTransactionWithMeta, VersionedAccountsModeBlockResponse, VersionedBlockResponse } from '@solana/web3.js';
 import dotenv from 'dotenv';
 import { DexParser } from '../dex-parser';
 
@@ -43,22 +43,56 @@ describe('Parser', () => {
 
   describe('Dex', () => {
     describe('parseTransaction', () => {
-      // ['53tdwmNWEp9KsyegiDk7Z3DXVfSQoBXpAJfZbpAUTwzCtDkfrbdCN17ksQnKdH2p9yBTrYHGhTvHrckaPCSshBkU',
-      // '3rEob1PiezEtzhjPJcDJ9menwWeUBmF19FfYysHP5v6DRQe6PVrWcLRBvAGDbB9Ubn8PF8FVKjQYVxDjA2wAwSgn',
-      // '4PVWm3dAP2eV6dkZraPbnNwMhwmfRS8Ve7gMyxzVuSVndVqxVn1CsMiM9XUf9ekX65svrLvi4FMwoWnZjsmAHPXQ',
-      // '33VnDBtrFawBRYwDqomdsH57GL83B7eWTQN5mnga9F1whyMzcpdmURnPkAjqDte8Ja9EcsGcejhDYcUKkA9sE4HG'].forEach(
-      //   async (signature) => {
-          Object.values(TEST_TRANSACTIONS).forEach(async (signature) => {
-          it(signature, async () => {
-            const parser = new DexParser(connection);
+      // ['3UAjspvWCedv954FnSyd68R82b8qBJoPD8QGADvR7jpuJx39vtC8MxMErfQaB8Ed8F9nh6sT6JB6odBVLaDA9hZH',
+      //   '5kaAWK5X9DdMmsWm6skaUXLd6prFisuYJavd9B62A941nRGcrmwvncg3tRtUfn7TcMLsrrmjCChdEjK3sjxS6YG9',
+      //   'afUCiFQ6amxuxx2AAwsghLt7Q9GYqHfZiF4u3AHhAzs8p1ThzmrtSUFMbcdJy8UnQNTa35Fb1YqxR6F9JMZynYp'
+      // ].forEach(async (signature) => {
+        Object.values(TEST_TRANSACTIONS).forEach(async (signature) => {
+        it(signature, async () => {
+          const parser = new DexParser(connection);
 
-            const trades = await parser.parseTransaction(signature);
-            // console.log("Trades:", trades);
-            expect(trades.length).toBeGreaterThan(0);
+          // const trades = await parser.parseTransaction(signature);
+
+          const tx = await connection.getParsedTransaction(signature, {
+            maxSupportedTransactionVersion: 0,
           });
-        }
+          const trades = await parser.parseTrades(tx!);
+
+          console.log("Trades:", trades);
+          expect(trades.length).toBeGreaterThan(0);
+        });
+      }
       );
     });
+
+    // describe('parseTransaction', () => {
+    //   it("block", async () => {
+    //     const parser = new DexParser(connection);
+
+    //     // const trades = await parser.parseTransaction(signature);
+
+    //     const block = await connection.getParsedBlock(322192638, {
+    //       commitment: 'confirmed',
+    //       maxSupportedTransactionVersion: 0,
+    //       transactionDetails: 'full',
+
+    //     })
+    //     const ts: any[] = [], liqs: any[] = [];
+    //     block.transactions.forEach((tx) => {
+    //       if(tx.meta?.err) {
+    //         return;
+    //       }
+    //       const trades = parser.parseTrades({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any);
+    //       const ls = parser.parseLiquidity({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any);
+    //       ts.push(...trades);
+    //       liqs.push(...ls);
+    //     })
+
+    //     console.log("Trades:", ts);
+    //     console.log("Liquidity:", liqs);
+
+    //   });
+    // });
 
     // describe("parseLiquidity", () => {
     //   [

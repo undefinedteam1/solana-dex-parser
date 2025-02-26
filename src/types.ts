@@ -30,7 +30,7 @@ export interface TokenAmount {
 }
 
 export interface TransferInfo {
-  type: "TRANSFER_IN" | "TRANSFER_OUT";
+  type: 'TRANSFER_IN' | 'TRANSFER_OUT';
   token: TokenInfo;
   from: string;
   to: string;
@@ -39,7 +39,7 @@ export interface TransferInfo {
 }
 
 export interface TransferData {
-  type: "transfer" | "transferChecked" | string;
+  type: 'transfer' | 'transferChecked' | string;
   info: {
     authority: string;
     destination: string;
@@ -54,7 +54,7 @@ export interface TransferData {
   idx: string;
 }
 
-export type TradeType = "BUY" | "SELL";
+export type TradeType = 'BUY' | 'SELL';
 
 export interface TradeInfo {
   user: string;
@@ -98,7 +98,7 @@ export interface PumpfunCompleteEvent {
 }
 
 export interface PumpfunEvent {
-  type: "TRADE" | "CREATE" | "COMPLETE";
+  type: 'TRADE' | 'CREATE' | 'COMPLETE';
   data: PumpfunTradeEvent | PumpfunCreateEvent | PumpfunCompleteEvent;
   slot: number;
   timestamp: number;
@@ -106,14 +106,7 @@ export interface PumpfunEvent {
   idx: string; // instruction indexes
 }
 
-export type PoolEventType =
-  | "CREATE"
-  | "CREATE2"
-  | "ADD"
-  | "ADD2"
-  | "REMOVE"
-  | "REMOVE2"
-  | "LOCK";
+export type PoolEventType = 'CREATE' | 'ADD' | 'REMOVE';
 
 export interface PoolEventBase {
   user: string;

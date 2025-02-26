@@ -1,28 +1,20 @@
-import { ParsedTransactionWithMeta } from "@solana/web3.js";
-import { DEX_PROGRAMS, TOKENS } from "../constants";
-import {
-  DexInfo,
-  PumpfunEvent,
-  PumpfunTradeEvent,
-  TradeInfo,
-  TradeType,
-} from "../types";
-import { PumpfunEventParser } from "./parser-pumpfun-event";
+import { ParsedTransactionWithMeta } from '@solana/web3.js';
+import { DEX_PROGRAMS, TOKENS } from '../constants';
+import { DexInfo, PumpfunEvent, PumpfunTradeEvent, TradeInfo, TradeType } from '../types';
+import { PumpfunEventParser } from './parser-pumpfun-event';
 
 export class PumpfunParser {
   private eventParser: PumpfunEventParser;
 
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo?: DexInfo,
+    private readonly dexInfo?: DexInfo
   ) {
     this.eventParser = new PumpfunEventParser(this.txWithMeta, dexInfo);
   }
 
   public processTrades(): TradeInfo[] {
-    const events = this.eventParser
-      .processEvents()
-      .filter((it) => it.type == "TRADE");
+    const events = this.eventParser.processEvents().filter((it) => it.type == 'TRADE');
     return events.length > 0 ? this.processSwapData(events) : [];
   }
 
@@ -37,9 +29,7 @@ export class PumpfunParser {
   }
 
   private parseInnerInstructions(instructionIndex: number): PumpfunEvent[] {
-    return this.eventParser
-      .parseInnerInstructions(instructionIndex)
-      .filter((it) => it.type == "TRADE");
+    return this.eventParser.parseInnerInstructions(instructionIndex).filter((it) => it.type == 'TRADE');
   }
 
   private processSwapData(events: PumpfunEvent[]): TradeInfo[] {
@@ -49,8 +39,8 @@ export class PumpfunParser {
 
   private createTradeInfo(data: PumpfunEvent): TradeInfo {
     const event = data.data as PumpfunTradeEvent;
-    const tradeType: TradeType = event.isBuy ? "BUY" : "SELL";
-    const isBuy = tradeType === "BUY";
+    const tradeType: TradeType = event.isBuy ? 'BUY' : 'SELL';
+    const isBuy = tradeType === 'BUY';
 
     return {
       type: tradeType,

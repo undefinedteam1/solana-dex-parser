@@ -1,66 +1,63 @@
-import { Connection } from "@solana/web3.js";
-import dotenv from "dotenv";
-import { MeteoraLiquidityParser } from "../parsers/parser-meteora-liquidity";
+import { Connection } from '@solana/web3.js';
+import dotenv from 'dotenv';
+import { MeteoraLiquidityParser } from '../parsers/parser-meteora-liquidity';
 
 dotenv.config();
 
 const tests = {
   CREATE: [
     {
-      signature:
-        "2GWLwbEjyR7moFYK5JfapbsDBrBz3298BVWsAebhUECPaXjLbTZ6DkbEN34BF57jdGot7GkwDnrzszFB3H9AJxmS",
-      type: "CREATE",
-      desc: "Meteora Pools Program: initializePermissionlessConstantProductPoolWithConfig",
-      name: "STRIKE",
-      poolId: "BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb",
-      token0Mint: "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw",
+      signature: '2GWLwbEjyR7moFYK5JfapbsDBrBz3298BVWsAebhUECPaXjLbTZ6DkbEN34BF57jdGot7GkwDnrzszFB3H9AJxmS',
+      type: 'CREATE',
+      desc: 'Meteora Pools Program: initializePermissionlessConstantProductPoolWithConfig',
+      name: 'STRIKE',
+      poolId: 'BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb',
+      token0Mint: 'STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw',
       token0Amount: 100000000,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 2740,
     },
   ],
   ADD: [
     {
-      signature:
-        "LaocVd6PpfdH1KTdQuRTf5WwnUzmyf3gdAy16xro747nzrhpgXg1oxFrpgBk31tPh24ksVAyiSkNW7vncoKTGyH",
-      type: "ADD",
-      desc: "Meteora Pools Program: addBalanceLiquidity",
-      name: "STRIKE",
-      poolId: "BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb",
-      token0Mint: "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw",
+      signature: 'LaocVd6PpfdH1KTdQuRTf5WwnUzmyf3gdAy16xro747nzrhpgXg1oxFrpgBk31tPh24ksVAyiSkNW7vncoKTGyH',
+      type: 'ADD',
+      desc: 'Meteora Pools Program: addBalanceLiquidity',
+      name: 'STRIKE',
+      poolId: 'BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb',
+      token0Mint: 'STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw',
       token0Amount: 720.780405,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 0.029097874,
     },
   ],
   REMOVE: [
     {
-      signature:
-        "2xEAewTjtSHgpEHHzaNjHiuoMHNZQXz5vySXHCSL8omujjvaxq9JsfGWjusz43ndmzcu5riESKm1UH4riWDX9v1v",
-      type: "REMOVE",
-      desc: " Meteora Pools Program: removeBalanceLiquidity",
-      name: "STRIKE",
-      poolId: "BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb",
-      token0Mint: "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw",
+      signature: '2xEAewTjtSHgpEHHzaNjHiuoMHNZQXz5vySXHCSL8omujjvaxq9JsfGWjusz43ndmzcu5riESKm1UH4riWDX9v1v',
+      type: 'REMOVE',
+      desc: ' Meteora Pools Program: removeBalanceLiquidity',
+      name: 'STRIKE',
+      poolId: 'BCXjm4FfSoquZQJV5Wcje1g1pSHW2hFMU9wDE98Nyatb',
+      token0Mint: 'STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw',
       token0Amount: 14938.609562,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 0.578534516,
     },
   ],
 };
 
-describe("Liquidity", () => {
+describe('Liquidity', () => {
   let connection: Connection;
   beforeAll(async () => {
     // Initialize connection
     const rpcUrl = process.env.SOLANA_RPC_URL;
     if (!rpcUrl) {
-      throw new Error("SOLANA_RPC_URL environment variable is not set");
+      throw new Error('SOLANA_RPC_URL environment variable is not set');
     }
     connection = new Connection(rpcUrl);
   });
 
-  describe("Meteora Pools", () => {
+  describe('Meteora Pools', () => {
     Object.values(tests)
       .flat()
       .forEach((test) => {

@@ -1,12 +1,8 @@
-import { ParsedInstruction, ParsedTransactionWithMeta } from "@solana/web3.js";
-import { DEX_PROGRAMS } from "../constants";
-import { DexInfo, TokenInfo, TradeInfo, TransferData } from "../types";
-import { TokenInfoExtractor } from "../token-extractor";
-import {
-  processSwapData,
-  isTransfer,
-  processTransfer,
-} from "../transfer-utils";
+import { ParsedInstruction, ParsedTransactionWithMeta } from '@solana/web3.js';
+import { DEX_PROGRAMS } from '../constants';
+import { DexInfo, TokenInfo, TradeInfo, TransferData } from '../types';
+import { TokenInfoExtractor } from '../token-extractor';
+import { processSwapData, isTransfer, processTransfer } from '../transfer-utils';
 
 export class OrcaParser {
   private readonly splTokenMap: Map<string, TokenInfo>;
@@ -14,7 +10,7 @@ export class OrcaParser {
 
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo: DexInfo,
+    private readonly dexInfo: DexInfo
   ) {
     const tokenExtractor = new TokenInfoExtractor(txWithMeta);
     this.splTokenMap = tokenExtractor.extractSPLTokenInfo();
@@ -30,18 +26,16 @@ export class OrcaParser {
         }
         return trades;
       },
-      [],
+      []
     );
   }
 
   public processInstructionTrades(instructionIndex: number): TradeInfo[] {
     try {
       const transfers = this.processOrcaSwaps(instructionIndex);
-      return transfers.length
-        ? [processSwapData(this.txWithMeta, transfers, this.dexInfo)]
-        : [];
+      return transfers.length ? [processSwapData(this.txWithMeta, transfers, this.dexInfo)] : [];
     } catch (error) {
-      console.error("Error processing Orca trades:", error);
+      console.error('Error processing Orca trades:', error);
       return [];
     }
   }
@@ -60,26 +54,15 @@ export class OrcaParser {
       .flatMap((set) =>
         set.instructions
           .map((instruction, index) =>
-            this.processTransferInstruction(
-              instruction as ParsedInstruction,
-              `${instructionIndex}-${index}`,
-            ),
+            this.processTransferInstruction(instruction as ParsedInstruction, `${instructionIndex}-${index}`)
           )
-          .filter((transfer): transfer is TransferData => transfer !== null),
+          .filter((transfer): transfer is TransferData => transfer !== null)
       );
   }
 
-  private processTransferInstruction(
-    instruction: ParsedInstruction,
-    idx: string,
-  ): TransferData | null {
+  private processTransferInstruction(instruction: ParsedInstruction, idx: string): TransferData | null {
     if (isTransfer(instruction)) {
-      return processTransfer(
-        instruction,
-        idx,
-        this.splTokenMap,
-        this.splDecimalsMap,
-      );
+      return processTransfer(instruction, idx, this.splTokenMap, this.splDecimalsMap);
     }
     return null;
   }

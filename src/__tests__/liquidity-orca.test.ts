@@ -1,64 +1,61 @@
-import { Connection } from "@solana/web3.js";
-import dotenv from "dotenv";
-import { OrcaLiquidityParser } from "../parsers/parser-orca-liquidity";
+import { Connection } from '@solana/web3.js';
+import dotenv from 'dotenv';
+import { OrcaLiquidityParser } from '../parsers/parser-orca-liquidity';
 
 dotenv.config();
 
 const tests = {
   ADD: [
     {
-      signature:
-        "3mZcyeDJysgs79nLcvtN4XQ6iepyERqG93P2F2ZYgUX4ZF1Yr1XFBMKR8DHd7z4gN2EmvAqMc3KhQTQpGMbtvhF7",
-      type: "ADD",
-      desc: " Whirlpools Program: increaseLiquidity",
-      name: "JUP",
-      poolId: "C1MgLojNLWBKADvu9BHdtgzz1oZX4dZ5zGdGcgvvW8Wz",
-      token0Mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+      signature: '3mZcyeDJysgs79nLcvtN4XQ6iepyERqG93P2F2ZYgUX4ZF1Yr1XFBMKR8DHd7z4gN2EmvAqMc3KhQTQpGMbtvhF7',
+      type: 'ADD',
+      desc: ' Whirlpools Program: increaseLiquidity',
+      name: 'JUP',
+      poolId: 'C1MgLojNLWBKADvu9BHdtgzz1oZX4dZ5zGdGcgvvW8Wz',
+      token0Mint: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
       token0Amount: 6931.015285,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 45.407996732,
     },
     {
-      signature:
-        "4Kv6gQgdSsCPSxRApiCNMHFE1dKKGVugrJTzdzSYX5a2aXho4o7jaQDSHLH3RTsr5aVwpkzWL1o5mSCyDtHeZKZr",
-      type: "ADD",
-      desc: "Whirlpools Program: increaseLiquidityV2",
-      name: "STRIKE",
-      poolId: "Djf5NYkwhdipTW3ZScPeUkjf7BLtDdxLvEGtNyWMtw3d",
-      token0Mint: "STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw",
+      signature: '4Kv6gQgdSsCPSxRApiCNMHFE1dKKGVugrJTzdzSYX5a2aXho4o7jaQDSHLH3RTsr5aVwpkzWL1o5mSCyDtHeZKZr',
+      type: 'ADD',
+      desc: 'Whirlpools Program: increaseLiquidityV2',
+      name: 'STRIKE',
+      poolId: 'Djf5NYkwhdipTW3ZScPeUkjf7BLtDdxLvEGtNyWMtw3d',
+      token0Mint: 'STrikemJEk2tFVYpg7SMo9nGPrnJ56fHnS1K7PV2fPw',
       token0Amount: 2000000,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 6.315579644,
     },
   ],
   REMOVE: [
     {
-      signature:
-        "23zkGAorUC3aHSk7zJYiUvvs6gEXPPzp8xRiWfACzkrqBEaQrKiH9QCgrmwSTD6hxKKEjryEGbEvurt6xSBpuBMC",
-      type: "REMOVE",
-      desc: "Whirlpools Program: decreaseLiquidity",
-      name: "JUP",
-      poolId: "C1MgLojNLWBKADvu9BHdtgzz1oZX4dZ5zGdGcgvvW8Wz",
-      token0Mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+      signature: '23zkGAorUC3aHSk7zJYiUvvs6gEXPPzp8xRiWfACzkrqBEaQrKiH9QCgrmwSTD6hxKKEjryEGbEvurt6xSBpuBMC',
+      type: 'REMOVE',
+      desc: 'Whirlpools Program: decreaseLiquidity',
+      name: 'JUP',
+      poolId: 'C1MgLojNLWBKADvu9BHdtgzz1oZX4dZ5zGdGcgvvW8Wz',
+      token0Mint: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
       token0Amount: 106.470976,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 0.475676716,
     },
   ],
 };
 
-describe("Liquidity", () => {
+describe('Liquidity', () => {
   let connection: Connection;
   beforeAll(async () => {
     // Initialize connection
     const rpcUrl = process.env.SOLANA_RPC_URL;
     if (!rpcUrl) {
-      throw new Error("SOLANA_RPC_URL environment variable is not set");
+      throw new Error('SOLANA_RPC_URL environment variable is not set');
     }
     connection = new Connection(rpcUrl);
   });
 
-  describe("Orca", () => {
+  describe('Orca', () => {
     Object.values(tests)
       .flat()
       .forEach((test) => {

@@ -1,28 +1,21 @@
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { ParsedInstruction, ParsedTransactionWithMeta, PublicKey } from "@solana/web3.js";
-import { TOKENS, DEX_PROGRAMS } from "./constants";
-import {
-  TokenInfo,
-  TransferData,
-  convertToUiAmount,
-  TradeInfo,
-  DexInfo,
-} from "./types";
-import { isSupportedToken } from "./utils";
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
+import { ParsedInstruction, ParsedTransactionWithMeta } from '@solana/web3.js';
+import { TOKENS, DEX_PROGRAMS } from './constants';
+import { TokenInfo, TransferData, convertToUiAmount, TradeInfo, DexInfo } from './types';
+import { isSupportedToken } from './utils';
 
 export const isTransferCheck = (instruction: ParsedInstruction): boolean => {
   return (
-    (instruction.programId.equals(TOKEN_PROGRAM_ID) ||
-      instruction.programId.equals(TOKEN_2022_PROGRAM_ID)) &&
-    instruction.parsed.type.includes("transferChecked")
+    (instruction.programId.equals(TOKEN_PROGRAM_ID) || instruction.programId.equals(TOKEN_2022_PROGRAM_ID)) &&
+    instruction.parsed.type.includes('transferChecked')
   );
 };
 
 export const isTransfer = (instruction: ParsedInstruction): boolean => {
   return (
-    instruction.program === "spl-token" &&
+    instruction.program === 'spl-token' &&
     instruction.programId.equals(TOKEN_PROGRAM_ID) &&
-    instruction.parsed.type === "transfer"
+    instruction.parsed.type === 'transfer'
   );
 };
 
@@ -30,7 +23,7 @@ export const processTransfer = (
   instruction: ParsedInstruction,
   idx: string,
   splTokenMap: Map<string, TokenInfo>,
-  splDecimalsMap: Map<string, number>,
+  splDecimalsMap: Map<string, number>
 ): TransferData | null => {
   const { info } = instruction.parsed;
   if (!info) return null;
@@ -39,15 +32,15 @@ export const processTransfer = (
   if (!mint) return null;
 
   const decimals = splDecimalsMap.get(mint);
-  if (typeof decimals === "undefined") return null;
+  if (typeof decimals === 'undefined') return null;
 
   return {
-    type: "transfer",
+    type: 'transfer',
     info: {
-      authority: info.authority || "",
-      destination: info.destination || "",
+      authority: info.authority || '',
+      destination: info.destination || '',
       mint,
-      source: info.source || "",
+      source: info.source || '',
       tokenAmount: {
         amount: info.amount,
         decimals,
@@ -58,12 +51,9 @@ export const processTransfer = (
   };
 };
 
-export const isExtraAction = (
-  instruction: ParsedInstruction,
-  type: string,
-): boolean => {
+export const isExtraAction = (instruction: ParsedInstruction, type: string): boolean => {
   return (
-    instruction.program === "spl-token" &&
+    instruction.program === 'spl-token' &&
     instruction.programId.equals(TOKEN_PROGRAM_ID) &&
     instruction.parsed.type === type
   );
@@ -74,7 +64,7 @@ export const processExtraAction = (
   idx: string,
   splTokenMap: Map<string, TokenInfo>,
   splDecimalsMap: Map<string, number>,
-  type: string,
+  type: string
 ): TransferData | null => {
   const { info } = instruction.parsed;
   if (!info) return null;
@@ -83,15 +73,15 @@ export const processExtraAction = (
   if (!mint) return null;
 
   const decimals = splDecimalsMap.get(mint);
-  if (typeof decimals === "undefined") return null;
+  if (typeof decimals === 'undefined') return null;
 
   return {
     type: type,
     info: {
-      authority: info.authority || info.mintAuthority || "",
-      destination: info.destination || "",
+      authority: info.authority || info.mintAuthority || '',
+      destination: info.destination || '',
       mint,
-      source: info.source || "",
+      source: info.source || '',
       tokenAmount: {
         amount: info.amount,
         decimals,
@@ -105,21 +95,21 @@ export const processExtraAction = (
 export const processTransferCheck = (
   instruction: ParsedInstruction,
   idx: string,
-  splDecimalsMap: Map<string, number>,
+  splDecimalsMap: Map<string, number>
 ): TransferData | null => {
   const { info } = instruction.parsed;
   if (!info) return null;
 
   const decimals = splDecimalsMap.get(info.mint);
-  if (typeof decimals === "undefined") return null;
+  if (typeof decimals === 'undefined') return null;
 
   return {
-    type: "transferChecked",
+    type: 'transferChecked',
     info: {
-      authority: info.authority || "",
-      destination: info.destination || "",
-      mint: info.mint || "",
-      source: info.source || "",
+      authority: info.authority || '',
+      destination: info.destination || '',
+      mint: info.mint || '',
+      source: info.source || '',
       tokenAmount: info.tokenAmount || {
         amount: info.amount,
         decimals,
@@ -133,35 +123,24 @@ export const processTransferCheck = (
 export const processSwapData = (
   txWithMeta: ParsedTransactionWithMeta,
   transfers: TransferData[],
-  dexInfo: DexInfo,
+  dexInfo: DexInfo
 ): TradeInfo => {
   if (!transfers.length) {
-    throw new Error("No swap data provided");
+    throw new Error('No swap data provided');
   }
 
   const uniqueTokens = extractUniqueTokens(transfers);
   if (uniqueTokens.length < 2) {
-    throw new Error(
-      `Insufficient unique tokens for swap > ${txWithMeta.transaction.signatures[0]}`,
-    );
+    throw new Error(`Insufficient unique tokens for swap > ${txWithMeta.transaction.signatures[0]}`);
   }
 
-  const { inputToken, outputToken } = calculateTokenAmounts(
-    transfers,
-    uniqueTokens,
-  );
-  const tradeType = Object.values(TOKENS).includes(inputToken.mint)
-    ? "SELL"
-    : "BUY";
+  const { inputToken, outputToken } = calculateTokenAmounts(transfers, uniqueTokens);
+  const tradeType = Object.values(TOKENS).includes(inputToken.mint) ? 'SELL' : 'BUY';
 
   let signer = txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58();
 
   // containsDCAProgram checks if the transaction contains the Jupiter DCA program.
-  if (
-    txWithMeta.transaction.message.accountKeys.find(
-      (it) => it.pubkey.toBase58() == DEX_PROGRAMS.JUPITER_DCA.id,
-    )
-  ) {
+  if (txWithMeta.transaction.message.accountKeys.find((it) => it.pubkey.toBase58() == DEX_PROGRAMS.JUPITER_DCA.id)) {
     signer = txWithMeta.transaction.message.accountKeys[2].pubkey.toBase58();
   }
 
@@ -194,10 +173,7 @@ export const extractUniqueTokens = (transfers: TransferData[]): TokenInfo[] => {
   return uniqueTokens;
 };
 
-export const calculateTokenAmounts = (
-  transfers: TransferData[],
-  uniqueTokens: TokenInfo[],
-) => {
+export const calculateTokenAmounts = (transfers: TransferData[], uniqueTokens: TokenInfo[]) => {
   const inputToken = uniqueTokens[0];
   const outputToken = uniqueTokens[uniqueTokens.length - 1];
 
@@ -217,11 +193,7 @@ export const calculateTokenAmounts = (
   };
 };
 
-export const sumTokenAmounts = (
-  transfers: TransferData[],
-  inputMint: string,
-  outputMint: string,
-) => {
+export const sumTokenAmounts = (transfers: TransferData[], inputMint: string, outputMint: string) => {
   const seenTransfers = new Set<string>();
   let inputAmount = 0;
   let outputAmount = 0;
@@ -245,15 +217,13 @@ export const sumTokenAmounts = (
   return { inputAmount, outputAmount };
 };
 
-export const getTransferTokenInfo = (
-  transfer: TransferData,
-): TokenInfo | null => {
+export const getTransferTokenInfo = (transfer: TransferData): TokenInfo | null => {
   return transfer?.info
     ? {
-      mint: transfer.info.mint,
-      amount: transfer.info.tokenAmount.uiAmount,
-      decimals: transfer.info.tokenAmount.decimals,
-    }
+        mint: transfer.info.mint,
+        amount: transfer.info.tokenAmount.uiAmount,
+        decimals: transfer.info.tokenAmount.decimals,
+      }
     : null;
 };
 
@@ -262,7 +232,7 @@ export const processTransferInnerInstruction = (
   instructionIndex: number,
   splTokenMap: Map<string, TokenInfo>,
   splDecimalsMap: Map<string, number>,
-  extraTypes?: string[],
+  extraTypes?: string[]
 ): TransferData[] => {
   const innerInstructions = txWithMeta.meta?.innerInstructions;
   if (!innerInstructions) return [];
@@ -281,9 +251,8 @@ export const processTransferInnerInstruction = (
           );
 
           return items;
-        }
-        )
-        .filter((transfer): transfer is TransferData => transfer !== null),
+        })
+        .filter((transfer): transfer is TransferData => transfer !== null)
     );
 };
 
@@ -292,9 +261,8 @@ export const processTransferInstruction = (
   idx: string,
   splTokenMap: Map<string, TokenInfo>,
   splDecimalsMap: Map<string, number>,
-  extraTypes?: string[],
+  extraTypes?: string[]
 ): TransferData | null => {
-
   if (isTransfer(instruction)) {
     return processTransfer(instruction, idx, splTokenMap, splDecimalsMap);
   }
@@ -305,13 +273,7 @@ export const processTransferInstruction = (
     const actions = extraTypes
       .map((it) => {
         if (isExtraAction(instruction, it)) {
-          return processExtraAction(
-            instruction,
-            idx,
-            splTokenMap,
-            splDecimalsMap,
-            it,
-          );
+          return processExtraAction(instruction, idx, splTokenMap, splDecimalsMap, it);
         }
       })
       .filter((it) => !!it);
@@ -334,12 +296,11 @@ export const processTransferInstruction = (
  * @returns
  */
 export const getLPTransfers = (transfers: TransferData[]) => {
-  const tokens = transfers.filter((it) => it.type.includes("transfer"));
+  const tokens = transfers.filter((it) => it.type.includes('transfer'));
   if (tokens.length == 2) {
     if (
       tokens[0].info.mint == TOKENS.SOL ||
-      (isSupportedToken(tokens[0].info.mint) &&
-        !isSupportedToken(tokens[1].info.mint))
+      (isSupportedToken(tokens[0].info.mint) && !isSupportedToken(tokens[1].info.mint))
     ) {
       return [tokens[1], tokens[0]];
     }

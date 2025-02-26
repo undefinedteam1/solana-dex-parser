@@ -1,10 +1,7 @@
-import {
-  ParsedTransactionWithMeta,
-  PartiallyDecodedInstruction,
-} from "@solana/web3.js";
-import { Buffer } from "buffer";
-import base58 from "bs58";
-import { DEX_PROGRAMS, DISCRIMINATORS } from "../constants";
+import { ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
+import { Buffer } from 'buffer';
+import base58 from 'bs58';
+import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
 import {
   convertToUiAmount,
   DexInfo,
@@ -12,12 +9,12 @@ import {
   PumpfunCreateEvent,
   PumpfunEvent,
   PumpfunTradeEvent,
-} from "../types";
+} from '../types';
 
 export class PumpfunEventParser {
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo?: DexInfo,
+    private readonly dexInfo?: DexInfo
   ) {}
 
   public processEvents(): PumpfunEvent[] {
@@ -28,7 +25,7 @@ export class PumpfunEventParser {
         }
         return events;
       },
-      [],
+      []
     );
   }
 
@@ -48,12 +45,10 @@ export class PumpfunEventParser {
           .flatMap((ix, idx: number) => {
             const events: PumpfunEvent[] = [];
             if (this.isPumpFunCreateEvent(ix as PartiallyDecodedInstruction)) {
-              const event = this.parseCreateEvent(
-                ix as PartiallyDecodedInstruction,
-              );
+              const event = this.parseCreateEvent(ix as PartiallyDecodedInstruction);
               if (event) {
                 events.push({
-                  type: "CREATE",
+                  type: 'CREATE',
                   data: event,
                   ...txMeta,
                   idx: `${instructionIndex}-${idx}`,
@@ -61,12 +56,10 @@ export class PumpfunEventParser {
               }
             }
             if (this.isPumpFunTradeEvent(ix as PartiallyDecodedInstruction)) {
-              const event = this.parseTradeEvent(
-                ix as PartiallyDecodedInstruction,
-              );
+              const event = this.parseTradeEvent(ix as PartiallyDecodedInstruction);
               if (event) {
                 events.push({
-                  type: "TRADE",
+                  type: 'TRADE',
                   data: event,
                   ...txMeta,
                   idx: `${instructionIndex}-${idx}`,
@@ -74,15 +67,11 @@ export class PumpfunEventParser {
               }
             }
 
-            if (
-              this.isPumpFunCompleteEvent(ix as PartiallyDecodedInstruction)
-            ) {
-              const event = this.parseCompleteEvent(
-                ix as PartiallyDecodedInstruction,
-              );
+            if (this.isPumpFunCompleteEvent(ix as PartiallyDecodedInstruction)) {
+              const event = this.parseCompleteEvent(ix as PartiallyDecodedInstruction);
               if (event) {
                 events.push({
-                  type: "COMPLETE",
+                  type: 'COMPLETE',
                   data: event,
                   ...txMeta,
                   idx: `${instructionIndex}-${idx}`,
@@ -91,33 +80,26 @@ export class PumpfunEventParser {
             }
             return events;
           })
-          .filter((event) => event !== null),
+          .filter((event) => event !== null)
       );
   }
 
-  private isPumpFunTradeEvent(
-    instruction: PartiallyDecodedInstruction,
-  ): boolean {
+  private isPumpFunTradeEvent(instruction: PartiallyDecodedInstruction): boolean {
     try {
-      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id)
-        return false;
+      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id) return false;
       const data = base58.decode(instruction.data as string);
-      return Buffer.from(data.slice(0, 16)).equals(
-        DISCRIMINATORS.PUMPFUN.TRADE_EVENT,
-      );
+      return Buffer.from(data.slice(0, 16)).equals(DISCRIMINATORS.PUMPFUN.TRADE_EVENT);
     } catch {
       return false;
     }
   }
 
-  private parseTradeEvent(
-    instruction: PartiallyDecodedInstruction,
-  ): PumpfunTradeEvent | null {
+  private parseTradeEvent(instruction: PartiallyDecodedInstruction): PumpfunTradeEvent | null {
     try {
       const data = base58.decode(instruction.data as string);
       return this.decodeTradeEvent(data.slice(16));
     } catch (error) {
-      console.error("Failed to parse PumpFun trade event:", error);
+      console.error('Failed to parse PumpFun trade event:', error);
       return null;
     }
   }
@@ -137,29 +119,22 @@ export class PumpfunEventParser {
     };
   }
 
-  private isPumpFunCreateEvent(
-    instruction: PartiallyDecodedInstruction,
-  ): boolean {
+  private isPumpFunCreateEvent(instruction: PartiallyDecodedInstruction): boolean {
     try {
-      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id)
-        return false;
+      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id) return false;
       const data = base58.decode(instruction.data as string);
-      return Buffer.from(data.slice(0, 16)).equals(
-        DISCRIMINATORS.PUMPFUN.CREATE_EVENT,
-      );
+      return Buffer.from(data.slice(0, 16)).equals(DISCRIMINATORS.PUMPFUN.CREATE_EVENT);
     } catch {
       return false;
     }
   }
 
-  private parseCreateEvent(
-    instruction: PartiallyDecodedInstruction,
-  ): PumpfunCreateEvent | null {
+  private parseCreateEvent(instruction: PartiallyDecodedInstruction): PumpfunCreateEvent | null {
     try {
       const data = base58.decode(instruction.data as string);
       return this.decodeCreateEvent(data.slice(16));
     } catch (error) {
-      console.error("Failed to parse PumpFun create event:", error);
+      console.error('Failed to parse PumpFun create event:', error);
       return null;
     }
   }
@@ -176,29 +151,22 @@ export class PumpfunEventParser {
     };
   }
 
-  private isPumpFunCompleteEvent(
-    instruction: PartiallyDecodedInstruction,
-  ): boolean {
+  private isPumpFunCompleteEvent(instruction: PartiallyDecodedInstruction): boolean {
     try {
-      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id)
-        return false;
+      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id) return false;
       const data = base58.decode(instruction.data as string);
-      return Buffer.from(data.slice(0, 16)).equals(
-        DISCRIMINATORS.PUMPFUN.COMPLETE_EVENT,
-      );
+      return Buffer.from(data.slice(0, 16)).equals(DISCRIMINATORS.PUMPFUN.COMPLETE_EVENT);
     } catch {
       return false;
     }
   }
 
-  private parseCompleteEvent(
-    instruction: PartiallyDecodedInstruction,
-  ): PumpfunCompleteEvent | null {
+  private parseCompleteEvent(instruction: PartiallyDecodedInstruction): PumpfunCompleteEvent | null {
     try {
       const data = base58.decode(instruction.data as string);
       return this.decodeCompleteEvent(data.slice(16));
     } catch (error) {
-      console.error("Failed to parse PumpFun complete event:", error);
+      console.error('Failed to parse PumpFun complete event:', error);
       return null;
     }
   }
@@ -254,7 +222,7 @@ export class BinaryReader {
 
     this.checkBounds(length);
     const strBuffer = this.buffer.slice(this.offset, this.offset + length);
-    const content = strBuffer.toString("utf8");
+    const content = strBuffer.toString('utf8');
     this.offset += length;
 
     return content;
@@ -263,7 +231,7 @@ export class BinaryReader {
   private checkBounds(length: number) {
     if (this.offset + length > this.buffer.length) {
       throw new Error(
-        `Buffer overflow: trying to read ${length} bytes at offset ${this.offset} in buffer of length ${this.buffer.length}`,
+        `Buffer overflow: trying to read ${length} bytes at offset ${this.offset} in buffer of length ${this.buffer.length}`
       );
     }
   }

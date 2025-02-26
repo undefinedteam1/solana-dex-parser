@@ -1,11 +1,6 @@
-import { ParsedTransactionWithMeta } from "@solana/web3.js";
-import { TradeInfo } from "../types";
-import {
-  getBalanceChanges,
-  getDexInfo,
-  getTokenDecimals,
-  isSupportedToken,
-} from "../utils";
+import { ParsedTransactionWithMeta } from '@solana/web3.js';
+import { TradeInfo } from '../types';
+import { getBalanceChanges, getDexInfo, getTokenDecimals, isSupportedToken } from '../utils';
 
 /**
  * BalanceChanges Parser
@@ -14,48 +9,32 @@ export class DefaultParser {
   constructor(private readonly txWithMeta: ParsedTransactionWithMeta) {}
 
   public processTrades(): TradeInfo[] {
-    return this.parseTradesByBalanceChanges(
-      this.txWithMeta,
-      getDexInfo(this.txWithMeta),
-    );
+    return this.parseTradesByBalanceChanges(this.txWithMeta, getDexInfo(this.txWithMeta));
   }
 
   public parseTradesByBalanceChanges(
     tx: ParsedTransactionWithMeta,
-    dexInfo: { programId?: string; amm?: string },
+    dexInfo: { programId?: string; amm?: string }
   ): TradeInfo[] {
     const { preBalances, postBalances } = getBalanceChanges(tx);
     const trades: TradeInfo[] = [];
     const signer = tx.transaction.message.accountKeys[0].pubkey.toBase58();
     Object.entries(postBalances).forEach(([owner, mints], index: number) => {
-      const changes = this.getSignificantChanges(
-        mints,
-        preBalances[owner] || {},
-      );
+      const changes = this.getSignificantChanges(mints, preBalances[owner] || {});
 
       if (changes.length !== 2) return;
       const [token1, token2] = changes;
 
       if (signer != owner) return;
 
-      const trade = this.createTradeInfo(
-        token1,
-        token2,
-        owner,
-        tx,
-        dexInfo,
-        index,
-      );
+      const trade = this.createTradeInfo(token1, token2, owner, tx, dexInfo, index);
       if (trade) trades.push(trade);
     });
 
     return trades;
   }
 
-  private getSignificantChanges(
-    postMints: Record<string, number>,
-    preMints: Record<string, number>,
-  ) {
+  private getSignificantChanges(postMints: Record<string, number>, preMints: Record<string, number>) {
     return Object.entries(postMints)
       .map(([mint, postBalance]) => ({
         mint,
@@ -70,12 +49,12 @@ export class DefaultParser {
     owner: string,
     tx: ParsedTransactionWithMeta,
     dexInfo: { programId?: string; amm?: string },
-    index: number,
+    index: number
   ): TradeInfo | null {
     const baseTradeInfo = {
       user: owner,
       programId: dexInfo.programId,
-      amm: dexInfo.amm || "",
+      amm: dexInfo.amm || '',
       slot: tx.slot,
       timestamp: tx.blockTime || 0,
       signature: tx.transaction.signatures[0],
@@ -84,7 +63,7 @@ export class DefaultParser {
 
     if (token1.diff < 0 && token2.diff > 0) {
       return {
-        type: isSupportedToken(token1.mint) ? "SELL" : "BUY",
+        type: isSupportedToken(token1.mint) ? 'SELL' : 'BUY',
         inputToken: this.formatToken(token1, tx),
         outputToken: this.formatToken(token2, tx),
         ...baseTradeInfo,
@@ -93,7 +72,7 @@ export class DefaultParser {
 
     if (token1.diff > 0 && token2.diff < 0) {
       return {
-        type: isSupportedToken(token1.mint) ? "BUY" : "SELL",
+        type: isSupportedToken(token1.mint) ? 'BUY' : 'SELL',
         inputToken: this.formatToken(token2, tx),
         outputToken: this.formatToken(token1, tx),
         ...baseTradeInfo,
@@ -103,10 +82,7 @@ export class DefaultParser {
     return null;
   }
 
-  private formatToken(
-    token: { mint: string; diff: number },
-    tx: ParsedTransactionWithMeta,
-  ) {
+  private formatToken(token: { mint: string; diff: number }, tx: ParsedTransactionWithMeta) {
     return {
       mint: token.mint,
       amount: Math.abs(token.diff),

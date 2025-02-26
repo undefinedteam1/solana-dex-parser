@@ -1,7 +1,7 @@
-import { Connection, ParsedTransactionWithMeta } from "@solana/web3.js";
-import { DEX_PROGRAMS } from "./constants";
-import { DexInfo, ParseConfig, PoolEvent, TradeInfo } from "./types";
-import { getDexInfo } from "./utils";
+import { Connection, ParsedTransactionWithMeta } from '@solana/web3.js';
+import { DEX_PROGRAMS } from './constants';
+import { DexInfo, ParseConfig, PoolEvent, TradeInfo } from './types';
+import { getDexInfo } from './utils';
 import {
   MoonshotParser,
   MeteoraParser,
@@ -10,14 +10,14 @@ import {
   RaydiumParser,
   OrcaParser,
   JupiterParser,
-} from "./parsers";
-import { RaydiumLiquidityParser } from "./parsers/parser-raydium-liquidity";
-import { MeteoraLiquidityParser } from "./parsers/parser-meteora-liquidity";
-import { OrcaLiquidityParser } from "./parsers/parser-orca-liquidity";
+} from './parsers';
+import { RaydiumLiquidityParser } from './parsers/parser-raydium-liquidity';
+import { MeteoraLiquidityParser } from './parsers/parser-meteora-liquidity';
+import { OrcaLiquidityParser } from './parsers/parser-orca-liquidity';
 
 type ParserConstructor = new (
   tx: ParsedTransactionWithMeta,
-  dexInfo: DexInfo,
+  dexInfo: DexInfo
 ) => {
   processTrades(): TradeInfo[];
   processInstructionTrades?(index: number): TradeInfo[];
@@ -43,10 +43,7 @@ export class DexParser {
     [DEX_PROGRAMS.ORCA.id]: OrcaParser,
   };
 
-  private readonly parseLiquidityMap: Record<
-    string,
-    ParserLiquidityConstructor
-  > = {
+  private readonly parseLiquidityMap: Record<string, ParserLiquidityConstructor> = {
     [DEX_PROGRAMS.METEORA.id]: MeteoraLiquidityParser,
     [DEX_PROGRAMS.METEORA_POOLS.id]: MeteoraLiquidityParser,
     [DEX_PROGRAMS.RAYDIUM_V4.id]: RaydiumLiquidityParser,
@@ -57,27 +54,20 @@ export class DexParser {
 
   constructor(private connection: Connection) {}
 
-  public async parseTransaction(
-    signature: string,
-    config?: ParseConfig,
-  ): Promise<TradeInfo[]> {
+  public async parseTransaction(signature: string, config?: ParseConfig): Promise<TradeInfo[]> {
     const tx = await this.connection.getParsedTransaction(signature, {
-      commitment: "confirmed",
+      commitment: 'confirmed',
       maxSupportedTransactionVersion: 0,
     });
     if (!tx) throw `Can't fetch transaction! ${signature}`;
     return this.parseTrades(tx, config);
   }
 
-  public parseTrades(
-    tx: ParsedTransactionWithMeta,
-    config?: ParseConfig,
-  ): TradeInfo[] {
+  public parseTrades(tx: ParsedTransactionWithMeta, config?: ParseConfig): TradeInfo[] {
     const dexInfo = getDexInfo(tx);
     if (!dexInfo.programId) return [];
 
-    if (config?.programIds && !config.programIds.includes(dexInfo.programId))
-      return [];
+    if (config?.programIds && !config.programIds.includes(dexInfo.programId)) return [];
 
     const trades: TradeInfo[] = [];
     const ParserClass = this.parserMap[dexInfo.programId];
@@ -95,9 +85,7 @@ export class DexParser {
     }
 
     if (trades.length === 0 && config?.tryUnknowDEX == true) {
-      trades.push(
-        ...new DefaultParser(tx).parseTradesByBalanceChanges(tx, dexInfo),
-      );
+      trades.push(...new DefaultParser(tx).parseTradesByBalanceChanges(tx, dexInfo));
     }
 
     return trades;
@@ -116,57 +104,43 @@ export class DexParser {
     return events;
   }
 
-  private parseInstructions(
-    tx: ParsedTransactionWithMeta,
-    dexInfo: DexInfo,
-    isInner: boolean,
-  ): TradeInfo[] {
+  private parseInstructions(tx: ParsedTransactionWithMeta, dexInfo: DexInfo, isInner: boolean): TradeInfo[] {
     const trades: TradeInfo[] = [];
     const processedProtocols = new Set<string>();
 
-    tx.transaction.message.instructions.forEach(
-      (instruction: any, index: number) => {
-        if (dexInfo.programId !== instruction.programId.toBase58()) return;
+    tx.transaction.message.instructions.forEach((instruction: any, index: number) => {
+      if (dexInfo.programId !== instruction.programId.toBase58()) return;
 
-        const processInstruction = (programId: string, isInner: boolean) => {
-          if (processedProtocols.has(programId)) return;
-          processedProtocols.add(programId);
+      const processInstruction = (programId: string, isInner: boolean) => {
+        if (processedProtocols.has(programId)) return;
+        processedProtocols.add(programId);
 
-          const ParserClass = this.parserMap[programId];
-          if (!ParserClass) return;
+        const ParserClass = this.parserMap[programId];
+        if (!ParserClass) return;
 
-          const parser = new ParserClass(tx, dexInfo);
-          if (parser.processInstructionTrades) {
-            if (
-              isInner ||
-              (!isInner &&
-                parser.isTradeInstruction &&
-                parser.isTradeInstruction(instruction))
-            ) {
-              trades.push(...parser.processInstructionTrades(index));
-            }
+        const parser = new ParserClass(tx, dexInfo);
+        if (parser.processInstructionTrades) {
+          if (isInner || (!isInner && parser.isTradeInstruction && parser.isTradeInstruction(instruction))) {
+            trades.push(...parser.processInstructionTrades(index));
           }
-        };
-
-        if (isInner) {
-          const innerInstructions = tx.meta?.innerInstructions;
-          if (!innerInstructions) return;
-
-          innerInstructions
-            .filter((set) => set.index === index)
-            .forEach((set) => {
-              set.instructions.forEach((innerInstruction) => {
-                processInstruction(
-                  innerInstruction.programId.toBase58(),
-                  isInner,
-                );
-              });
-            });
-        } else {
-          processInstruction(instruction.programId.toBase58(), isInner);
         }
-      },
-    );
+      };
+
+      if (isInner) {
+        const innerInstructions = tx.meta?.innerInstructions;
+        if (!innerInstructions) return;
+
+        innerInstructions
+          .filter((set) => set.index === index)
+          .forEach((set) => {
+            set.instructions.forEach((innerInstruction) => {
+              processInstruction(innerInstruction.programId.toBase58(), isInner);
+            });
+          });
+      } else {
+        processInstruction(instruction.programId.toBase58(), isInner);
+      }
+    });
 
     return trades;
   }

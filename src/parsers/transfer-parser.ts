@@ -1,6 +1,6 @@
-import { ParsedTransactionWithMeta } from "@solana/web3.js";
-import { TransferInfo } from "../types";
-import { getBalanceChanges, getTokenDecimals } from "../utils";
+import { ParsedTransactionWithMeta } from '@solana/web3.js';
+import { TransferInfo } from '../types';
+import { getBalanceChanges, getTokenDecimals } from '../utils';
 
 export class TransferParser {
   public parseTransfers(tx: ParsedTransactionWithMeta): TransferInfo[] {
@@ -17,12 +17,11 @@ export class TransferParser {
           // Find the counterparty by looking for opposite balance change
           for (const [otherOwner, otherMints] of Object.entries(postBalances)) {
             if (otherOwner === owner) continue;
-            const otherDiff =
-              (otherMints[mint] || 0) - (preBalances[otherOwner]?.[mint] || 0);
+            const otherDiff = (otherMints[mint] || 0) - (preBalances[otherOwner]?.[mint] || 0);
 
             if (otherDiff === -difference) {
               transfers.push({
-                type: difference > 0 ? "TRANSFER_IN" : "TRANSFER_OUT",
+                type: difference > 0 ? 'TRANSFER_IN' : 'TRANSFER_OUT',
                 token: {
                   mint,
                   amount: Math.abs(difference),

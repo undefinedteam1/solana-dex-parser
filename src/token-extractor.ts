@@ -1,11 +1,7 @@
-import {
-  ParsedInstruction,
-  ParsedTransactionWithMeta,
-  PublicKey,
-} from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { TokenInfo } from "./types";
-import { TOKENS } from "./constants";
+import { ParsedInstruction, ParsedTransactionWithMeta, PublicKey } from '@solana/web3.js';
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { TokenInfo } from './types';
+import { TOKENS } from './constants';
 
 interface TokenBalance {
   mint: string;
@@ -35,14 +31,10 @@ export class TokenInfoExtractor {
     return splTokenAddresses;
   }
 
-  private processPostTokenBalances(
-    tokenMap: Map<string, TokenInfo>,
-    accountKeys: Array<{ pubkey: PublicKey }>,
-  ): void {
+  private processPostTokenBalances(tokenMap: Map<string, TokenInfo>, accountKeys: Array<{ pubkey: PublicKey }>): void {
     (this.txWithMeta.meta?.postTokenBalances || []).forEach((accountInfo) => {
       if (accountInfo.mint) {
-        const accountKey =
-          accountKeys[accountInfo.accountIndex].pubkey.toBase58();
+        const accountKey = accountKeys[accountInfo.accountIndex].pubkey.toBase58();
         tokenMap.set(accountKey, {
           mint: accountInfo.mint.toString(),
           amount: 0,
@@ -59,7 +51,7 @@ export class TokenInfoExtractor {
       const { source, destination } = instr.parsed?.info || {};
       if (!source && !destination) return;
 
-      const emptyTokenInfo = { mint: "", amount: 0, decimals: 0 };
+      const emptyTokenInfo = { mint: '', amount: 0, decimals: 0 };
 
       if (source && !tokenMap.has(source)) {
         tokenMap.set(source, emptyTokenInfo);
@@ -77,9 +69,7 @@ export class TokenInfoExtractor {
 
   private getAllInstructions(): ParsedInstruction[] {
     const mainInstructions = this.txWithMeta.transaction.message.instructions;
-    const innerInstructions = (
-      this.txWithMeta.meta?.innerInstructions || []
-    ).flatMap((set) => set.instructions);
+    const innerInstructions = (this.txWithMeta.meta?.innerInstructions || []).flatMap((set) => set.instructions);
 
     return [...mainInstructions, ...innerInstructions] as ParsedInstruction[];
   }
@@ -113,7 +103,7 @@ export class TokenInfoExtractor {
 
       return tokenMap;
     } catch (error) {
-      throw this.formatError("extract token info", error);
+      throw this.formatError('extract token info', error);
     }
   }
 
@@ -123,10 +113,7 @@ export class TokenInfoExtractor {
 
       this.getPostTokenBalances().forEach((balance) => {
         if (balance.mint) {
-          decimalsMap.set(
-            balance.mint.toString(),
-            balance.uiTokenAmount.decimals,
-          );
+          decimalsMap.set(balance.mint.toString(), balance.uiTokenAmount.decimals);
         }
       });
 
@@ -136,14 +123,13 @@ export class TokenInfoExtractor {
 
       return decimalsMap;
     } catch (error) {
-      throw this.formatError("extract decimals", error);
+      throw this.formatError('extract decimals', error);
     }
   }
 
   public getDecimals(mint: string): number {
     return (
-      this.getPostTokenBalances().find((balance) => balance.mint === mint)
-        ?.uiTokenAmount.decimals ??
+      this.getPostTokenBalances().find((balance) => balance.mint === mint)?.uiTokenAmount.decimals ??
       (mint === TOKENS.SOL ? this.defaultSolInfo.decimals : 0)
     );
   }
@@ -152,16 +138,13 @@ export class TokenInfoExtractor {
     const balances = this.getPostTokenBalances();
     const missingMints = requiredMints.filter((mint) => {
       const mintStr = mint.toString();
-      return (
-        !balances.some((balance) => balance.mint.toString() === mintStr) &&
-        mint.toBase58() !== TOKENS.SOL
-      );
+      return !balances.some((balance) => balance.mint.toString() === mintStr) && mint.toBase58() !== TOKENS.SOL;
     });
 
     if (missingMints.length > 0) {
       throw this.formatError(
-        "validate token info",
-        `Missing token info for mints: ${missingMints.map((m) => m.toString()).join(", ")}`,
+        'validate token info',
+        `Missing token info for mints: ${missingMints.map((m) => m.toString()).join(', ')}`
       );
     }
   }
@@ -171,6 +154,6 @@ export class TokenInfoExtractor {
   }
 
   private formatError(operation: string, error: unknown): string {
-    return `Failed to ${operation}: ${error instanceof Error ? error.message : "Unknown error"}`;
+    return `Failed to ${operation}: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 }

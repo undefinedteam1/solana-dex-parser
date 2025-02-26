@@ -1,102 +1,96 @@
-import { Connection } from "@solana/web3.js";
-import dotenv from "dotenv";
-import { RaydiumLiquidityParser } from "../parsers/parser-raydium-liquidity";
+import { Connection } from '@solana/web3.js';
+import dotenv from 'dotenv';
+import { RaydiumLiquidityParser } from '../parsers/parser-raydium-liquidity';
 
 dotenv.config();
 
 const tests = {
   CREATE: [
     {
-      signature:
-        "xZmKodPHYxesDJzPLHfjqG4VvKJcQpwuo3fTa2T64LY9nePfAa97xtSmzCvSWJ5EFzYjAURLD666zqV8oJL8kTp",
-      type: "CREATE",
-      desc: "Raydium CPMM: initialize",
-      name: "IMG",
-      poolId: "CXgcuECqdaBpvJWH5cwEir9Y5FY9SKTjhGutMc95bGy3",
-      token0Mint: "znv3FZt2HFAvzYf5LxzVyryh3mBXWuTRRng25gEZAjh",
+      signature: 'xZmKodPHYxesDJzPLHfjqG4VvKJcQpwuo3fTa2T64LY9nePfAa97xtSmzCvSWJ5EFzYjAURLD666zqV8oJL8kTp',
+      type: 'CREATE',
+      desc: 'Raydium CPMM: initialize',
+      name: 'IMG',
+      poolId: 'CXgcuECqdaBpvJWH5cwEir9Y5FY9SKTjhGutMc95bGy3',
+      token0Mint: 'znv3FZt2HFAvzYf5LxzVyryh3mBXWuTRRng25gEZAjh',
       token0Amount: 1000000000,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 20,
     },
     {
-      signature:
-        "55JBLGRP6Zcd4t8gxsQ27EbLN3kzzMMnwxA9iD1CUTsax2C2cJLNbW3nuRg1gCH56ojJ4YNpRcuzpDL1PbnRvh18",
-      type: "CREATE",
-      desc: "Raydium CPMM: initialize",
-      name: "TRUMP",
-      poolId: "HKuJrP5tYQLbEUdjKwjgnHs2957QKjR2iWhJKTtMa1xs",
-      token0Mint: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+      signature: '55JBLGRP6Zcd4t8gxsQ27EbLN3kzzMMnwxA9iD1CUTsax2C2cJLNbW3nuRg1gCH56ojJ4YNpRcuzpDL1PbnRvh18',
+      type: 'CREATE',
+      desc: 'Raydium CPMM: initialize',
+      name: 'TRUMP',
+      poolId: 'HKuJrP5tYQLbEUdjKwjgnHs2957QKjR2iWhJKTtMa1xs',
+      token0Mint: '6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN',
       token0Amount: 423.320786,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 0.352896784,
     },
   ],
   ADD: [
     {
-      signature:
-        "2uVjffn9bwatwRnGZYRpJk5fhxTcGcGfvtc971FBdt1CgUhxESrG8qPN3DiahgaLDULC4JTqc1whSCfvZ5gzJRmL",
-      type: "ADD",
-      desc: "Raydium CPMM: deposit",
-      name: "IMG",
-      poolId: "CXgcuECqdaBpvJWH5cwEir9Y5FY9SKTjhGutMc95bGy3",
-      token0Mint: "znv3FZt2HFAvzYf5LxzVyryh3mBXWuTRRng25gEZAjh",
+      signature: '2uVjffn9bwatwRnGZYRpJk5fhxTcGcGfvtc971FBdt1CgUhxESrG8qPN3DiahgaLDULC4JTqc1whSCfvZ5gzJRmL',
+      type: 'ADD',
+      desc: 'Raydium CPMM: deposit',
+      name: 'IMG',
+      poolId: 'CXgcuECqdaBpvJWH5cwEir9Y5FY9SKTjhGutMc95bGy3',
+      token0Mint: 'znv3FZt2HFAvzYf5LxzVyryh3mBXWuTRRng25gEZAjh',
       token0Amount: 928.616834,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 0.064818705,
     },
     {
-      signature:
-        "38Bf6HotXPuGcErvexLS4tCQVnLSuD1PtvhgNuCmhbbNwwDKXNSw8Gc6MQwgWwpU5FNUJwGac1ziSS6kKDJdW1Rr",
-      type: "ADD",
-      desc: "Raydium CPMM: deposit",
-      name: "TRUMP",
-      poolId: "HKuJrP5tYQLbEUdjKwjgnHs2957QKjR2iWhJKTtMa1xs",
-      token0Mint: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+      signature: '38Bf6HotXPuGcErvexLS4tCQVnLSuD1PtvhgNuCmhbbNwwDKXNSw8Gc6MQwgWwpU5FNUJwGac1ziSS6kKDJdW1Rr',
+      type: 'ADD',
+      desc: 'Raydium CPMM: deposit',
+      name: 'TRUMP',
+      poolId: 'HKuJrP5tYQLbEUdjKwjgnHs2957QKjR2iWhJKTtMa1xs',
+      token0Mint: '6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN',
       token0Amount: 972.595817,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 95.855640586,
     },
   ],
   REMOVE: [
     {
-      signature:
-        "5sYGW9tkSuh4UHUNGLwtLRSuAGHTTKQMqgaGtF7jB4r8EzADkVmq3nPfiWiQ7UhPn4vj2bpqNXvcKpqgMX1uWc97",
-      type: "REMOVE",
-      desc: "Raydium CPMM: withdraw",
-      name: "IMG",
-      poolId: "CXgcuECqdaBpvJWH5cwEir9Y5FY9SKTjhGutMc95bGy3",
-      token0Mint: "znv3FZt2HFAvzYf5LxzVyryh3mBXWuTRRng25gEZAjh",
+      signature: '5sYGW9tkSuh4UHUNGLwtLRSuAGHTTKQMqgaGtF7jB4r8EzADkVmq3nPfiWiQ7UhPn4vj2bpqNXvcKpqgMX1uWc97',
+      type: 'REMOVE',
+      desc: 'Raydium CPMM: withdraw',
+      name: 'IMG',
+      poolId: 'CXgcuECqdaBpvJWH5cwEir9Y5FY9SKTjhGutMc95bGy3',
+      token0Mint: 'znv3FZt2HFAvzYf5LxzVyryh3mBXWuTRRng25gEZAjh',
       token0Amount: 1735.661744,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 0.03501825,
     },
     {
-      signature:
-        "5eVe9LMAHgz6Ze7VrUn1XHgoaWJXinM2uoEvRciVoJsADCDc8v4HrewQorp4JUx3jAzBSw5p3RrSAYFqd95udWxR",
-      type: "REMOVE",
-      desc: "Raydium CPMM: withdraw",
-      name: "TRUMP",
-      poolId: "HKuJrP5tYQLbEUdjKwjgnHs2957QKjR2iWhJKTtMa1xs",
-      token0Mint: "6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN",
+      signature: '5eVe9LMAHgz6Ze7VrUn1XHgoaWJXinM2uoEvRciVoJsADCDc8v4HrewQorp4JUx3jAzBSw5p3RrSAYFqd95udWxR',
+      type: 'REMOVE',
+      desc: 'Raydium CPMM: withdraw',
+      name: 'TRUMP',
+      poolId: 'HKuJrP5tYQLbEUdjKwjgnHs2957QKjR2iWhJKTtMa1xs',
+      token0Mint: '6p6xgHyF7AeE6TZkSmFsko444wqoP15icUSqi2jfGiPN',
       token0Amount: 977.537752,
-      token1Mint: "So11111111111111111111111111111111111111112",
+      token1Mint: 'So11111111111111111111111111111111111111112',
       token1Amount: 95.417034698,
     },
   ],
 };
 
-describe("Liquidity", () => {
+describe('Liquidity', () => {
   let connection: Connection;
   beforeAll(async () => {
     // Initialize connection
     const rpcUrl = process.env.SOLANA_RPC_URL;
     if (!rpcUrl) {
-      throw new Error("SOLANA_RPC_URL environment variable is not set");
+      throw new Error('SOLANA_RPC_URL environment variable is not set');
     }
     connection = new Connection(rpcUrl);
   });
 
-  describe("Raydium CPMM", () => {
+  describe('Raydium CPMM', () => {
     Object.values(tests)
       .flat()
       .forEach((test) => {

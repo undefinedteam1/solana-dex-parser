@@ -1,17 +1,9 @@
-import { ParsedInstruction, ParsedTransactionWithMeta } from "@solana/web3.js";
-import { DEX_PROGRAMS, DISCRIMINATORS } from "../constants";
-import { DexInfo, TokenInfo, TradeInfo, TransferData } from "../types";
-import { TokenInfoExtractor } from "../token-extractor";
-import {
-  isTransfer,
-  processTransfer,
-  isTransferCheck,
-  processTransferCheck,
-  processSwapData,
-  processTransferInnerInstruction,
-  processTransferInstruction,
-} from "../transfer-utils";
-import base58 from "bs58";
+import { ParsedTransactionWithMeta } from '@solana/web3.js';
+import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
+import { DexInfo, TokenInfo, TradeInfo } from '../types';
+import { TokenInfoExtractor } from '../token-extractor';
+import { processSwapData, processTransferInnerInstruction } from '../transfer-utils';
+import base58 from 'bs58';
 
 export class RaydiumParser {
   private readonly splTokenMap: Map<string, TokenInfo>;
@@ -19,7 +11,7 @@ export class RaydiumParser {
 
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo: DexInfo,
+    private readonly dexInfo: DexInfo
   ) {
     const tokenExtractor = new TokenInfoExtractor(txWithMeta);
     this.splTokenMap = tokenExtractor.extractSPLTokenInfo();
@@ -35,7 +27,7 @@ export class RaydiumParser {
         }
         return trades;
       },
-      [],
+      []
     );
   }
 
@@ -47,11 +39,9 @@ export class RaydiumParser {
         this.splTokenMap,
         this.splDecimalsMap
       );
-      return transfers.length
-        ? [processSwapData(this.txWithMeta, transfers, this.dexInfo)]
-        : [];
+      return transfers.length ? [processSwapData(this.txWithMeta, transfers, this.dexInfo)] : [];
     } catch (error) {
-      console.error("Error processing Raydium trades:", error);
+      console.error('Error processing Raydium trades:', error);
       return [];
     }
   }
@@ -69,16 +59,15 @@ export class RaydiumParser {
   }
 
   private isLiquidityEvent(instruction: any): boolean {
-    const data = base58.decode(instruction.data as string);
-    const a = Object.values(DISCRIMINATORS.RAYDIUM).find((it) =>
-      data.slice(0, 1).equals(it),
-    );
-    const b = Object.values(DISCRIMINATORS.RAYDIUM_CL).flatMap((it) => Object.values(it)).find((it) =>
-      data.slice(0, 8).equals(it),
-    );
-    const c = Object.values(DISCRIMINATORS.RAYDIUM_CPMM).find((it) =>
-      data.slice(0, 8).equals(it),
-    );
-    return a != undefined || b != undefined || c != undefined;
+    if (instruction.data) {
+      const data = base58.decode(instruction.data as string);
+      const a = Object.values(DISCRIMINATORS.RAYDIUM).find((it) => data.slice(0, 1).equals(it));
+      const b = Object.values(DISCRIMINATORS.RAYDIUM_CL)
+        .flatMap((it) => Object.values(it))
+        .find((it) => data.slice(0, 8).equals(it));
+      const c = Object.values(DISCRIMINATORS.RAYDIUM_CPMM).find((it) => data.slice(0, 8).equals(it));
+      return a != undefined || b != undefined || c != undefined;
+    }
+    return false;
   }
 }

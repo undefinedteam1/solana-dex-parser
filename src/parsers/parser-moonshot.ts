@@ -1,22 +1,7 @@
-import {
-  ParsedMessageAccount,
-  ParsedTransactionWithMeta,
-  PartiallyDecodedInstruction,
-} from "@solana/web3.js";
-import { decode as base58Decode } from "bs58";
-import {
-  DEX_PROGRAMS,
-  DISCRIMINATORS,
-  TOKEN_DECIMALS,
-  TOKENS,
-} from "../constants";
-import {
-  convertToUiAmount,
-  DexInfo,
-  TokenAmount,
-  TradeInfo,
-  TradeType,
-} from "../types";
+import { ParsedMessageAccount, ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
+import { decode as base58Decode } from 'bs58';
+import { DEX_PROGRAMS, DISCRIMINATORS, TOKEN_DECIMALS, TOKENS } from '../constants';
+import { convertToUiAmount, DexInfo, TokenAmount, TradeInfo, TradeType } from '../types';
 
 enum CollateralType {
   SOL,
@@ -27,7 +12,7 @@ enum CollateralType {
 export class MoonshotParser {
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo: DexInfo,
+    private readonly dexInfo: DexInfo
   ) {}
 
   public processTrades(): TradeInfo[] {
@@ -50,17 +35,11 @@ export class MoonshotParser {
     const instructions = this.txWithMeta.transaction.message.instructions;
     trades.push(
       ...instructions
-        .filter(
-          (instruction, index) =>
-            instructionIndex == index && this.isTradeInstruction(instruction),
-        )
+        .filter((instruction, index) => instructionIndex == index && this.isTradeInstruction(instruction))
         .map((instruction, index) =>
-          this.parseTradeInstruction(
-            instruction as PartiallyDecodedInstruction,
-            `${instructionIndex}-${index}`,
-          ),
+          this.parseTradeInstruction(instruction as PartiallyDecodedInstruction, `${instructionIndex}-${index}`)
         )
-        .filter((transfer): transfer is TradeInfo => transfer !== null),
+        .filter((transfer): transfer is TradeInfo => transfer !== null)
     );
 
     // inner instruction
@@ -72,13 +51,10 @@ export class MoonshotParser {
           .flatMap((set) =>
             set.instructions
               .map((instruction, index) =>
-                this.parseTradeInstruction(
-                  instruction as PartiallyDecodedInstruction,
-                  `${instructionIndex}-${index}`,
-                ),
+                this.parseTradeInstruction(instruction as PartiallyDecodedInstruction, `${instructionIndex}-${index}`)
               )
-              .filter((transfer): transfer is TradeInfo => transfer !== null),
-          ),
+              .filter((transfer): transfer is TradeInfo => transfer !== null)
+          )
       );
     }
 
@@ -87,19 +63,11 @@ export class MoonshotParser {
 
   public isTradeInstruction(instruction: any): boolean {
     const programId =
-      instruction.programId ||
-      this.txWithMeta.transaction.message.accountKeys[
-        instruction.programIdIndex
-      ];
-    return (
-      programId.toBase58() == DEX_PROGRAMS.MOONSHOT.id &&
-      instruction.accounts.length === 11
-    );
+      instruction.programId || this.txWithMeta.transaction.message.accountKeys[instruction.programIdIndex];
+    return programId.toBase58() == DEX_PROGRAMS.MOONSHOT.id && instruction.accounts.length === 11;
   }
 
-  private detectCollateralType(
-    accountKeys: ParsedMessageAccount[],
-  ): CollateralType {
+  private detectCollateralType(accountKeys: ParsedMessageAccount[]): CollateralType {
     if (accountKeys.some((key) => key.pubkey.toBase58() == TOKENS.USDC)) {
       return CollateralType.USDC;
     }
@@ -109,22 +77,17 @@ export class MoonshotParser {
     return CollateralType.SOL;
   }
 
-  private parseTradeInstruction(
-    instruction: any,
-    idx: string,
-  ): TradeInfo | null {
-    if (!("data" in instruction)) return null;
+  private parseTradeInstruction(instruction: any, idx: string): TradeInfo | null {
+    if (!('data' in instruction)) return null;
 
     const decodedData = base58Decode(instruction.data);
     const discriminator = decodedData.slice(0, 8);
     let tradeType: TradeType;
 
     if (Buffer.from(discriminator).equals(DISCRIMINATORS.MOONSHOT.BUY)) {
-      tradeType = "BUY";
-    } else if (
-      Buffer.from(discriminator).equals(DISCRIMINATORS.MOONSHOT.SELL)
-    ) {
-      tradeType = "SELL";
+      tradeType = 'BUY';
+    } else if (Buffer.from(discriminator).equals(DISCRIMINATORS.MOONSHOT.SELL)) {
+      tradeType = 'SELL';
     } else {
       return null;
     }
@@ -134,19 +97,9 @@ export class MoonshotParser {
     const collateralType = this.detectCollateralType(accountKeys);
 
     const collateralMint = this.getCollateralMint(collateralType);
-    const { tokenAmount, collateralAmount } = this.calculateAmounts(
-      moonshotTokenMint,
-      collateralMint,
-    );
+    const { tokenAmount, collateralAmount } = this.calculateAmounts(moonshotTokenMint, collateralMint);
 
-    return this.createTradeInfo(
-      tradeType,
-      tokenAmount,
-      collateralAmount,
-      moonshotTokenMint,
-      collateralMint,
-      idx,
-    );
+    return this.createTradeInfo(tradeType, tokenAmount, collateralAmount, moonshotTokenMint, collateralMint, idx);
   }
 
   private getCollateralMint(collateralType: CollateralType): string {
@@ -162,18 +115,11 @@ export class MoonshotParser {
 
   private calculateAmounts(tokenMint: string, collateralMint: string) {
     const tokenBalanceChanges = this.getTokenBalanceChanges(tokenMint);
-    const collateralBalanceChanges =
-      this.getTokenBalanceChanges(collateralMint);
+    const collateralBalanceChanges = this.getTokenBalanceChanges(collateralMint);
 
     return {
-      tokenAmount: this.createTokenAmount(
-        BigInt(Math.abs(Number(tokenBalanceChanges))),
-        tokenMint,
-      ),
-      collateralAmount: this.createTokenAmount(
-        BigInt(Math.abs(Number(collateralBalanceChanges))),
-        collateralMint,
-      ),
+      tokenAmount: this.createTokenAmount(BigInt(Math.abs(Number(tokenBalanceChanges))), tokenMint),
+      collateralAmount: this.createTokenAmount(BigInt(Math.abs(Number(collateralBalanceChanges))), collateralMint),
     };
   }
 
@@ -183,27 +129,19 @@ export class MoonshotParser {
     collateralAmount: TokenAmount,
     moonshotTokenMint: string,
     collateralMint: string,
-    idx: string,
+    idx: string
   ): TradeInfo {
     return {
       type: tradeType,
       inputToken: {
-        mint: tradeType == "BUY" ? moonshotTokenMint : collateralMint,
-        amount:
-          tradeType == "BUY" ? tokenAmount.uiAmount : collateralAmount.uiAmount,
-        decimals:
-          tradeType == "BUY" ? tokenAmount.decimals : collateralAmount.decimals,
+        mint: tradeType == 'BUY' ? moonshotTokenMint : collateralMint,
+        amount: tradeType == 'BUY' ? tokenAmount.uiAmount : collateralAmount.uiAmount,
+        decimals: tradeType == 'BUY' ? tokenAmount.decimals : collateralAmount.decimals,
       },
       outputToken: {
-        mint: tradeType == "SELL" ? moonshotTokenMint : collateralMint,
-        amount:
-          tradeType == "SELL"
-            ? tokenAmount.uiAmount
-            : collateralAmount.uiAmount,
-        decimals:
-          tradeType == "SELL"
-            ? tokenAmount.decimals
-            : collateralAmount.decimals,
+        mint: tradeType == 'SELL' ? moonshotTokenMint : collateralMint,
+        amount: tradeType == 'SELL' ? tokenAmount.uiAmount : collateralAmount.uiAmount,
+        decimals: tradeType == 'SELL' ? tokenAmount.decimals : collateralAmount.decimals,
       },
       user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
       programId: DEX_PROGRAMS.MOONSHOT.id,
@@ -222,7 +160,7 @@ export class MoonshotParser {
     if (mint == TOKENS.SOL) {
       const meta = this.txWithMeta.meta;
       if (!meta?.postBalances?.[0] || !meta?.preBalances?.[0]) {
-        throw new Error("Insufficient balance information for SOL");
+        throw new Error('Insufficient balance information for SOL');
       }
       return BigInt(meta.postBalances[0] - meta.preBalances[0]);
     }
@@ -246,7 +184,7 @@ export class MoonshotParser {
     });
 
     if (!balanceFound) {
-      throw new Error("Could not find balance for specified mint and signer");
+      throw new Error('Could not find balance for specified mint and signer');
     }
 
     return postAmount - preAmount;
@@ -254,10 +192,8 @@ export class MoonshotParser {
 
   private getTokenDecimals(mint: string): number {
     const decimals = TOKEN_DECIMALS[mint];
-    if (typeof decimals === "undefined") {
-      const tokenBalance = this.txWithMeta.meta?.preTokenBalances?.find(
-        (balance) => balance.mint === mint,
-      );
+    if (typeof decimals === 'undefined') {
+      const tokenBalance = this.txWithMeta.meta?.preTokenBalances?.find((balance) => balance.mint === mint);
       if (tokenBalance?.uiTokenAmount.decimals) {
         return tokenBalance.uiTokenAmount.decimals;
       }

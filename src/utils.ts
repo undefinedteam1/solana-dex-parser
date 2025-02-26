@@ -1,12 +1,10 @@
-import { ParsedTransactionWithMeta } from "@solana/web3.js";
-import { SYSTEM_PROGRAMS, DEX_PROGRAMS, TOKENS } from "./constants";
-import { DexInfo, PoolEventType } from "./types";
+import { ParsedTransactionWithMeta } from '@solana/web3.js';
+import { SYSTEM_PROGRAMS, DEX_PROGRAMS, TOKENS } from './constants';
+import { DexInfo, PoolEventType } from './types';
 
 export const getProgramName = (programId: string): string => {
-  const dexProgram = Object.values(DEX_PROGRAMS).find(
-    (dex) => dex.id === programId,
-  );
-  return dexProgram ? dexProgram.name : "Unknown";
+  const dexProgram = Object.values(DEX_PROGRAMS).find((dex) => dex.id === programId);
+  return dexProgram ? dexProgram.name : 'Unknown';
 };
 
 export const getDexInfo = (tx: ParsedTransactionWithMeta): DexInfo => {
@@ -14,11 +12,11 @@ export const getDexInfo = (tx: ParsedTransactionWithMeta): DexInfo => {
   let mainProgramId: string | undefined;
 
   for (const ix of instructions) {
-    if (!("programId" in ix)) continue;
+    if (!('programId' in ix)) continue;
 
     const programId = ix.programId.toString();
     if (SYSTEM_PROGRAMS.includes(programId)) continue;
-    if ("parsed" in ix && ix.parsed?.type === "createIdempotent") continue;
+    if ('parsed' in ix && ix.parsed?.type === 'createIdempotent') continue;
 
     if (programId === DEX_PROGRAMS.JUPITER.id) {
       return {
@@ -31,9 +29,7 @@ export const getDexInfo = (tx: ParsedTransactionWithMeta): DexInfo => {
       mainProgramId = programId;
     }
 
-    const dexProgram = Object.values(DEX_PROGRAMS).find(
-      (dex) => dex.id === programId,
-    );
+    const dexProgram = Object.values(DEX_PROGRAMS).find((dex) => dex.id === programId);
 
     if (dexProgram) {
       return {
@@ -54,7 +50,7 @@ export const getBalanceChanges = (tx: ParsedTransactionWithMeta) => {
 };
 
 export const mapBalances = (
-  balances: NonNullable<ParsedTransactionWithMeta["meta"]>["preTokenBalances"],
+  balances: NonNullable<ParsedTransactionWithMeta['meta']>['preTokenBalances']
 ): Record<string, Record<string, number>> => {
   const mapped: Record<string, Record<string, number>> = {};
 
@@ -65,19 +61,14 @@ export const mapBalances = (
       if (!mapped[balance.owner]) {
         mapped[balance.owner] = {};
       }
-      mapped[balance.owner][balance.mint] = Number(
-        balance.uiTokenAmount?.uiAmount || 0,
-      );
+      mapped[balance.owner][balance.mint] = Number(balance.uiTokenAmount?.uiAmount || 0);
     }
   }
 
   return mapped;
 };
 
-export const getTokenDecimals = (
-  tx: ParsedTransactionWithMeta,
-  mint: string,
-): number => {
+export const getTokenDecimals = (tx: ParsedTransactionWithMeta, mint: string): number => {
   const tokenBalance = tx.meta?.preTokenBalances?.find((b) => b.mint === mint);
   return tokenBalance?.uiTokenAmount?.decimals || 9;
 };
@@ -86,11 +77,7 @@ export const isSupportedToken = (mint: string): boolean => {
   return Object.values(TOKENS).includes(mint);
 };
 
-export const getPoolEventBase = (
-  type: PoolEventType,
-  tx: ParsedTransactionWithMeta,
-  programId: string,
-) => {
+export const getPoolEventBase = (type: PoolEventType, tx: ParsedTransactionWithMeta, programId: string) => {
   return {
     user: tx.transaction.message.accountKeys[0].pubkey.toBase58(),
     type,
@@ -103,7 +90,5 @@ export const getPoolEventBase = (
 };
 
 export const hexToUint8Array = (hex: string) => {
-  return new Uint8Array(
-    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
-  );
+  return new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
 };

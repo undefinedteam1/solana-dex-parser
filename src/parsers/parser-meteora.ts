@@ -69,9 +69,12 @@ export class MeteoraParser {
       .filter((set) => set.index == instructionIndex)
       .flatMap((set) =>
         set.instructions
-          .map((instruction, index) =>
-            this.processTransferInstruction(instruction as ParsedInstruction, `${instructionIndex}-${index}`)
-          )
+          .map((instruction, index) => {
+            if (!this.isLiquidityEvent(instruction)) {
+              return this.processTransferInstruction(instruction as ParsedInstruction, `${instructionIndex}-${index}`);
+            }
+            return null;
+          })
           .filter((transfer): transfer is TransferData => transfer !== null)
       );
   }

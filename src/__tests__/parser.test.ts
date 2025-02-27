@@ -43,9 +43,9 @@ describe('Parser', () => {
 
   describe('Dex', () => {
     describe('parseTransaction', () => {
-      // ['3UAjspvWCedv954FnSyd68R82b8qBJoPD8QGADvR7jpuJx39vtC8MxMErfQaB8Ed8F9nh6sT6JB6odBVLaDA9hZH',
-      //   '5kaAWK5X9DdMmsWm6skaUXLd6prFisuYJavd9B62A941nRGcrmwvncg3tRtUfn7TcMLsrrmjCChdEjK3sjxS6YG9',
-      //   'afUCiFQ6amxuxx2AAwsghLt7Q9GYqHfZiF4u3AHhAzs8p1ThzmrtSUFMbcdJy8UnQNTa35Fb1YqxR6F9JMZynYp'
+      // ['125MRda3h1pwGZpPRwSRdesTPiETaKvy4gdiizyc3SWAik4cECqKGw2gggwyA1sb2uekQVkupA2X9S4vKjbstxx3',
+      //   '4uuw76SPksFw6PvxLFkG9jRyReV1F4EyPYNc3DdSECip8tM22ewqGWJUaRZ1SJEZpuLJz1qPTEPb2es8Zuegng9Z',
+      //   '33VnDBtrFawBRYwDqomdsH57GL83B7eWTQN5mnga9F1whyMzcpdmURnPkAjqDte8Ja9EcsGcejhDYcUKkA9sE4HG'
       // ].forEach(async (signature) => {
         Object.values(TEST_TRANSACTIONS).forEach(async (signature) => {
         it(signature, async () => {
@@ -58,7 +58,7 @@ describe('Parser', () => {
           });
           const trades = await parser.parseTrades(tx!);
 
-          console.log("Trades:", trades);
+          // console.log("Trades:", trades);
           expect(trades.length).toBeGreaterThan(0);
         });
       }

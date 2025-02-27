@@ -17,17 +17,8 @@ export const getProgramName = (programId: string): string =>
  */
 export const getDexInfo = (tx: ParsedTransactionWithMeta): DexInfo => {
   const instructions = tx.transaction.message.instructions;
+  let mainProgramId: string | undefined;
 
-  // Check for Jupiter first (priority DEX)
-  const jupiterId = DEX_PROGRAMS.JUPITER.id;
-  if (instructions.some((ix) => 'programId' in ix && ix.programId.toString() === jupiterId)) {
-    return {
-      programId: jupiterId,
-      amm: DEX_PROGRAMS.JUPITER.name,
-    };
-  }
-
-  // Find the first valid program that isn't a system program or idempotent creation
   for (const ix of instructions) {
     if (!('programId' in ix)) continue;
 
@@ -35,20 +26,28 @@ export const getDexInfo = (tx: ParsedTransactionWithMeta): DexInfo => {
     if (SYSTEM_PROGRAMS.includes(programId)) continue;
     if ('parsed' in ix && ix.parsed?.type === 'createIdempotent') continue;
 
-    // Check if it's a known DEX program
+    if (programId === DEX_PROGRAMS.JUPITER.id) {
+      return {
+        programId: DEX_PROGRAMS.JUPITER.id,
+        amm: DEX_PROGRAMS.JUPITER.name,
+      };
+    }
+
+    if (!mainProgramId) {
+      mainProgramId = programId;
+    }
+
     const dexProgram = Object.values(DEX_PROGRAMS).find((dex) => dex.id === programId);
+
     if (dexProgram) {
       return {
         programId: dexProgram.id,
         amm: dexProgram.name,
       };
     }
-
-    // If we got here, we found a non-system program that isn't a known DEX
-    return { programId };
   }
 
-  return {};
+  return mainProgramId ? { programId: mainProgramId } : {};
 };
 
 /**
@@ -121,3 +120,7 @@ export const getPoolEventBase = (type: PoolEventType, tx: ParsedTransactionWithM
  */
 export const hexToUint8Array = (hex: string): Uint8Array =>
   new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
+
+export const notSystemProgram = (instruction: any): boolean => {
+  return !SYSTEM_PROGRAMS.includes(instruction.programId.toBase58());
+};

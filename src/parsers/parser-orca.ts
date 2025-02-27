@@ -1,8 +1,9 @@
 import { ParsedInstruction, ParsedTransactionWithMeta } from '@solana/web3.js';
-import { DEX_PROGRAMS } from '../constants';
+import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
 import { DexInfo, TokenInfo, TradeInfo, TransferData } from '../types';
 import { TokenInfoExtractor } from '../token-extractor';
 import { processSwapData, isTransfer, processTransfer } from '../transfer-utils';
+import base58 from 'bs58';
 
 export class OrcaParser {
   private readonly splTokenMap: Map<string, TokenInfo>;
@@ -42,7 +43,15 @@ export class OrcaParser {
 
   public isTradeInstruction(instruction: any): boolean {
     const programId = instruction.programId.toBase58();
-    return DEX_PROGRAMS.ORCA.id == programId;
+    return DEX_PROGRAMS.ORCA.id == programId && this.notLiquidityEvent(instruction);
+  }
+
+  private notLiquidityEvent(instruction: any): boolean {
+    if (instruction.data) {
+      const instructionType = base58.decode(instruction.data as string).slice(0, 8);
+      return !Object.values(DISCRIMINATORS.ORCA).some((it) => instructionType.equals(it));
+    }
+    return true;
   }
 
   private processOrcaSwaps(instructionIndex: number): TransferData[] {
@@ -53,9 +62,11 @@ export class OrcaParser {
       .filter((set) => set.index === instructionIndex)
       .flatMap((set) =>
         set.instructions
-          .map((instruction, index) =>
-            this.processTransferInstruction(instruction as ParsedInstruction, `${instructionIndex}-${index}`)
-          )
+          .map((instruction, index) => {
+            return this.notLiquidityEvent(instruction)
+              ? this.processTransferInstruction(instruction as ParsedInstruction, `${instructionIndex}-${index}`)
+              : null;
+          })
           .filter((transfer): transfer is TransferData => transfer !== null)
       );
   }

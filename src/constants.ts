@@ -154,6 +154,9 @@ export const DISCRIMINATORS = {
       removeLiquidityByRange: new Uint8Array([26, 82, 102, 152, 240, 74, 105, 26]), // removeLiquidityByRange
       removeAllLiquidity: new Uint8Array([10, 51, 61, 35, 112, 105, 24, 85]), // removeAllLiquidity
     },
+    OTHERS: {
+      claimFee: new Uint8Array([169, 32, 79, 137, 136, 232, 70, 137]), //claimFee
+    },
   },
   METEORA_POOLS: {
     CREATE: new Uint8Array([7, 166, 138, 171, 206, 171, 236, 244]), // initializePermissionlessConstantProductPoolWithConfig
@@ -166,5 +169,7 @@ export const DISCRIMINATORS = {
     ADD_LIQUIDITY: new Uint8Array([46, 156, 243, 118, 13, 205, 251, 178]), // increaseLiquidity
     ADD_LIQUIDITY2: new Uint8Array([133, 29, 89, 223, 69, 238, 176, 10]), // increaseLiquidityV2
     REMOVE_LIQUIDITY: new Uint8Array([160, 38, 208, 111, 104, 91, 44, 1]), // decreaseLiquidity
+    OTHER1: new Uint8Array([164, 152, 207, 99, 30, 186, 19, 182]), // collectFees
+    OTHER2: new Uint8Array([70, 5, 132, 87, 86, 235, 177, 34]), //collectReward
   },
 } as const;

@@ -72,16 +72,16 @@ export class DexParser {
     const trades: TradeInfo[] = [];
     const ParserClass = this.parserMap[dexInfo.programId];
     if (ParserClass) {
-      const parser = new ParserClass(tx, dexInfo);
+      const parser = new ParserClass(tx, dexInfo); // Special protocols, Router Dex and Bots
       trades.push(...parser.processTrades());
     }
 
     if (trades.length == 0) {
-      trades.push(...this.parseInstructions(tx, dexInfo, true));
+      trades.push(...this.parseInstructions(tx, dexInfo, true)); // Inner instructions
     }
 
     if (trades.length == 0) {
-      trades.push(...this.parseInstructions(tx, dexInfo, false));
+      trades.push(...this.parseInstructions(tx, dexInfo, false)); // Outer instructions
     }
 
     if (trades.length === 0 && config?.tryUnknowDEX == true) {

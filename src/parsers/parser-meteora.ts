@@ -45,20 +45,20 @@ export class MeteoraParser {
     const programId = instruction.programId.toBase58();
     return (
       [DEX_PROGRAMS.METEORA.id, DEX_PROGRAMS.METEORA_POOLS.id].includes(programId) &&
-      this.isLiquidityEvent(instruction) == false
+      this.notLiquidityEvent(instruction)
     );
   }
 
-  private isLiquidityEvent(instruction: any): boolean {
+  private notLiquidityEvent(instruction: any): boolean {
     if (instruction.data) {
       const instructionType = base58.decode(instruction.data as string).slice(0, 8);
       const a = Object.values(DISCRIMINATORS.METEORA_DLMM)
         .flatMap((it) => Object.values(it))
-        .find((it) => instructionType.equals(it));
-      const b = Object.values(DISCRIMINATORS.METEORA_POOLS).find((it) => instructionType.equals(it));
-      return a != undefined || b != undefined;
+        .some((it) => instructionType.equals(it));
+      const b = Object.values(DISCRIMINATORS.METEORA_POOLS).some((it) => instructionType.equals(it));
+      return !a && !b;
     }
-    return false;
+    return true;
   }
 
   private processMeteoraSwaps(instructionIndex: number): TransferData[] {
@@ -69,12 +69,11 @@ export class MeteoraParser {
       .filter((set) => set.index == instructionIndex)
       .flatMap((set) =>
         set.instructions
-          .map((instruction, index) => {
-            if (!this.isLiquidityEvent(instruction)) {
-              return this.processTransferInstruction(instruction as ParsedInstruction, `${instructionIndex}-${index}`);
-            }
-            return null;
-          })
+          .map((instruction, index) =>
+            this.notLiquidityEvent(instruction)
+              ? this.processTransferInstruction(instruction as ParsedInstruction, `${instructionIndex}-${index}`)
+              : null
+          )
           .filter((transfer): transfer is TransferData => transfer !== null)
       );
   }

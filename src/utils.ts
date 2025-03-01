@@ -1,6 +1,6 @@
 import { ParsedTransactionWithMeta } from '@solana/web3.js';
 import { SYSTEM_PROGRAMS, DEX_PROGRAMS, TOKENS } from './constants';
-import { DexInfo, PoolEventType } from './types';
+import { DexInfo, PoolEventType, TradeType } from './types';
 
 /**
  * Get the name of a program by its ID
@@ -124,3 +124,14 @@ export const hexToUint8Array = (hex: string): Uint8Array =>
 export const notSystemProgram = (instruction: any): boolean => {
   return !SYSTEM_PROGRAMS.includes(instruction.programId.toBase58());
 };
+
+export const absBigInt = (value: bigint): bigint => {
+  return value < 0n ? -value : value
+}
+
+export const getTradeType = (inMint: string, outMint: string): TradeType => {
+  if (inMint == TOKENS.SOL) return 'BUY';
+  if (outMint == TOKENS.SOL) return 'SELL';
+  if (Object.values(TOKENS).includes(inMint)) return 'BUY';
+  return 'SELL'
+}

@@ -22,7 +22,7 @@ export class MeteoraParser {
     return this.txWithMeta.transaction.message.instructions.reduce(
       (trades: TradeInfo[], instruction: any, index: number) => {
         if (this.isTradeInstruction(instruction)) {
-          const instructionTrades = this.processInstructionTrades(index);
+          const instructionTrades = this.processInstructionTrades(instruction, index);
           trades.push(...instructionTrades);
         }
         return trades;
@@ -31,10 +31,16 @@ export class MeteoraParser {
     );
   }
 
-  public processInstructionTrades(instructionIndex: number): TradeInfo[] {
+  public processInstructionTrades(instruction: any, outerIndex: number, innerIndex?: number): TradeInfo[] {
     try {
-      const transfers = this.processMeteoraSwaps(instructionIndex);
-      return transfers.length ? [processSwapData(this.txWithMeta, transfers, this.dexInfo)] : [];
+      const accounts = instruction.accounts?.map((it: { toBase58: () => any; }) => it.toBase58());
+      const curIdx = innerIndex === undefined ? outerIndex.toString() : `${outerIndex}-${innerIndex}`;
+      const transfers = this.processMeteoraSwaps(outerIndex).filter((it) => accounts.includes(it.info.destination) && it.idx >= curIdx);
+      if (transfers.length > 0) {
+        const trade = processSwapData(this.txWithMeta, transfers, this.dexInfo);
+        if (trade) return [trade];
+      }
+      return [];
     } catch (error) {
       console.error('Error processing Meteora trades:', error);
       return [];

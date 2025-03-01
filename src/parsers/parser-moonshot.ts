@@ -1,43 +1,38 @@
 import { ParsedMessageAccount, ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
 import { decode as base58Decode } from 'bs58';
-import { DEX_PROGRAMS, DISCRIMINATORS, TOKEN_DECIMALS, TOKENS } from '../constants';
+import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
 import { convertToUiAmount, DexInfo, TokenAmount, TradeInfo, TradeType } from '../types';
-
-enum CollateralType {
-  SOL,
-  USDC,
-  USDT,
-}
+import { absBigInt, getTokenDecimals } from '../utils';
 
 export class MoonshotParser {
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
     private readonly dexInfo: DexInfo
-  ) {}
+  ) { }
 
   public processTrades(): TradeInfo[] {
     const trades: TradeInfo[] = [];
     const instructions = this.txWithMeta.transaction.message.instructions;
 
-    instructions.forEach((it: any, index: number) => {
-      if (this.isTradeInstruction(it)) {
-        trades.push(...this.processInstructionTrades(index));
+    instructions.forEach((instruction: any, index: number) => {
+      if (this.isTradeInstruction(instruction)) {
+        trades.push(...this.processInstructionTrades(instruction, index));
       }
     });
 
     return trades;
   }
 
-  public processInstructionTrades(instructionIndex: number): TradeInfo[] {
+  public processInstructionTrades(instruction: any, outerIndex: number, innerIndex?: number): TradeInfo[] {
     const trades: TradeInfo[] = [];
 
     // outer instruction
     const instructions = this.txWithMeta.transaction.message.instructions;
     trades.push(
       ...instructions
-        .filter((instruction, index) => instructionIndex == index && this.isTradeInstruction(instruction))
+        .filter((instruction, index) => outerIndex == index && this.isTradeInstruction(instruction))
         .map((instruction, index) =>
-          this.parseTradeInstruction(instruction as PartiallyDecodedInstruction, `${instructionIndex}-${index}`)
+          this.parseTradeInstruction(instruction as PartiallyDecodedInstruction, `${outerIndex}-${index}`)
         )
         .filter((transfer): transfer is TradeInfo => transfer !== null)
     );
@@ -47,11 +42,11 @@ export class MoonshotParser {
     if (innerInstructions) {
       trades.push(
         ...innerInstructions
-          .filter((set) => set.index === instructionIndex)
+          .filter((set) => set.index === outerIndex)
           .flatMap((set) =>
             set.instructions
               .map((instruction, index) =>
-                this.parseTradeInstruction(instruction as PartiallyDecodedInstruction, `${instructionIndex}-${index}`)
+                this.parseTradeInstruction(instruction as PartiallyDecodedInstruction, `${outerIndex}-${index}`)
               )
               .filter((transfer): transfer is TradeInfo => transfer !== null)
           )
@@ -67,14 +62,14 @@ export class MoonshotParser {
     return programId.toBase58() == DEX_PROGRAMS.MOONSHOT.id && instruction.accounts.length === 11;
   }
 
-  private detectCollateralType(accountKeys: ParsedMessageAccount[]): CollateralType {
+  private detectCollateralMint(accountKeys: ParsedMessageAccount[]): string {
     if (accountKeys.some((key) => key.pubkey.toBase58() == TOKENS.USDC)) {
-      return CollateralType.USDC;
+      return TOKENS.USDC;
     }
     if (accountKeys.some((key) => key.pubkey.toBase58() == TOKENS.USDT)) {
-      return CollateralType.USDT;
+      return TOKENS.USDT;
     }
-    return CollateralType.SOL;
+    return TOKENS.SOL;
   }
 
   private parseTradeInstruction(instruction: any, idx: string): TradeInfo | null {
@@ -92,25 +87,12 @@ export class MoonshotParser {
       return null;
     }
 
-    const moonshotTokenMint = instruction.accounts[6];
+    const moonshotTokenMint = instruction.accounts[6].toBase58(); // meme
     const accountKeys = this.txWithMeta.transaction.message.accountKeys;
-    const collateralType = this.detectCollateralType(accountKeys);
-
-    const collateralMint = this.getCollateralMint(collateralType);
+    const collateralMint = this.detectCollateralMint(accountKeys);
     const { tokenAmount, collateralAmount } = this.calculateAmounts(moonshotTokenMint, collateralMint);
 
     return this.createTradeInfo(tradeType, tokenAmount, collateralAmount, moonshotTokenMint, collateralMint, idx);
-  }
-
-  private getCollateralMint(collateralType: CollateralType): string {
-    switch (collateralType) {
-      case CollateralType.USDC:
-        return TOKENS.USDC;
-      case CollateralType.USDT:
-        return TOKENS.USDT;
-      default:
-        return TOKENS.SOL;
-    }
   }
 
   private calculateAmounts(tokenMint: string, collateralMint: string) {
@@ -118,8 +100,8 @@ export class MoonshotParser {
     const collateralBalanceChanges = this.getTokenBalanceChanges(collateralMint);
 
     return {
-      tokenAmount: this.createTokenAmount(BigInt(Math.abs(Number(tokenBalanceChanges))), tokenMint),
-      collateralAmount: this.createTokenAmount(BigInt(Math.abs(Number(collateralBalanceChanges))), collateralMint),
+      tokenAmount: this.createTokenAmount(absBigInt(tokenBalanceChanges), tokenMint),
+      collateralAmount: this.createTokenAmount(absBigInt(collateralBalanceChanges), collateralMint),
     };
   }
 
@@ -134,14 +116,14 @@ export class MoonshotParser {
     return {
       type: tradeType,
       inputToken: {
+        mint: tradeType == 'BUY' ? collateralMint : moonshotTokenMint,
+        amount: tradeType == 'BUY' ? collateralAmount.uiAmount : tokenAmount.uiAmount,
+        decimals: tradeType == 'BUY' ? collateralAmount.decimals : tokenAmount.decimals,
+      },
+      outputToken: {
         mint: tradeType == 'BUY' ? moonshotTokenMint : collateralMint,
         amount: tradeType == 'BUY' ? tokenAmount.uiAmount : collateralAmount.uiAmount,
         decimals: tradeType == 'BUY' ? tokenAmount.decimals : collateralAmount.decimals,
-      },
-      outputToken: {
-        mint: tradeType == 'SELL' ? moonshotTokenMint : collateralMint,
-        amount: tradeType == 'SELL' ? tokenAmount.uiAmount : collateralAmount.uiAmount,
-        decimals: tradeType == 'SELL' ? tokenAmount.decimals : collateralAmount.decimals,
       },
       user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
       programId: DEX_PROGRAMS.MOONSHOT.id,
@@ -190,20 +172,9 @@ export class MoonshotParser {
     return postAmount - preAmount;
   }
 
-  private getTokenDecimals(mint: string): number {
-    const decimals = TOKEN_DECIMALS[mint];
-    if (typeof decimals === 'undefined') {
-      const tokenBalance = this.txWithMeta.meta?.preTokenBalances?.find((balance) => balance.mint === mint);
-      if (tokenBalance?.uiTokenAmount.decimals) {
-        return tokenBalance.uiTokenAmount.decimals;
-      }
-      return 9;
-    }
-    return decimals;
-  }
 
   private createTokenAmount(amount: bigint, mint: string): TokenAmount {
-    const decimals = this.getTokenDecimals(mint);
+    const decimals = getTokenDecimals(this.txWithMeta, mint);
     return {
       amount,
       uiAmount: convertToUiAmount(amount, decimals),

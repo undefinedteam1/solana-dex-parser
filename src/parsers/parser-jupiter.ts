@@ -2,8 +2,10 @@ import { ParsedTransactionWithMeta, PartiallyDecodedInstruction, PublicKey } fro
 import bs58 from 'bs58';
 import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
 import { deserializeUnchecked } from 'borsh';
-import { convertToUiAmount, DexInfo, TradeInfo } from '../types';
+import { convertToUiAmount, DexInfo, TradeInfo, TradeType } from '../types';
 import { TokenInfoExtractor } from '../token-extractor';
+import { getLPTransfers } from '../transfer-utils';
+import { getTradeType } from '../utils';
 
 export interface JupiterSwapEvent {
   amm: PublicKey;
@@ -91,7 +93,7 @@ export class JupiterParser {
     return this.txWithMeta.transaction.message.instructions.reduce(
       (trades: TradeInfo[], instruction: any, index: number) => {
         if (this.isTradeInstruction(instruction)) {
-          const instructionTrades = this.processInstructionTrades(index);
+          const instructionTrades = this.processInstructionTrades(instruction, index);
           trades.push(...instructionTrades);
         }
         return trades;
@@ -100,9 +102,10 @@ export class JupiterParser {
     );
   }
 
-  public processInstructionTrades(instructionIndex: number): TradeInfo[] {
+  public processInstructionTrades(instruction: any, outerIndex: number, innerIndex?: number): TradeInfo[] {
     try {
-      const events = this.processJupiterSwaps(instructionIndex);
+      const curIdx = innerIndex === undefined ? outerIndex.toString() : `${outerIndex}-${innerIndex}`;
+      const events = this.processJupiterSwaps(outerIndex).filter((it) => it.idx >= curIdx);
       const data = this.processSwapData(events);
       return data ? [data] : [];
     } catch (error) {
@@ -232,11 +235,11 @@ export class JupiterParser {
     const [inMint, inAmount] = inMintEntry;
     const [outMint, outAmount] = outMintEntry;
     const inMintDecimals = intermediateInfo.decimals.get(inMint) || 0;
-    const outMintDecimals = intermediateInfo.decimals.get(inMint) || 0;
+    const outMintDecimals = intermediateInfo.decimals.get(outMint) || 0;
     // Determine signer based on DCA program presence
     const signerIndex = this.containsDCAProgram() ? 2 : 0;
     const signer = this.txWithMeta.transaction.message.accountKeys[signerIndex].pubkey.toBase58();
-    const tradeType = Object.values(TOKENS).includes(inMint) ? 'BUY' : 'SELL';
+    const tradeType = getTradeType(inMint, outMint);
     return {
       type: tradeType,
       inputToken: {

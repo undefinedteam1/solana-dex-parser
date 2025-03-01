@@ -18,7 +18,7 @@ export class PumpfunParser {
     return events.length > 0 ? this.processSwapData(events) : [];
   }
 
-  public processInstructionTrades(instructionIndex: number): TradeInfo[] {
+  public processInstructionTrades(instruction: any, instructionIndex: number): TradeInfo[] {
     const events = this.parseInnerInstructions(instructionIndex);
     return this.processSwapData(events);
   }

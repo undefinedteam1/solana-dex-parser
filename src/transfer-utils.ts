@@ -2,7 +2,7 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { ParsedInstruction, ParsedTransactionWithMeta } from '@solana/web3.js';
 import { TOKENS, DEX_PROGRAMS } from './constants';
 import { TokenInfo, TransferData, convertToUiAmount, TradeInfo, DexInfo } from './types';
-import { isSupportedToken } from './utils';
+import { getTradeType, isSupportedToken } from './utils';
 
 export const isTransferCheck = (instruction: ParsedInstruction): boolean => {
   return (
@@ -28,7 +28,8 @@ export const processTransfer = (
   const { info } = instruction.parsed;
   if (!info) return null;
 
-  const mint = splTokenMap.get(info.destination)?.mint;
+  let mint = splTokenMap.get(info.destination)?.mint;
+  if (!mint) mint = splTokenMap.get(info.source)?.mint;
   if (!mint) return null;
 
   const decimals = splDecimalsMap.get(mint);
@@ -124,18 +125,18 @@ export const processSwapData = (
   txWithMeta: ParsedTransactionWithMeta,
   transfers: TransferData[],
   dexInfo: DexInfo
-): TradeInfo => {
+): TradeInfo | null => {
   if (!transfers.length) {
     throw new Error('No swap data provided');
   }
 
   const uniqueTokens = extractUniqueTokens(transfers);
   if (uniqueTokens.length < 2) {
-    throw new Error(`Insufficient unique tokens for swap > ${txWithMeta.transaction.signatures[0]}`);
+    throw (`Insufficient unique tokens for swap > ${txWithMeta.transaction.signatures[0]}`);
   }
 
   const { inputToken, outputToken } = calculateTokenAmounts(transfers, uniqueTokens);
-  const tradeType = Object.values(TOKENS).includes(inputToken.mint) ? 'BUY' : 'SELL';
+  const tradeType = getTradeType(inputToken.mint, outputToken.mint);
 
   let signer = txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58();
 
@@ -220,10 +221,10 @@ export const sumTokenAmounts = (transfers: TransferData[], inputMint: string, ou
 export const getTransferTokenInfo = (transfer: TransferData): TokenInfo | null => {
   return transfer?.info
     ? {
-        mint: transfer.info.mint,
-        amount: transfer.info.tokenAmount.uiAmount,
-        decimals: transfer.info.tokenAmount.decimals,
-      }
+      mint: transfer.info.mint,
+      amount: transfer.info.tokenAmount.uiAmount,
+      decimals: transfer.info.tokenAmount.decimals,
+    }
     : null;
 };
 
@@ -249,7 +250,6 @@ export const processTransferInnerInstruction = (
             splDecimalsMap,
             extraTypes
           );
-
           return items;
         })
         .filter((transfer): transfer is TransferData => transfer !== null)
@@ -286,12 +286,13 @@ export const processTransferInstruction = (
 /**
  * Sort and get LP tokens
  * make sure token0 is SPL Token, token1 is SOL/USDC/USDT
- * SOL,USDT
- * SOL,DDD
- * USDC,USDT/DDD
+ * SOL,USDT > buy
+ * SOL,DDD > buy
+ * USDC,USDT/DDD > buy
  * USDT,USDC
- * USDC,SOL
- * USDT,SOL
+ * DDD,USDC > sell
+ * USDC,SOL > sell
+ * USDT,SOL > sell
  * @param transfers
  * @returns
  */

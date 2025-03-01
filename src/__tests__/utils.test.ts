@@ -8,7 +8,7 @@ describe('Utils', () => {
     it('Get discriminator', async () => {
       const hex =
         // "01fecbdbb8670000000000ca9a3b0000000000203d88792d0000";
-        'a9204f8988e84689';
+        '1a526698f04a691a85fdffff94fdffff1027';
       const data = hexToUint8Array(hex);
 
       console.log(data.slice(0, 8));

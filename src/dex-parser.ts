@@ -1,7 +1,7 @@
 import { Connection, ParsedTransactionWithMeta } from '@solana/web3.js';
 import { DEX_PROGRAMS } from './constants';
 import { DexInfo, ParseConfig, PoolEvent, TradeInfo } from './types';
-import { getDexInfo } from './utils';
+import { getDexInfo, getProgramName } from './utils';
 import {
   MoonshotParser,
   MeteoraParser,
@@ -20,7 +20,7 @@ type ParserConstructor = new (
   dexInfo: DexInfo
 ) => {
   processTrades(): TradeInfo[];
-  processInstructionTrades?(index: number): TradeInfo[];
+  processInstructionTrades?(instruction: any, outerIndex: number, innerIndex?: number): TradeInfo[];
   isTradeInstruction(instruction: any): boolean;
 };
 
@@ -52,7 +52,7 @@ export class DexParser {
     [DEX_PROGRAMS.ORCA.id]: OrcaLiquidityParser,
   };
 
-  constructor(private connection: Connection) {}
+  constructor(private connection: Connection) { }
 
   public async parseTransaction(signature: string, config?: ParseConfig): Promise<TradeInfo[]> {
     const tx = await this.connection.getParsedTransaction(signature, {
@@ -108,20 +108,25 @@ export class DexParser {
     const trades: TradeInfo[] = [];
     const processedProtocols = new Set<string>();
 
-    tx.transaction.message.instructions.forEach((instruction: any, index: number) => {
+    tx.transaction.message.instructions.forEach((instruction: any, outerIndex: number) => {
       if (dexInfo.programId !== instruction.programId.toBase58()) return;
 
-      const processInstruction = (programId: string, isInner: boolean) => {
+      const processInstruction = (programId: string, outerIndex: number, innerIndex?: number) => {
         if (processedProtocols.has(programId)) return;
         processedProtocols.add(programId);
 
         const ParserClass = this.parserMap[programId];
         if (!ParserClass) return;
 
-        const parser = new ParserClass(tx, dexInfo);
+        const parser = new ParserClass(tx, { ...dexInfo, amm: dexInfo.amm || getProgramName(programId) });
         if (parser.processInstructionTrades) {
-          if (isInner || (!isInner && parser.isTradeInstruction && parser.isTradeInstruction(instruction))) {
-            trades.push(...parser.processInstructionTrades(index));
+          if (innerIndex == undefined) {
+            if (parser.isTradeInstruction && parser.isTradeInstruction(instruction)) {
+              trades.push(...parser.processInstructionTrades(instruction, outerIndex));
+            }
+          }
+          else {
+            trades.push(...parser.processInstructionTrades(instruction, outerIndex, innerIndex));
           }
         }
       };
@@ -131,14 +136,14 @@ export class DexParser {
         if (!innerInstructions) return;
 
         innerInstructions
-          .filter((set) => set.index === index)
+          .filter((set) => set.index === outerIndex)
           .forEach((set) => {
-            set.instructions.forEach((innerInstruction) => {
-              processInstruction(innerInstruction.programId.toBase58(), isInner);
+            set.instructions.forEach((innerInstruction, innerIdx) => {
+              processInstruction(innerInstruction.programId.toBase58(), outerIndex, innerIdx);
             });
           });
       } else {
-        processInstruction(instruction.programId.toBase58(), isInner);
+        processInstruction(instruction.programId.toBase58(), outerIndex);
       }
     });
 

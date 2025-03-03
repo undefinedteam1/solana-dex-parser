@@ -292,7 +292,7 @@ export interface PumpfunEvent {
 ## Note
 - Jupiter Swap is obtained by parsing Instruction information, and the output only contains a transaction record after the sum (excluding the specific route swap record).
 - Other aggregators, such as OKX, output multiple swap transaction records (swap records per amm).
-- Except for specially specified parsers(Jupiter,Moonshot), swap records are fetched by parsing transferActions
+- Except for specially specified parsers(Jupiter,Pumpfun,Moonshot), swap records are fetched by parsing transferActions
 - Orca Liquidity analysis, not yet support for OrcaV1,OrcaV2.
 
 ## Development

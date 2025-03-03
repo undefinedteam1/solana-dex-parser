@@ -1,5 +1,5 @@
 import { ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
-import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
+import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
 import { convertToUiAmount, PoolEvent, PoolEventType, TokenInfo, TransferData } from '../types';
 import { TokenInfoExtractor } from '../token-extractor';
 import { getLPTransfers, processTransferInnerInstruction } from '../transfer-utils';
@@ -93,7 +93,7 @@ class RaydiumV4PoolParser {
       const transfers = processTransferInnerInstruction(this.txWithMeta, index, this.splTokenMap, this.splDecimalsMap, [
         'mintTo',
         'burn',
-      ]).filter((it) => accounts.includes(it.info.destination) && it.idx >= curIdx);
+      ]).filter((it) => it.info.mint != TOKENS.NATIVE && accounts.includes(it.info.destination) && it.idx >= curIdx);
 
       const handlers = {
         CREATE: () => this.parseCreateEvent(instruction, index, data, transfers),

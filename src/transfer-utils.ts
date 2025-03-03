@@ -17,7 +17,7 @@ export const isTransfer = (instruction: ParsedInstruction): boolean => {
       instruction.programId.equals(TOKEN_PROGRAM_ID) &&
       instruction.parsed.type === 'transfer') ||
     (instruction.program === 'system' &&
-      instruction.programId.toBase58() == '11111111111111111111111111111111' &&
+      instruction.programId.toBase58() == TOKENS.NATIVE &&
       instruction.parsed.type === 'transfer')
   );
 };
@@ -33,7 +33,7 @@ export const processTransfer = (
 
   let mint = splTokenMap.get(info.destination)?.mint;
   if (!mint) mint = splTokenMap.get(info.source)?.mint;
-  if (!mint && instruction.programId.toBase58() == '11111111111111111111111111111111') mint = TOKENS.SOL;
+  if (!mint && instruction.programId.toBase58() == TOKENS.NATIVE) mint = TOKENS.SOL;
   if (!mint) return null;
 
   const decimals = splDecimalsMap.get(mint);
@@ -368,7 +368,7 @@ export const processTransferInstruction = (
  */
 export const getLPTransfers = (transfers: TransferData[]) => {
   const tokens = transfers.filter((it) => it.type.includes('transfer'));
-  if (tokens.length == 2) {
+  if (tokens.length >= 2) {
     if (
       tokens[0].info.mint == TOKENS.SOL ||
       (isSupportedToken(tokens[0].info.mint) && !isSupportedToken(tokens[1].info.mint))
@@ -377,4 +377,27 @@ export const getLPTransfers = (transfers: TransferData[]) => {
     }
   }
   return tokens;
+};
+
+export const attachTokenTransferInfo = (
+  trade: TradeInfo,
+  transferActions: Record<string, TransferData[]>
+): TradeInfo => {
+  const inputTransfer = Object.values(transferActions)
+    .flat()
+    .find((it) => it.info.mint == trade.inputToken.mint && it.info.tokenAmount?.uiAmount == trade.inputToken.amount);
+  const outputTransfer = Object.values(transferActions)
+    .flat()
+    .find((it) => it.info.mint == trade.outputToken.mint && it.info.tokenAmount?.uiAmount == trade.outputToken.amount);
+  if (inputTransfer) {
+    trade.inputToken.authority = inputTransfer.info.authority;
+    trade.inputToken.source = inputTransfer.info.source;
+    trade.inputToken.destination = inputTransfer.info.destination;
+  }
+  if (outputTransfer) {
+    trade.outputToken.authority = outputTransfer.info.authority;
+    trade.outputToken.source = outputTransfer.info.source;
+    trade.outputToken.destination = outputTransfer.info.destination;
+  }
+  return trade;
 };

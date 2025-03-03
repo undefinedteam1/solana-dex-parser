@@ -65,7 +65,8 @@ describe('Liquidity', () => {
           const tx = await connection.getParsedTransaction(test.signature, {
             maxSupportedTransactionVersion: 0,
           });
-          const parser = new MeteoraLiquidityParser(tx!);
+          if(!tx) throw new Error('Transaction not found');
+          const parser = new MeteoraLiquidityParser(tx);
           const events = parser.processLiquidity();
           expect(events.length).toEqual(1);
           expect(events[0].type).toEqual(test.type);

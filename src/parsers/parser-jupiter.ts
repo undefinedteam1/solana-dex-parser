@@ -4,6 +4,7 @@ import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
 import { deserializeUnchecked } from 'borsh';
 import { convertToUiAmount, DexInfo, TokenInfo, TradeInfo, TransferData } from '../types';
 import { getAMMs, getTradeType } from '../utils';
+import { attachTokenTransferInfo } from '../transfer-utils';
 
 export interface JupiterSwapEvent {
   amm: PublicKey;
@@ -237,7 +238,7 @@ export class JupiterParser {
     const signer = this.txWithMeta.transaction.message.accountKeys[signerIndex].pubkey.toBase58();
     const tradeType = getTradeType(inMint, outMint);
     const amm = this.dexInfo.amm ?? getAMMs(Object.keys(this.transferActions))?.[0];
-    return {
+    const trade = {
       type: tradeType,
       inputToken: {
         mint: inMint,
@@ -258,6 +259,8 @@ export class JupiterParser {
       signature: this.txWithMeta.transaction.signatures[0],
       idx: intermediateInfo.idx,
     };
+
+    return attachTokenTransferInfo(trade, this.transferActions);
   }
 
   private containsDCAProgram(): boolean {

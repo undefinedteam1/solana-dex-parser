@@ -165,11 +165,12 @@ describe('Liquidity', () => {
       .flat()
       // .filter((test: any) => test.test == true) // test only
       .forEach((test) => {
-        it(`${test.type} > ${test.name} > ${test.desc} `, async () => {
+        it(`${test.type} > ${test.name} > ${test.desc} > ${test.signature} `, async () => {
           const tx = await connection.getParsedTransaction(test.signature, {
             maxSupportedTransactionVersion: 0,
           });
-          const parser = new RaydiumLiquidityParser(tx!);
+          if(!tx) throw new Error('Transaction not found');
+          const parser = new RaydiumLiquidityParser(tx);
           const events = parser.processLiquidity();
           // console.log('events', events);
           expect(events.length).toBeGreaterThanOrEqual(1);

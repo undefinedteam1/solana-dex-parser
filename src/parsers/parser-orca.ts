@@ -17,8 +17,7 @@ export class OrcaParser {
   public processTrades(): TradeInfo[] {
     const trades: TradeInfo[] = [];
     Object.entries(this.transferActions).forEach((it) => {
-      if (it[1].length >= 2) {
-      }
+      trades.push(...this.parseTransferAction(it));
     });
     return trades;
   }
@@ -28,7 +27,7 @@ export class OrcaParser {
     const [programId, idxs] = transfer[0].split(':');
     const [outerIndex, innerIndex] = idxs.split('-');
 
-    if (DEX_PROGRAMS.ORCA.id == programId) {
+    if (transfer[1].length >= 2 && DEX_PROGRAMS.ORCA.id == programId) {
       const instruction = innerIndex
         ? this.txWithMeta.meta?.innerInstructions?.find((it) => it.index == Number(outerIndex))?.instructions[
             Number(innerIndex)

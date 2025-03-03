@@ -17,9 +17,7 @@ export class RaydiumParser {
   public processTrades(): TradeInfo[] {
     const trades: TradeInfo[] = [];
     Object.entries(this.transferActions).forEach((it) => {
-      if (it[1].length >= 2) {
-        trades.push(...this.parseTransferAction(it));
-      }
+      trades.push(...this.parseTransferAction(it));
     });
     return trades;
   }
@@ -30,6 +28,7 @@ export class RaydiumParser {
     const [outerIndex, innerIndex] = idxs.split('-');
 
     if (
+      transfer[1].length >= 2 &&
       [
         DEX_PROGRAMS.RAYDIUM_V4.id,
         DEX_PROGRAMS.RAYDIUM_ROUTE.id,

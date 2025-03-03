@@ -3,6 +3,7 @@ import { decode as base58Decode } from 'bs58';
 import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
 import { convertToUiAmount, DexInfo, TokenAmount, TokenInfo, TradeInfo, TradeType, TransferData } from '../types';
 import { absBigInt, getTokenDecimals } from '../utils';
+import { attachTokenTransferInfo } from '../transfer-utils';
 
 export class MoonshotParser {
   constructor(
@@ -116,7 +117,7 @@ export class MoonshotParser {
     collateralMint: string,
     idx: string
   ): TradeInfo {
-    return {
+    const trade: TradeInfo = {
       type: tradeType,
       inputToken: {
         mint: tradeType == 'BUY' ? collateralMint : moonshotTokenMint,
@@ -137,6 +138,8 @@ export class MoonshotParser {
       signature: this.txWithMeta.transaction.signatures[0],
       idx,
     };
+
+    return attachTokenTransferInfo(trade, this.transferActions);
   }
 
   private getTokenBalanceChanges(mint: string): bigint {

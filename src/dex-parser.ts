@@ -59,7 +59,7 @@ export class DexParser {
     return this.parseTrades(tx, config);
   }
 
-  public parseTrades(tx: ParsedTransactionWithMeta, config?: ParseConfig): TradeInfo[] {
+  public parseTrades(tx: ParsedTransactionWithMeta, config: ParseConfig = { tryUnknowDEX: true }): TradeInfo[] {
     const dexInfo = getDexInfo(tx);
     if (!dexInfo.programId) return [];
 
@@ -79,29 +79,28 @@ export class DexParser {
 
     if (trades.length == 0) {
       Object.entries(transferActions).forEach((transfer) => {
-        if (transfer[1].length >= 2) {
-          const programId = transfer[0].split(':')[0];
-          const ParserClass = this.parserMap[programId];
-          if (ParserClass) {
-            const parser = new ParserClass(
-              tx,
-              { ...dexInfo, amm: dexInfo.amm || getProgramName(programId) },
-              splTokenMap,
-              splDecimalsMap,
-              transferActions
-            );
-            if (parser.parseTransferAction) {
-              trades.push(...parser.parseTransferAction(transfer));
-            }
-          } else {
-            if (Object.values(DEX_PROGRAMS).some((it) => it.id == programId) || config?.tryUnknowDEX == true) {
-              const trade = processSwapData(tx, transfer[1], {
-                ...dexInfo,
-                amm: dexInfo.amm || getProgramName(programId),
-              });
-              if (trade) {
-                trades.push(trade);
-              }
+        const programId = transfer[0].split(':')[0];
+
+        const ParserClass = this.parserMap[programId];
+        if (ParserClass) {
+          const parser = new ParserClass(
+            tx,
+            { ...dexInfo, amm: dexInfo.amm || getProgramName(programId) },
+            splTokenMap,
+            splDecimalsMap,
+            transferActions
+          );
+          if (parser.parseTransferAction) {
+            trades.push(...parser.parseTransferAction(transfer));
+          }
+        } else if (transfer[1].length >= 2) {
+          if (Object.values(DEX_PROGRAMS).some((it) => it.id == programId) || config?.tryUnknowDEX == true) {
+            const trade = processSwapData(tx, transfer[1], {
+              ...dexInfo,
+              amm: dexInfo.amm || getProgramName(programId),
+            });
+            if (trade) {
+              trades.push(trade);
             }
           }
         }

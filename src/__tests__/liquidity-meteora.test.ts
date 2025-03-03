@@ -193,7 +193,7 @@ describe('Liquidity', () => {
   describe('Meteora DLMM', () => {
     Object.values(tests)
       .flat()
-      //  .filter((test: any) => test.test == true) // test only
+       .filter((test: any) => test.test == true) // test only
       .forEach((test) => {
         it(`${test.type} > ${test.name} > ${test.desc} `, async () => {
           const tx = await connection.getParsedTransaction(test.signature, {
@@ -201,6 +201,7 @@ describe('Liquidity', () => {
           });
           const parser = new MeteoraLiquidityParser(tx!);
           const events = parser.processLiquidity();
+          // console.log(events);
           expect(events.length).toBeGreaterThanOrEqual(1);
           expect(events[0].type).toEqual(test.type);
           expect(events[0].poolId).toEqual(test.poolId);

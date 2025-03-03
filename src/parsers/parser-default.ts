@@ -1,5 +1,5 @@
 import { ParsedTransactionWithMeta } from '@solana/web3.js';
-import { TradeInfo } from '../types';
+import { DexInfo, TradeInfo } from '../types';
 import { getBalanceChanges, getDexInfo, getTokenDecimals, isSupportedToken } from '../utils';
 
 /**
@@ -48,13 +48,14 @@ export class DefaultParser {
     token2: { mint: string; diff: number },
     owner: string,
     tx: ParsedTransactionWithMeta,
-    dexInfo: { programId?: string; amm?: string },
+    dexInfo: DexInfo,
     index: number
   ): TradeInfo | null {
     const baseTradeInfo = {
       user: owner,
       programId: dexInfo.programId,
       amm: dexInfo.amm || '',
+      route: dexInfo.route || '',
       slot: tx.slot,
       timestamp: tx.blockTime || 0,
       signature: tx.transaction.signatures[0],

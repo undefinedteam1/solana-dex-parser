@@ -1,11 +1,9 @@
 import { ParsedTransactionWithMeta, PartiallyDecodedInstruction, PublicKey } from '@solana/web3.js';
 import bs58 from 'bs58';
-import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
+import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
 import { deserializeUnchecked } from 'borsh';
-import { convertToUiAmount, DexInfo, TradeInfo, TradeType } from '../types';
-import { TokenInfoExtractor } from '../token-extractor';
-import { getLPTransfers } from '../transfer-utils';
-import { getTradeType } from '../utils';
+import { convertToUiAmount, DexInfo, TokenInfo, TradeInfo, TransferData } from '../types';
+import { getAMMs, getTradeType } from '../utils';
 
 export interface JupiterSwapEvent {
   amm: PublicKey;
@@ -79,15 +77,13 @@ export interface JupiterSwapInfo {
 }
 
 export class JupiterParser {
-  private readonly splDecimalsMap: Map<string, number>;
-
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo: DexInfo
-  ) {
-    const tokenExtractor = new TokenInfoExtractor(txWithMeta);
-    this.splDecimalsMap = tokenExtractor.extractDecimals();
-  }
+    private readonly dexInfo: DexInfo,
+    private readonly splTokenMap: Map<string, TokenInfo>,
+    private readonly splDecimalsMap: Map<string, number>,
+    private readonly transferActions: Record<string, TransferData[]>
+  ) {}
 
   public processTrades(): TradeInfo[] {
     return this.txWithMeta.transaction.message.instructions.reduce(
@@ -240,6 +236,7 @@ export class JupiterParser {
     const signerIndex = this.containsDCAProgram() ? 2 : 0;
     const signer = this.txWithMeta.transaction.message.accountKeys[signerIndex].pubkey.toBase58();
     const tradeType = getTradeType(inMint, outMint);
+    const amm = this.dexInfo.amm ?? getAMMs(Object.keys(this.transferActions))?.[0];
     return {
       type: tradeType,
       inputToken: {
@@ -254,7 +251,8 @@ export class JupiterParser {
       },
       user: signer,
       programId: this.dexInfo.programId,
-      amm: this.dexInfo.amm,
+      amm: amm || '',
+      route: this.dexInfo.route || '',
       slot: this.txWithMeta.slot,
       timestamp: this.txWithMeta.blockTime || 0,
       signature: this.txWithMeta.transaction.signatures[0],

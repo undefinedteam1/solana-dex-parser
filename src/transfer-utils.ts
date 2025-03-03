@@ -1,6 +1,6 @@
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { ParsedInstruction, ParsedTransactionWithMeta } from '@solana/web3.js';
-import { TOKENS, DEX_PROGRAMS } from './constants';
+import { TOKENS, DEX_PROGRAMS, SYSTEM_PROGRAMS } from './constants';
 import { TokenInfo, TransferData, convertToUiAmount, TradeInfo, DexInfo } from './types';
 import { getTradeType, isSupportedToken } from './utils';
 
@@ -13,9 +13,12 @@ export const isTransferCheck = (instruction: ParsedInstruction): boolean => {
 
 export const isTransfer = (instruction: ParsedInstruction): boolean => {
   return (
-    instruction.program === 'spl-token' &&
-    instruction.programId.equals(TOKEN_PROGRAM_ID) &&
-    instruction.parsed.type === 'transfer'
+    (instruction.program === 'spl-token' &&
+      instruction.programId.equals(TOKEN_PROGRAM_ID) &&
+      instruction.parsed.type === 'transfer') ||
+    (instruction.program === 'system' &&
+      instruction.programId.toBase58() == '11111111111111111111111111111111' &&
+      instruction.parsed.type === 'transfer')
   );
 };
 
@@ -30,6 +33,7 @@ export const processTransfer = (
 
   let mint = splTokenMap.get(info.destination)?.mint;
   if (!mint) mint = splTokenMap.get(info.source)?.mint;
+  if (!mint && instruction.programId.toBase58() == '11111111111111111111111111111111') mint = TOKENS.SOL;
   if (!mint) return null;
 
   const decimals = splDecimalsMap.get(mint);
@@ -43,9 +47,9 @@ export const processTransfer = (
       mint,
       source: info.source || '',
       tokenAmount: {
-        amount: info.amount,
+        amount: info.amount || info.lamports,
         decimals,
-        uiAmount: convertToUiAmount(info.amount, decimals),
+        uiAmount: convertToUiAmount(info.amount || info.lamports, decimals),
       },
     },
     idx: idx,
@@ -132,10 +136,14 @@ export const processSwapData = (
 
   const uniqueTokens = extractUniqueTokens(transfers);
   if (uniqueTokens.length < 2) {
-    throw (`Insufficient unique tokens for swap > ${txWithMeta.transaction.signatures[0]}`);
+    throw `Insufficient unique tokens for swap > ${txWithMeta.transaction.signatures[0]}`;
   }
 
-  const { inputToken, outputToken } = calculateTokenAmounts(transfers, uniqueTokens);
+  const { inputToken, outputToken } = calculateTokenAmounts(
+    txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
+    transfers,
+    uniqueTokens
+  );
   const tradeType = getTradeType(inputToken.mint, outputToken.mint);
 
   let signer = txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58();
@@ -152,6 +160,7 @@ export const processSwapData = (
     user: signer,
     programId: dexInfo.programId,
     amm: dexInfo.amm,
+    route: dexInfo.route || '',
     slot: txWithMeta.slot,
     timestamp: txWithMeta.blockTime || 0,
     signature: txWithMeta.transaction.signatures[0],
@@ -174,9 +183,13 @@ export const extractUniqueTokens = (transfers: TransferData[]): TokenInfo[] => {
   return uniqueTokens;
 };
 
-export const calculateTokenAmounts = (transfers: TransferData[], uniqueTokens: TokenInfo[]) => {
-  const inputToken = uniqueTokens[0];
-  const outputToken = uniqueTokens[uniqueTokens.length - 1];
+export const calculateTokenAmounts = (signer: string, transfers: TransferData[], uniqueTokens: TokenInfo[]) => {
+  let inputToken = uniqueTokens[0];
+  let outputToken = uniqueTokens[uniqueTokens.length - 1];
+
+  if (outputToken.source == signer) {
+    [inputToken, outputToken] = [outputToken, inputToken];
+  }
 
   const amounts = sumTokenAmounts(transfers, inputToken.mint, outputToken.mint);
 
@@ -185,11 +198,17 @@ export const calculateTokenAmounts = (transfers: TransferData[], uniqueTokens: T
       mint: inputToken.mint,
       amount: amounts.inputAmount,
       decimals: inputToken.decimals,
+      authority: inputToken.authority,
+      destination: inputToken.destination,
+      source: inputToken.source,
     },
     outputToken: {
       mint: outputToken.mint,
       amount: amounts.outputAmount,
       decimals: outputToken.decimals,
+      authority: outputToken.authority,
+      destination: outputToken.destination,
+      source: outputToken.source,
     },
   };
 };
@@ -221,11 +240,62 @@ export const sumTokenAmounts = (transfers: TransferData[], inputMint: string, ou
 export const getTransferTokenInfo = (transfer: TransferData): TokenInfo | null => {
   return transfer?.info
     ? {
-      mint: transfer.info.mint,
-      amount: transfer.info.tokenAmount.uiAmount,
-      decimals: transfer.info.tokenAmount.decimals,
-    }
+        mint: transfer.info.mint,
+        amount: transfer.info.tokenAmount.uiAmount,
+        decimals: transfer.info.tokenAmount.decimals,
+        authority: transfer.info.authority,
+        destination: transfer.info.destination,
+        source: transfer.info.source,
+      }
     : null;
+};
+
+const ignoreGroupPrograms = [DEX_PROGRAMS.METEORA_VAULT.id];
+
+export const getTransferActions = (
+  txWithMeta: ParsedTransactionWithMeta,
+  splTokenMap: Map<string, TokenInfo>,
+  splDecimalsMap: Map<string, number>,
+  extraTypes?: string[]
+): Record<string, TransferData[]> => {
+  const actions: Record<string, TransferData[]> = {};
+
+  const innerInstructions = txWithMeta.meta?.innerInstructions;
+  if (!innerInstructions) return actions;
+
+  let groupKey = '';
+  innerInstructions.forEach((set) => {
+    const outerIndex = set.index;
+    const outetrInstruction = txWithMeta.transaction.message.instructions[outerIndex];
+    const outerProgramId = outetrInstruction.programId.toBase58();
+    if (SYSTEM_PROGRAMS.includes(outerProgramId)) return;
+    groupKey = `${outerProgramId}:${outerIndex}`;
+
+    set.instructions.forEach((instruction, innerIndex) => {
+      const innerProgramId = instruction.programId.toBase58();
+      if (!SYSTEM_PROGRAMS.includes(innerProgramId) && !ignoreGroupPrograms.includes(innerProgramId)) {
+        // spceial case for meteora vault
+        groupKey = `${innerProgramId}:${outerIndex}-${innerIndex}`;
+        return;
+      }
+      const item = processTransferInstruction(
+        instruction as ParsedInstruction,
+        `${outerIndex}-${innerIndex}`,
+        splTokenMap,
+        splDecimalsMap,
+        extraTypes
+      );
+      if (item) {
+        if (actions[groupKey]) {
+          actions[groupKey].push(item);
+        } else {
+          actions[groupKey] = [item];
+        }
+      }
+    });
+  });
+
+  return actions;
 };
 
 export const processTransferInnerInstruction = (

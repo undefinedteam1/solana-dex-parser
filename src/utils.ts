@@ -26,24 +26,18 @@ export const getDexInfo = (tx: ParsedTransactionWithMeta): DexInfo => {
     if (SYSTEM_PROGRAMS.includes(programId)) continue;
     if ('parsed' in ix && ix.parsed?.type === 'createIdempotent') continue;
 
-    if (programId === DEX_PROGRAMS.JUPITER.id) {
+    const dexProgram = Object.values(DEX_PROGRAMS).find((dex) => dex.id === programId);
+    if (dexProgram) {
+      const isRoute = !dexProgram.tags.includes('amm');
       return {
-        programId: DEX_PROGRAMS.JUPITER.id,
-        amm: DEX_PROGRAMS.JUPITER.name,
+        programId: dexProgram.id,
+        route: isRoute ? dexProgram.name : undefined,
+        amm: !isRoute ? dexProgram.name : undefined,
       };
     }
 
     if (!mainProgramId) {
       mainProgramId = programId;
-    }
-
-    const dexProgram = Object.values(DEX_PROGRAMS).find((dex) => dex.id === programId);
-
-    if (dexProgram) {
-      return {
-        programId: dexProgram.id,
-        amm: dexProgram.name,
-      };
     }
   }
 
@@ -126,12 +120,23 @@ export const notSystemProgram = (instruction: any): boolean => {
 };
 
 export const absBigInt = (value: bigint): bigint => {
-  return value < 0n ? -value : value
-}
+  return value < 0n ? -value : value;
+};
 
 export const getTradeType = (inMint: string, outMint: string): TradeType => {
   if (inMint == TOKENS.SOL) return 'BUY';
   if (outMint == TOKENS.SOL) return 'SELL';
   if (Object.values(TOKENS).includes(inMint)) return 'BUY';
-  return 'SELL'
-}
+  return 'SELL';
+};
+
+export const getAMMs = (transferActionKeys: string[]) => {
+  const amms = Object.values(DEX_PROGRAMS).filter((it) => it.tags.includes('amm'));
+  return transferActionKeys
+    .map((it) => {
+      const item = Object.values(amms).find((amm) => it.split(':')[0] == amm.id);
+      if (item) return item.name;
+      return null;
+    })
+    .filter((it) => it != null);
+};

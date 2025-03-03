@@ -27,7 +27,7 @@ describe('Parser', () => {
       );
       const parser = new PumpfunEventParser(tx!);
       const events = parser.processEvents();
-      console.log(events);
+      // console.log(events);
       expect(events.length).toBeGreaterThan(1);
     });
   });

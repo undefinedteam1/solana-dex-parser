@@ -34,7 +34,7 @@ describe('Parser', () => {
           throw new Error("Block not found");
         }
         const ts: any[] = [], liqs: any[] = [];
-        console.log(block.transactions[0]);
+        // console.log(block.transactions[0]);
         block.transactions.forEach((tx) => {
           if (tx.meta?.err) {
             return;

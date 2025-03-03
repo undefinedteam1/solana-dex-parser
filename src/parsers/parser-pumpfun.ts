@@ -1,66 +1,44 @@
 import { ParsedTransactionWithMeta } from '@solana/web3.js';
-import { DEX_PROGRAMS, TOKENS } from '../constants';
-import { DexInfo, PumpfunEvent, PumpfunTradeEvent, TradeInfo, TradeType } from '../types';
-import { PumpfunEventParser } from './parser-pumpfun-event';
+import { DEX_PROGRAMS } from '../constants';
+import { DexInfo, TokenInfo, TradeInfo, TransferData } from '../types';
+import { getTransferTokenInfo, processSwapData } from '../transfer-utils';
+import { getProgramName } from '../utils';
 
 export class PumpfunParser {
-  private eventParser: PumpfunEventParser;
-
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo?: DexInfo
-  ) {
-    this.eventParser = new PumpfunEventParser(this.txWithMeta, dexInfo);
-  }
+    private readonly dexInfo: DexInfo,
+    private readonly splTokenMap: Map<string, TokenInfo>,
+    private readonly splDecimalsMap: Map<string, number>,
+    private readonly transferActions: Record<string, TransferData[]>
+  ) {}
 
   public processTrades(): TradeInfo[] {
-    const events = this.eventParser.processEvents().filter((it) => it.type == 'TRADE');
-    return events.length > 0 ? this.processSwapData(events) : [];
+    const trades: TradeInfo[] = [];
+    Object.entries(this.transferActions).forEach((it) => {
+      if (it[1].length >= 2) {
+        trades.push(...this.parseTransferAction(it));
+      }
+    });
+    return trades;
   }
 
-  public processInstructionTrades(instruction: any, instructionIndex: number): TradeInfo[] {
-    const events = this.parseInnerInstructions(instructionIndex);
-    return this.processSwapData(events);
-  }
+  public parseTransferAction(transfer: [string, TransferData[]]): TradeInfo[] {
+    const trades: TradeInfo[] = [];
+    const [programId] = transfer[0].split(':');
 
-  public isTradeInstruction(instruction: any): boolean {
-    const programId = instruction.programId.toBase58();
-    return DEX_PROGRAMS.PUMP_FUN.id == programId;
-  }
-
-  private parseInnerInstructions(instructionIndex: number): PumpfunEvent[] {
-    return this.eventParser.parseInnerInstructions(instructionIndex).filter((it) => it.type == 'TRADE');
-  }
-
-  private processSwapData(events: PumpfunEvent[]): TradeInfo[] {
-    if (!events.length) return [];
-    return events.map((event) => this.createTradeInfo(event));
-  }
-
-  private createTradeInfo(data: PumpfunEvent): TradeInfo {
-    const event = data.data as PumpfunTradeEvent;
-    const tradeType: TradeType = event.isBuy ? 'BUY' : 'SELL';
-    const isBuy = tradeType === 'BUY';
-
-    return {
-      type: tradeType,
-      inputToken: {
-        mint: isBuy ? TOKENS.SOL : event.mint,
-        amount: isBuy ? event.solAmount : event.tokenAmount,
-        decimals: isBuy ? 9 : 6,
-      },
-      outputToken: {
-        mint: isBuy ? event.mint : TOKENS.SOL,
-        amount: isBuy ? event.tokenAmount : event.solAmount,
-        decimals: isBuy ? 6 : 9,
-      },
-      user: event.user,
-      programId: DEX_PROGRAMS.PUMP_FUN.id,
-      amm: DEX_PROGRAMS.PUMP_FUN.name,
-      slot: data.slot,
-      timestamp: data.timestamp,
-      signature: data.signature,
-      idx: data.idx,
-    };
+    if (DEX_PROGRAMS.PUMP_FUN.id == programId) {
+      const trade = processSwapData(this.txWithMeta, transfer[1].slice(0, 2), {
+        ...this.dexInfo,
+        amm: this.dexInfo.amm || getProgramName(programId),
+      });
+      if (trade) {
+        if (transfer[1].length > 2) {
+          trade.fee = getTransferTokenInfo(transfer[1][2]) ?? undefined;
+        }
+        trades.push(trade);
+      }
+    }
+    return trades;
   }
 }

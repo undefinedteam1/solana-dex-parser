@@ -15,12 +15,16 @@ export interface ParseConfig {
 export interface DexInfo {
   programId?: string;
   amm?: string;
+  route?: string;
 }
 
 export interface TokenInfo {
   mint: string;
   amount: number;
   decimals: number;
+  authority?: string;
+  destination?: string;
+  source?: string;
 }
 
 export interface TokenAmount {
@@ -57,13 +61,14 @@ export interface TransferData {
 export type TradeType = 'BUY' | 'SELL';
 
 export interface TradeInfo {
-  user: string;
+  user: string; // Signer Address (Who Buy or Sell)
   type: TradeType;
   inputToken: TokenInfo;
   outputToken: TokenInfo;
   fee?: TokenInfo;
   programId?: string; // DEX program ID
-  amm?: string; // AMM type (e.g., 'Raydium v4', 'Jupiter')
+  amm?: string; // AMM type (e.g., 'RaydiumV4', 'Meteora')
+  route?: string; // Router or Bot (e.g., 'Jupiter','OKX','BananaGun')
   slot: number;
   timestamp: number;
   signature: string;

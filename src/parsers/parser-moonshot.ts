@@ -1,14 +1,17 @@
 import { ParsedMessageAccount, ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
 import { decode as base58Decode } from 'bs58';
 import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
-import { convertToUiAmount, DexInfo, TokenAmount, TradeInfo, TradeType } from '../types';
+import { convertToUiAmount, DexInfo, TokenAmount, TokenInfo, TradeInfo, TradeType, TransferData } from '../types';
 import { absBigInt, getTokenDecimals } from '../utils';
 
 export class MoonshotParser {
   constructor(
     private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo: DexInfo
-  ) { }
+    private readonly dexInfo: DexInfo,
+    private readonly splTokenMap: Map<string, TokenInfo>,
+    private readonly splDecimalsMap: Map<string, number>,
+    private readonly transferActions: Record<string, TransferData[]>
+  ) {}
 
   public processTrades(): TradeInfo[] {
     const trades: TradeInfo[] = [];
@@ -23,7 +26,7 @@ export class MoonshotParser {
     return trades;
   }
 
-  public processInstructionTrades(instruction: any, outerIndex: number, innerIndex?: number): TradeInfo[] {
+  public processInstructionTrades(instruction: any, outerIndex: number): TradeInfo[] {
     const trades: TradeInfo[] = [];
 
     // outer instruction
@@ -128,6 +131,7 @@ export class MoonshotParser {
       user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
       programId: DEX_PROGRAMS.MOONSHOT.id,
       amm: DEX_PROGRAMS.MOONSHOT.name,
+      route: this.dexInfo.route || '',
       slot: this.txWithMeta.slot,
       timestamp: this.txWithMeta.blockTime || 0,
       signature: this.txWithMeta.transaction.signatures[0],
@@ -171,7 +175,6 @@ export class MoonshotParser {
 
     return postAmount - preAmount;
   }
-
 
   private createTokenAmount(amount: bigint, mint: string): TokenAmount {
     const decimals = getTokenDecimals(this.txWithMeta, mint);

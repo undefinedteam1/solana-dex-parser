@@ -1,27 +1,23 @@
 import { Connection, ParsedTransactionWithMeta } from '@solana/web3.js';
 import { DEX_PROGRAMS } from './constants';
-import { DexInfo, ParseConfig, PoolEvent, TradeInfo } from './types';
+import { DexInfo, ParseConfig, PoolEvent, TokenInfo, TradeInfo, TransferData } from './types';
 import { getDexInfo, getProgramName } from './utils';
-import {
-  MoonshotParser,
-  MeteoraParser,
-  PumpfunParser,
-  DefaultParser,
-  RaydiumParser,
-  OrcaParser,
-  JupiterParser,
-} from './parsers';
+import { MoonshotParser, MeteoraParser, PumpfunParser, RaydiumParser, OrcaParser, JupiterParser } from './parsers';
 import { RaydiumLiquidityParser } from './parsers/parser-raydium-liquidity';
 import { MeteoraLiquidityParser } from './parsers/parser-meteora-liquidity';
 import { OrcaLiquidityParser } from './parsers/parser-orca-liquidity';
+import { TokenInfoExtractor } from './token-extractor';
+import { getTransferActions, processSwapData } from './transfer-utils';
 
 type ParserConstructor = new (
   tx: ParsedTransactionWithMeta,
-  dexInfo: DexInfo
+  dexInfo: DexInfo,
+  splTokenMap: Map<string, TokenInfo>,
+  splDecimalsMap: Map<string, number>,
+  transferActions: Record<string, TransferData[]>
 ) => {
   processTrades(): TradeInfo[];
-  processInstructionTrades?(instruction: any, outerIndex: number, innerIndex?: number): TradeInfo[];
-  isTradeInstruction(instruction: any): boolean;
+  parseTransferAction?(transfer: [string, TransferData[]]): TradeInfo[];
 };
 
 type ParserLiquidityConstructor = new (tx: ParsedTransactionWithMeta) => {
@@ -36,7 +32,7 @@ export class DexParser {
     [DEX_PROGRAMS.METEORA.id]: MeteoraParser,
     [DEX_PROGRAMS.METEORA_POOLS.id]: MeteoraParser,
     [DEX_PROGRAMS.PUMP_FUN.id]: PumpfunParser,
-    [DEX_PROGRAMS.RAYDIUM_AMM.id]: RaydiumParser,
+    [DEX_PROGRAMS.RAYDIUM_ROUTE.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_CL.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_CPMM.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_V4.id]: RaydiumParser,
@@ -52,7 +48,7 @@ export class DexParser {
     [DEX_PROGRAMS.ORCA.id]: OrcaLiquidityParser,
   };
 
-  constructor(private connection: Connection) { }
+  constructor(private connection: Connection) {}
 
   public async parseTransaction(signature: string, config?: ParseConfig): Promise<TradeInfo[]> {
     const tx = await this.connection.getParsedTransaction(signature, {
@@ -69,23 +65,47 @@ export class DexParser {
 
     if (config?.programIds && !config.programIds.includes(dexInfo.programId)) return [];
 
+    const tokenExtractor = new TokenInfoExtractor(tx);
+    const splTokenMap = tokenExtractor.extractSPLTokenInfo();
+    const splDecimalsMap = tokenExtractor.extractDecimals();
+    const transferActions = getTransferActions(tx, splTokenMap, splDecimalsMap);
+
     const trades: TradeInfo[] = [];
     const ParserClass = this.parserMap[dexInfo.programId];
     if (ParserClass) {
-      const parser = new ParserClass(tx, dexInfo); // Special protocols, Router Dex and Bots
+      const parser = new ParserClass(tx, dexInfo, splTokenMap, splDecimalsMap, transferActions); // Special protocols, Router Dex and Bots
       trades.push(...parser.processTrades());
     }
 
     if (trades.length == 0) {
-      trades.push(...this.parseInstructions(tx, dexInfo, true)); // Inner instructions
-    }
-
-    if (trades.length == 0) {
-      trades.push(...this.parseInstructions(tx, dexInfo, false)); // Outer instructions
-    }
-
-    if (trades.length === 0 && config?.tryUnknowDEX == true) {
-      trades.push(...new DefaultParser(tx).parseTradesByBalanceChanges(tx, dexInfo));
+      Object.entries(transferActions).forEach((transfer) => {
+        if (transfer[1].length >= 2) {
+          const programId = transfer[0].split(':')[0];
+          const ParserClass = this.parserMap[programId];
+          if (ParserClass) {
+            const parser = new ParserClass(
+              tx,
+              { ...dexInfo, amm: dexInfo.amm || getProgramName(programId) },
+              splTokenMap,
+              splDecimalsMap,
+              transferActions
+            );
+            if (parser.parseTransferAction) {
+              trades.push(...parser.parseTransferAction(transfer));
+            }
+          } else {
+            if (Object.values(DEX_PROGRAMS).some((it) => it.id == programId) || config?.tryUnknowDEX == true) {
+              const trade = processSwapData(tx, transfer[1], {
+                ...dexInfo,
+                amm: dexInfo.amm || getProgramName(programId),
+              });
+              if (trade) {
+                trades.push(trade);
+              }
+            }
+          }
+        }
+      });
     }
 
     return trades;
@@ -102,51 +122,5 @@ export class DexParser {
       events.push(...parser.processLiquidity());
     }
     return events;
-  }
-
-  private parseInstructions(tx: ParsedTransactionWithMeta, dexInfo: DexInfo, isInner: boolean): TradeInfo[] {
-    const trades: TradeInfo[] = [];
-    const processedProtocols = new Set<string>();
-
-    tx.transaction.message.instructions.forEach((instruction: any, outerIndex: number) => {
-      if (dexInfo.programId !== instruction.programId.toBase58()) return;
-
-      const processInstruction = (programId: string, outerIndex: number, innerIndex?: number) => {
-        if (processedProtocols.has(programId)) return;
-        processedProtocols.add(programId);
-
-        const ParserClass = this.parserMap[programId];
-        if (!ParserClass) return;
-
-        const parser = new ParserClass(tx, { ...dexInfo, amm: dexInfo.amm || getProgramName(programId) });
-        if (parser.processInstructionTrades) {
-          if (innerIndex == undefined) {
-            if (parser.isTradeInstruction && parser.isTradeInstruction(instruction)) {
-              trades.push(...parser.processInstructionTrades(instruction, outerIndex));
-            }
-          }
-          else {
-            trades.push(...parser.processInstructionTrades(instruction, outerIndex, innerIndex));
-          }
-        }
-      };
-
-      if (isInner) {
-        const innerInstructions = tx.meta?.innerInstructions;
-        if (!innerInstructions) return;
-
-        innerInstructions
-          .filter((set) => set.index === outerIndex)
-          .forEach((set) => {
-            set.instructions.forEach((innerInstruction, innerIdx) => {
-              processInstruction(innerInstruction.programId.toBase58(), outerIndex, innerIdx);
-            });
-          });
-      } else {
-        processInstruction(instruction.programId.toBase58(), outerIndex);
-      }
-    });
-
-    return trades;
   }
 }

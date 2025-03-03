@@ -24,7 +24,6 @@ export class PumpfunParser {
   public parseTransferAction(transfer: [string, TransferData[]]): TradeInfo[] {
     const [, idxs] = transfer[0].split(':');
     const [outerIndex] = idxs.split('-');
-
     const events = this.parseInnerInstructions(Number(outerIndex));
     return events.length > 0 ? this.processSwapData(events) : [];
   }

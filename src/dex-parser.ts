@@ -107,7 +107,7 @@ export class DexParser {
       });
     }
 
-    return trades;
+    return [...new Map(trades.map((item) => [`${item.idx}-${item.signature}`, item])).values()]; // unique array
   }
 
   public parseLiquidity(tx: ParsedTransactionWithMeta): PoolEvent[] {

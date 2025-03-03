@@ -250,7 +250,9 @@ export const getTransferTokenInfo = (transfer: TransferData): TokenInfo | null =
     : null;
 };
 
-const ignoreGroupPrograms = [DEX_PROGRAMS.METEORA_VAULT.id];
+const ignoreGroupPrograms = Object.values(DEX_PROGRAMS)
+  .filter((it) => it.tags.includes('vault'))
+  .map((it) => it.id);
 
 export const getTransferActions = (
   txWithMeta: ParsedTransactionWithMeta,

@@ -71,40 +71,45 @@ export class DexParser {
     const transferActions = getTransferActions(tx, splTokenMap, splDecimalsMap);
 
     const trades: TradeInfo[] = [];
-    const ParserClass = this.parserMap[dexInfo.programId];
-    if (ParserClass) {
-      const parser = new ParserClass(tx, dexInfo, splTokenMap, splDecimalsMap, transferActions); // Special protocols, Router Dex and Bots
-      trades.push(...parser.processTrades());
-    }
 
-    if (trades.length == 0) {
-      Object.entries(transferActions).forEach((transfer) => {
-        const programId = transfer[0].split(':')[0];
+    try {
+      const ParserClass = this.parserMap[dexInfo.programId];
+      if (ParserClass) {
+        const parser = new ParserClass(tx, dexInfo, splTokenMap, splDecimalsMap, transferActions); // Special protocols, Router Dex and Bots
+        trades.push(...parser.processTrades());
+      }
 
-        const ParserClass = this.parserMap[programId];
-        if (ParserClass) {
-          const parser = new ParserClass(
-            tx,
-            { ...dexInfo, amm: dexInfo.amm || getProgramName(programId) },
-            splTokenMap,
-            splDecimalsMap,
-            transferActions
-          );
-          if (parser.parseTransferAction) {
-            trades.push(...parser.parseTransferAction(transfer));
-          }
-        } else if (transfer[1].length >= 2) {
-          if (Object.values(DEX_PROGRAMS).some((it) => it.id == programId) || config?.tryUnknowDEX == true) {
-            const trade = processSwapData(tx, transfer[1], {
-              ...dexInfo,
-              amm: dexInfo.amm || getProgramName(programId),
-            });
-            if (trade) {
-              trades.push(trade);
+      if (trades.length == 0) {
+        Object.entries(transferActions).forEach((transfer) => {
+          const programId = transfer[0].split(':')[0];
+
+          const ParserClass = this.parserMap[programId];
+          if (ParserClass) {
+            const parser = new ParserClass(
+              tx,
+              { ...dexInfo, amm: dexInfo.amm || getProgramName(programId) },
+              splTokenMap,
+              splDecimalsMap,
+              transferActions
+            );
+            if (parser.parseTransferAction) {
+              trades.push(...parser.parseTransferAction(transfer));
+            }
+          } else if (transfer[1].length >= 2) {
+            if (Object.values(DEX_PROGRAMS).some((it) => it.id == programId) || config?.tryUnknowDEX == true) {
+              const trade = processSwapData(tx, transfer[1], {
+                ...dexInfo,
+                amm: dexInfo.amm || getProgramName(programId),
+              });
+              if (trade) {
+                trades.push(trade);
+              }
             }
           }
-        }
-      });
+        });
+      }
+    } catch (ex) {
+      console.error('parseTrades error!', ex);
     }
 
     return [...new Map(trades.map((item) => [`${item.idx}-${item.signature}`, item])).values()]; // unique array
@@ -115,10 +120,15 @@ export class DexParser {
     if (!dexInfo.programId) return [];
 
     const events: PoolEvent[] = [];
-    const ParserLiquidityClass = this.parseLiquidityMap[dexInfo.programId];
-    if (ParserLiquidityClass) {
-      const parser = new ParserLiquidityClass(tx);
-      events.push(...parser.processLiquidity());
+
+    try {
+      const ParserLiquidityClass = this.parseLiquidityMap[dexInfo.programId];
+      if (ParserLiquidityClass) {
+        const parser = new ParserLiquidityClass(tx);
+        events.push(...parser.processLiquidity());
+      }
+    } catch (ex) {
+      console.error('parseLiquidity error!', ex);
     }
     return events;
   }

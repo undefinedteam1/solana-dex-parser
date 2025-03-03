@@ -92,7 +92,7 @@ export const DEX_PROGRAMS = {
   METEORA_VAULT: {
     id: '24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi',
     name: 'MeteoraVault',
-    tags: ['amm'],
+    tags: ['vault'],
   },
   METEORA_POOLS: {
     id: 'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB',
@@ -132,6 +132,21 @@ export const DEX_PROGRAMS = {
   LIFINITY_V2: {
     id: '2wT8Yq49kHgDzXuPxZSaeLaH1qbmGXtEyPy64bL7aD3c',
     name: 'LifinityV2',
+    tags: ['amm'],
+  },
+  STABBEL: {
+    id: 'swapNyd8XiQwJ6ianp9snpu4brUqFxadzvHebnAXjJZ',
+    name: 'Stabble',
+    tags: ['amm'],
+  },
+  STABBEL_VAULT: {
+    id: 'vo1tWgqZMjG61Z2T9qUaMYKqZ75CYzMuaZ2LZP1n7HV',
+    name: 'StabbleVault',
+    tags: ['vault'],
+  },
+  STABBEL_WEIGHT: {
+    id: 'swapFpHZwjELNnjvThjajtiVmkz3yPQEHjLtka2fwHW',
+    name: 'StabbleWeight',
     tags: ['amm'],
   },
 };

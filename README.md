@@ -67,20 +67,16 @@ async function parseSwap() {
   // Get transaction
   const signature = 'your-transaction-signature';
  
-  const parser = new DexParser(connection);
+  const parser = new DexParser();
 
-  // case 1, by signature
-  const trades = await parser.parseTransaction(signature);
-  console.log("Trades:", trades);
-
-  // case 2, by tx object
+  // parse tx object
   const tx = await connection.getParsedTransaction(signature, {
     commitment: "confirmed",
     maxSupportedTransactionVersion: 0,
   });
 
-  const trades2 = await parser.parseTrades(tx);
-  console.log("trades2:", trades2);
+  const trades = await parser.parseTrades(tx);
+  console.log("trades:", trades);
 }
 
 ```
@@ -144,7 +140,7 @@ async function parseLiquidityEvents() {
   });
  
   // Parse events
-  const parser = new DexParser(connection);
+  const parser = new DexParser();
   const events = await parser.parseLiquidity(tx);
   console.log("events:", events);
 }

@@ -48,9 +48,10 @@ export class DexParser {
     [DEX_PROGRAMS.ORCA.id]: OrcaLiquidityParser,
   };
 
-  constructor(private connection: Connection) {}
+  constructor(private connection?: Connection) {}
 
   public async parseTransaction(signature: string, config?: ParseConfig): Promise<TradeInfo[]> {
+    if (!this.connection) throw `Connection required!`;
     const tx = await this.connection.getParsedTransaction(signature, {
       commitment: 'confirmed',
       maxSupportedTransactionVersion: 0,

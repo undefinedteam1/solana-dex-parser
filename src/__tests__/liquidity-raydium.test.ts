@@ -112,6 +112,17 @@ const tests = {
   ],
 };
 
+const test_errors = [
+  "4Cod1cNGv6RboJ7rSB79yeVCR4Lfd25rFgLY3eiPJfTJjTGyYP1r2i1upAYZHQsWDqUbGd1bhTRm1bpSQcpWMnEz",
+  "v8s37Srj6QPMtRC1HfJcrSenCHvYebHiGkHVuFFiQ6UviqHnoVx4U77M3TZhQQXewXadHYh5t35LkesJi3ztPZZ",
+  "oXUd22GQ1d45a6XNzfdpHAX6NfFEfFa9o2Awn2oimY89Rms3PmXL1uBJx3CnTYjULJw6uim174b3PLBFkaAxKzK",
+  "4mxr44yo5Qi7Rabwbknkh8MNUEWAMKmzFQEmqUVdx5JpHEEuh59TrqiMCjZ7mgZMozRK1zW8me34w8Myi8Qi1tWP",
+  "5kaAWK5X9DdMmsWm6skaUXLd6prFisuYJavd9B62A941nRGcrmwvncg3tRtUfn7TcMLsrrmjCChdEjK3sjxS6YG9",
+  "51nj5GtAmDC23QkeyfCNfTJ6Pdgwx7eq4BARfq1sMmeEaPeLsx9stFA3Dzt9MeLV5xFujBgvghLGcayC3ZevaQYi",
+  "4MSVpVBwxnYTQSF3bSrAB99a3pVr6P6bgoCRDsrBbDMA77WeQqoBDDDXqEh8WpnUy5U4GeotdCG9xyExjNTjYE1u",
+  "mWaH4FELcPj4zeY4Cgk5gxUirQDM7yE54VgMEVaqiUDQjStyzwNrxLx4FMEaKEHQoYsgCRhc1YdmBvhGDRVgRrq"
+]
+
 describe('Liquidity', () => {
   let connection: Connection;
   beforeAll(async () => {
@@ -141,6 +152,20 @@ describe('Liquidity', () => {
           expect(events[0].token0Amount).toEqual(test.token0Amount);
           expect(events[0].token1Mint).toEqual(test.token1Mint);
           expect(events[0].token1Amount).toEqual(test.token1Amount);
+        });
+      });
+  });
+
+  describe('Raydium V4 Error Cases', () => {
+    test_errors.forEach((signature) => {
+        it(`${signature} `, async () => {
+          const tx = await connection.getParsedTransaction(signature, {
+            maxSupportedTransactionVersion: 0,
+          });
+          if(!tx) throw new Error('Transaction not found');
+          const parser = new RaydiumLiquidityParser(tx);
+          const events = parser.processLiquidity();
+          expect(events.length).toEqual(0);
         });
       });
   });

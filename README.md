@@ -10,6 +10,7 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 - Parsing methods:
   - Pumpfun and Jupiter: parsing the event data
   - Raydium, Orca, and Meteora: parsing Transfer and TransferChecked methods of the token program
+  - Raydium v4 Logs decoder (decode ray_log)
   - Moonshot: parsing the instruction data of the Trade instruction
 - Parse **Liquidity** transactions (create, add, remove)
   - Raydium V4
@@ -45,7 +46,7 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 ## Installation
 
 ```bash
-npm install solana-dex-parser
+yarn install solana-dex-parser
 ```
 
 ## Usage
@@ -285,6 +286,32 @@ export interface PumpfunEvent {
 }
 ```
 
+#### 3.4 Raydium v4 logs decode:
+
+```typescript
+import { decodeRaydiumLog, LogType, parseRaydiumSwapLog } from 'solana-dex-parser';
+
+  const log = decodeRaydiumLog("ray_log: A0lQ1uGPAAAAWnKACwAAAAABAAAAAAAAACRBWYc/AgAANLV+oBcAAACInZmY0pIAAO8MAhcAAAAA");
+  if (log) {
+    if (log.logType == LogType.SwapBaseIn || log.logType == LogType.SwapBaseOut) {
+      const swap = parseRaydiumSwapLog(log as any);
+      console.log('swap', swap); // buy and sell 
+    }
+    else {
+      console.log('log', log); // add/remove liquidity
+    }
+  }
+
+  // output
+  swap {
+      type: 'Buy',
+      mode: 'Exact Input',
+      inputAmount: 617969242185n,
+      outputAmount: 386010351n,
+      slippageProtection: 192967258n
+    }
+```
+
 ## Note
 - Jupiter Swap is obtained by parsing Instruction information, and the output only contains a transaction record after the sum (excluding the specific route swap record).
 - Other aggregators, such as OKX, output multiple swap transaction records (swap records per amm).
@@ -295,8 +322,8 @@ export interface PumpfunEvent {
 
 ### Prerequisites
 
-- Node.js >= 16
-- npm >= 7
+- Node.js >= 18.8.0
+- yarn
 
 ### Setup
 
@@ -308,25 +335,25 @@ cd solana-dex-parser
 
 2. Install dependencies
 ```bash
-npm install
+yarn install
 ```
 
 3. Build the project
 ```bash
-npm run build
+yarn build
 ```
 
 ### Testing
 
 Run the test suite:
 ```bash
-npm test
+yarn test
 ```
 
 Run unit tests:
 ```bash
-npm run test parser.test.ts
-npm run test liquidity-raydium.test.ts
+yarn test parser.test.ts
+yarn test liquidity-raydium.test.ts
 ......
 ```
 

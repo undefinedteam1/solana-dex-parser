@@ -1,7 +1,6 @@
 import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
 import { DexParser } from '../dex-parser';
-import * as https from 'node:https';
 
 dotenv.config();
 
@@ -13,7 +12,9 @@ describe('Parser', () => {
     if (!rpcUrl) {
       throw new Error('SOLANA_RPC_URL environment variable is not set');
     }
-    connection = new Connection(rpcUrl, { commitment: 'confirmed', httpAgent: new https.Agent({ host: '127.0.0.1', port: 7890 }) });
+    connection = new Connection(rpcUrl, { 
+      commitment: 'confirmed',
+     });
   });
 
   describe('Dex', () => {

@@ -31,7 +31,7 @@ describe('Dex Parser', () => {
             maxSupportedTransactionVersion: 0,
           });
           if (!tx) { throw new Error(`Transaction not found > ${signature}`); }
-
+          
           const trades = parser.parseTrades(tx);
           const liquidity = parser.parseLiquidity(tx);
           console.log('trades', trades, '> liquidity', liquidity);

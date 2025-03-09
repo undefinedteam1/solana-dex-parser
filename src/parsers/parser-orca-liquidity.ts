@@ -72,11 +72,7 @@ class OrcaPoolParser {
     return null;
   }
 
-  public parseInstruction(
-    instruction: any,
-    index: number,
-    innerIndex?: number
-  ): PoolEvent | null {
+  public parseInstruction(instruction: any, index: number, innerIndex?: number): PoolEvent | null {
     try {
       const data = getInstructionData(instruction);
       const action = this.getPoolAction(data);
@@ -100,11 +96,7 @@ class OrcaPoolParser {
     return innerIndex === undefined ? index.toString() : `${index}-${innerIndex}`;
   }
 
-  protected parseTransfers(
-    instruction: any,
-    index: number,
-    innerIndex?: number
-  ): TransferData[] {
+  protected parseTransfers(instruction: any, index: number, innerIndex?: number): TransferData[] {
     const curIdx = this.getInstructionId(index, innerIndex);
     const accounts = this.adapter.getInstructionAccounts(instruction);
     return this.utils
@@ -112,12 +104,7 @@ class OrcaPoolParser {
       .filter((transfer) => accounts.includes(transfer.info.destination) && transfer.idx >= curIdx);
   }
 
-  private parseAddLiquidityEvent(
-    instruction: any,
-    index: number,
-    data: any,
-    transfers: TransferData[]
-  ): PoolEvent {
+  private parseAddLiquidityEvent(instruction: any, index: number, data: any, transfers: TransferData[]): PoolEvent {
     const [token0, token1] = this.utils.getLPTransfers(transfers);
     const token0Mint = token0?.info.mint;
     const token1Mint = token1?.info.mint;
@@ -140,12 +127,7 @@ class OrcaPoolParser {
     };
   }
 
-  private parseRemoveLiquidityEvent(
-    instruction: any,
-    index: number,
-    data: any,
-    transfers: TransferData[]
-  ): PoolEvent {
+  private parseRemoveLiquidityEvent(instruction: any, index: number, data: any, transfers: TransferData[]): PoolEvent {
     const [token0, token1] = this.utils.getLPTransfers(transfers);
     const token0Mint = token0?.info.mint;
     const token1Mint = token1?.info.mint;

@@ -1,3 +1,10 @@
+import { ParsedTransactionWithMeta, TransactionResponse, VersionedTransactionResponse } from '@solana/web3.js';
+
+export type SolanaTransaction =
+  | ParsedTransactionWithMeta
+  | VersionedTransactionResponse
+  | (TransactionResponse & VersionedTransactionResponse);
+
 export interface ParseConfig {
   /**
    * if true, will try to parse unknown DEXes
@@ -123,6 +130,7 @@ export interface PoolEventBase {
   signature: string;
   idx: string; // instruction indexes
 }
+
 export interface PoolEvent extends PoolEventBase {
   /**
    * AMM pool address (market)

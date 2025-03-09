@@ -1,32 +1,27 @@
-import { ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
+import { PartiallyDecodedInstruction } from '@solana/web3.js';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
-import { convertToUiAmount, PoolEvent, PoolEventType, TokenInfo, TransferData } from '../types';
-import { TokenInfoExtractor } from '../token-extractor';
-import { getLPTransfers, processTransferInnerInstruction } from '../transfer-utils';
-import base58 from 'bs58';
-import { getPoolEventBase } from '../utils';
+import { convertToUiAmount, PoolEvent, PoolEventType, TransferData } from '../types';
+import { TransactionAdapter } from '../transaction-adapter';
+import { TransactionUtils } from '../transaction-utils';
+import { getInstructionData } from '../utils';
 
 export class OrcaLiquidityParser {
-  private readonly splTokenMap: Map<string, TokenInfo>;
-  private readonly splDecimalsMap: Map<string, number>;
-
-  constructor(private readonly txWithMeta: ParsedTransactionWithMeta) {
-    const tokenExtractor = new TokenInfoExtractor(txWithMeta);
-    this.splTokenMap = tokenExtractor.extractSPLTokenInfo();
-    this.splDecimalsMap = tokenExtractor.extractDecimals();
+  private readonly utils: TransactionUtils;
+  constructor(private readonly adapter: TransactionAdapter) {
+    this.utils = new TransactionUtils(adapter);
   }
 
   public processLiquidity(): PoolEvent[] {
-    const events = this.txWithMeta.transaction.message.instructions
-      .map((instr, idx) => this.processInstruction(instr, idx))
-      .filter((event): event is PoolEvent => event !== null);
+    const events = this.adapter.instructions
+      .map((instr: any, idx: number) => this.processInstruction(instr, idx))
+      .filter((event: any): event is PoolEvent => event !== null);
 
     return events.length > 0 ? events : this.processInnerInstructions();
   }
 
   private processInnerInstructions(): PoolEvent[] {
     try {
-      return this.txWithMeta.transaction.message.instructions.flatMap((_, idx) => this.processInnerInstruction(idx));
+      return this.adapter.instructions.flatMap((_: any, idx: number) => this.processInnerInstruction(idx));
     } catch (error) {
       console.error('Error processing Meteora inner instructions:', error);
       return [];
@@ -34,7 +29,7 @@ export class OrcaLiquidityParser {
   }
 
   private processInnerInstruction(outerIndex: number): PoolEvent[] {
-    return (this.txWithMeta.meta?.innerInstructions || [])
+    return (this.adapter.innerInstructions || [])
       .filter((set) => set.index === outerIndex)
       .flatMap((set) =>
         set.instructions
@@ -44,7 +39,7 @@ export class OrcaLiquidityParser {
   }
 
   private processInstruction(instruction: any, index: number, innerIndex?: number): PoolEvent | null {
-    const programId = instruction.programId.toBase58();
+    const programId = this.adapter.getInstructionProgramId(instruction);
     const parser = this.getParser(programId);
     return parser ? parser.parseInstruction(instruction, index, innerIndex) : null;
   }
@@ -52,7 +47,7 @@ export class OrcaLiquidityParser {
   private getParser(programId: string): OrcaPoolParser | null {
     switch (programId) {
       case DEX_PROGRAMS.ORCA.id:
-        return new OrcaPoolParser(this.txWithMeta, this.splTokenMap, this.splDecimalsMap);
+        return new OrcaPoolParser(this.adapter, this.utils);
       default:
         return null;
     }
@@ -61,9 +56,8 @@ export class OrcaLiquidityParser {
 
 class OrcaPoolParser {
   constructor(
-    private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly splTokenMap: Map<string, TokenInfo>,
-    private readonly splDecimalsMap: Map<string, number>
+    private readonly adapter: TransactionAdapter,
+    private readonly utils: TransactionUtils
   ) {}
 
   public getPoolAction(data: any): PoolEventType | null {
@@ -85,7 +79,7 @@ class OrcaPoolParser {
     innerIndex?: number
   ): PoolEvent | null {
     try {
-      const data = base58.decode(instruction.data as string);
+      const data = getInstructionData(instruction);
       const action = this.getPoolAction(data);
       if (!action) return null;
 
@@ -113,10 +107,10 @@ class OrcaPoolParser {
     innerIndex?: number
   ): TransferData[] {
     const curIdx = this.getInstructionId(index, innerIndex);
-    const accounts = instruction.accounts.map((acc) => acc.toBase58());
-    return processTransferInnerInstruction(this.txWithMeta, index, this.splTokenMap, this.splDecimalsMap).filter(
-      (transfer) => accounts.includes(transfer.info.destination) && transfer.idx >= curIdx
-    );
+    const accounts = this.adapter.getInstructionAccounts(instruction);
+    return this.utils
+      .processTransferInstructions(index)
+      .filter((transfer) => accounts.includes(transfer.info.destination) && transfer.idx >= curIdx);
   }
 
   private parseAddLiquidityEvent(
@@ -125,25 +119,25 @@ class OrcaPoolParser {
     data: any,
     transfers: TransferData[]
   ): PoolEvent {
-    const [token0, token1] = getLPTransfers(transfers);
+    const [token0, token1] = this.utils.getLPTransfers(transfers);
     const token0Mint = token0?.info.mint;
     const token1Mint = token1?.info.mint;
-    const programId = instruction.programId.toBase58();
+    const programId = this.adapter.getInstructionProgramId(instruction);
+    const accounts = this.adapter.getInstructionAccounts(instruction);
     return {
-      ...getPoolEventBase('ADD', this.txWithMeta, programId),
+      ...this.adapter.getPoolEventBase('ADD', programId),
       idx: index.toString(),
-      poolId: instruction.accounts[0].toString(),
-      poolLpMint: instruction.accounts[0].toString(),
+      poolId: accounts[0],
+      poolLpMint: accounts[0],
       token0Mint: token0Mint,
       token1Mint: token1Mint,
       token0Amount:
         token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(32), this.splDecimalsMap.get(token0Mint)),
+        convertToUiAmount(data.readBigUInt64LE(32), this.adapter.getTokenDecimals(token0Mint)),
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), this.splDecimalsMap.get(token1Mint)),
-      lpAmount:
-        convertToUiAmount(data.readBigUInt64LE(8), this.splDecimalsMap.get(instruction.accounts[1].toString())) || 0,
+        convertToUiAmount(data.readBigUInt64LE(24), this.adapter.getTokenDecimals(token1Mint)),
+      lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])) || 0,
     };
   }
 
@@ -153,24 +147,25 @@ class OrcaPoolParser {
     data: any,
     transfers: TransferData[]
   ): PoolEvent {
-    const [token0, token1] = getLPTransfers(transfers);
+    const [token0, token1] = this.utils.getLPTransfers(transfers);
     const token0Mint = token0?.info.mint;
     const token1Mint = token1?.info.mint;
-    const programId = instruction.programId.toBase58();
+    const programId = this.adapter.getInstructionProgramId(instruction);
+    const accounts = this.adapter.getInstructionAccounts(instruction);
     return {
-      ...getPoolEventBase('REMOVE', this.txWithMeta, programId),
+      ...this.adapter.getPoolEventBase('REMOVE', programId),
       idx: index.toString(),
-      poolId: instruction.accounts[0].toString(),
-      poolLpMint: instruction.accounts[0].toString(),
+      poolId: accounts[0],
+      poolLpMint: accounts[0],
       token0Mint: token0Mint,
       token1Mint: token1Mint,
       token0Amount:
         token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(32), this.splDecimalsMap.get(token0Mint)),
+        convertToUiAmount(data.readBigUInt64LE(32), this.adapter.getTokenDecimals(token0Mint)),
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), this.splDecimalsMap.get(token1Mint)),
-      lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.splDecimalsMap.get(instruction.accounts[1].toString())),
+        convertToUiAmount(data.readBigUInt64LE(24), this.adapter.getTokenDecimals(token1Mint)),
+      lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
     };
   }
 }

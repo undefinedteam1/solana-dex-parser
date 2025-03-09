@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 import { hexToUint8Array } from '../utils';
-import base58 from 'bs58';
 
 dotenv.config();
 

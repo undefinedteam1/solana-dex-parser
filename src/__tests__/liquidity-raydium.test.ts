@@ -1,6 +1,7 @@
 import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
 import { RaydiumLiquidityParser } from '../parsers/parser-raydium-liquidity';
+import { TransactionAdapter } from '../transaction-adapter';
 
 dotenv.config();
 
@@ -143,7 +144,7 @@ describe('Liquidity', () => {
             maxSupportedTransactionVersion: 0,
           });
           if(!tx) throw new Error('Transaction not found');
-          const parser = new RaydiumLiquidityParser(tx);
+          const parser = new RaydiumLiquidityParser(new TransactionAdapter(tx));
           const events = parser.processLiquidity();
           expect(events.length).toEqual(1);
           expect(events[0].type).toEqual(test.type);
@@ -159,11 +160,11 @@ describe('Liquidity', () => {
   describe('Raydium V4 Error Cases', () => {
     test_errors.forEach((signature) => {
         it(`${signature} `, async () => {
-          const tx = await connection.getParsedTransaction(signature, {
+          const tx = await connection.getTransaction(signature, {
             maxSupportedTransactionVersion: 0,
           });
           if(!tx) throw new Error('Transaction not found');
-          const parser = new RaydiumLiquidityParser(tx);
+          const parser = new RaydiumLiquidityParser(new TransactionAdapter(tx));
           const events = parser.processLiquidity();
           expect(events.length).toEqual(0);
         });

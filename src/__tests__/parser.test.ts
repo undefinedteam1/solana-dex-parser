@@ -7,6 +7,7 @@ dotenv.config();
 
 describe('Dex Parser', () => {
   let connection: Connection;
+  let fetchTime = 0, processTime = 0;
   beforeAll(async () => {
     // Initialize connection
     const rpcUrl = process.env.SOLANA_RPC_URL;
@@ -42,13 +43,22 @@ describe('Dex Parser', () => {
       // .filter((test: any) => test.test == true) // test only
       .forEach((test) => {
         it(`${test.type} > ${test.amm} > ${test.signature} `, async () => {
-          const tx = await connection.getParsedTransaction(test.signature, {
+          const s1 = Date.now();
+          const tx = await connection.getTransaction(test.signature, {
             commitment: 'confirmed',
             maxSupportedTransactionVersion: 0,
           });
           if (!tx) { throw new Error(`Transaction not found > ${test.signature}`); }
+          const s2 = Date.now();
+          fetchTime += s2 - s1;
+          const s3 = Date.now();
 
           const trades = parser.parseTrades(tx);
+
+          const s4 = Date.now();
+          processTime += s4 - s3;
+          // console.log('fetchTime', fetchTime);
+          // console.log('processTime', processTime);
           // console.log('trades', trades);
           expect(trades.length).toBeGreaterThanOrEqual(1);
           expectItem(trades[0], test);
@@ -58,5 +68,10 @@ describe('Dex Parser', () => {
           }
         });
       });
+  });
+
+  afterAll(async () => {
+    console.log(`Fetch time: ${fetchTime / 1000} s > avg: ${(fetchTime) / 1000 / tests.length} s >`, '\n',
+      `Process time: ${processTime / 1000} s > avg: ${(processTime) / 1000 / tests.length} s >`);
   });
 });

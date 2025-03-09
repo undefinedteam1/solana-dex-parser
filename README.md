@@ -2,6 +2,17 @@
 
 A TypeScript library for parsing Solana DEX swap transactions. Supports multiple DEX protocols including Jupiter, Raydium, Meteora, PumpFun, and Moonshot.
 
+## 🚀 What's New in 2.0.0
+
+Major refactoring with enhanced transaction parsing support:
+- Support for multiple transaction formats:
+  - `getTransaction`/`getParsedTransaction`
+  - Transactions of `getBlock`/`getParsedBlock` 
+- Unified parsing interface for both parsed and compiled transactions
+- Improved performance with optimized data processing
+- Enhanced error handling and stability
+- Simplified API with better TypeScript support
+
 ## Features
 
 - Parse **Swap** transactions from multiple DEX protocols
@@ -46,7 +57,7 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 ## Installation
 
 ```bash
-yarn install solana-dex-parser
+yarn add solana-dex-parser
 ```
 
 ## Usage
@@ -65,17 +76,16 @@ async function parseSwap() {
   // Setup connection
   const connection = new Connection('https://api.mainnet-beta.solana.com');
   
-  // Get transaction
+  // Get transaction (supports both parsed and compiled transactions)
   const signature = 'your-transaction-signature';
- 
-  const parser = new DexParser();
-
-  // parse tx object
-  const tx = await connection.getParsedTransaction(signature, {
-    commitment: "confirmed",
+  const tx = await connection.getTransaction(signature, {
     maxSupportedTransactionVersion: 0,
   });
+  // Or use getParsedTransaction
+  // const tx = await connection.getParsedTransaction(signature);
 
+  // Parse trades
+  const parser = new DexParser();
   const trades = await parser.parseTrades(tx);
   console.log("trades:", trades);
 }
@@ -124,23 +134,70 @@ async function parseSwap() {
     ]
 ```
 
-### 2. Liquidity Usage
+### Block Transaction Parsing
+
+```typescript
+import { Connection } from '@solana/web3.js';
+import { DexParser } from 'solana-dex-parser';
+
+// Works with both getBlock and getParsedBlock
+async function parseBlockTransactions() {
+  const connection = new Connection('https://api.mainnet-beta.solana.com');
+  const slot = 'your-block-slot';
+  
+ try {
+    const block = await connection.getBlock(slot, {
+      commitment: 'confirmed',
+      maxSupportedTransactionVersion: 0,
+      transactionDetails: 'full',
+    });
+    // Or use getParsedBlock
+    // const block = await connection.getParsedBlock(slot,{
+    //   commitment: 'confirmed',
+    //   maxSupportedTransactionVersion: 0,
+    //   transactionDetails: 'full',
+    // });
+
+    const parser = new DexParser();
+    const trades = [];
+    const liquidityEvents = [];
+
+    for (const tx of block.transactions) {
+      if (tx.meta?.err) continue;
+
+      const txData = {
+        ...tx!,
+        slot: block.parentSlot + 1,
+        blockTime: block.blockTime
+      };
+
+      trades.push(...parser.parseTrades(txData));
+      liquidityEvents.push(...parser.parseLiquidity(txData));
+    }
+
+    return { trades, liquidityEvents };
+  } catch (error) {
+    console.error('Failed to parse block:', error);
+    throw error;
+  }
+}
+```
+
+### 2. Liquidity Events Parsing
 
 ```typescript
 import { Connection } from '@solana/web3.js';
 import { DexParser } from 'solana-dex-parser';
 
 async function parseLiquidityEvents() {
-  // Setup connection
   const connection = new Connection('https://api.mainnet-beta.solana.com');
-  
-  // Get transaction
   const signature = 'your-transaction-signature';
-  const tx = await connection.getParsedTransaction(signature, {
+  
+  // Works with both parsed and unparsed transactions
+  const tx = await connection.getTransaction(signature, {
     maxSupportedTransactionVersion: 0,
   });
  
-  // Parse events
   const parser = new DexParser();
   const events = await parser.parseLiquidity(tx);
   console.log("events:", events);
@@ -220,47 +277,12 @@ async function parseLiquidityEvents() {
     ]
 ```
 
-### 3. Common Use Cases
+### 3. More Use Cases
 
-#### 3.1 Analyzing DEX trading activity:
-
-```typescript
-const signatures = ['sig1', 'sig2', 'sig3'];
-const allTrades = [];
-
-for (const signature of signatures) {
-  const parsedTransaction = await connection.getParsedTransaction(signature);
-  const trades = dexParser.parseTransaction(parsedTransaction);
-  allTrades.push(...trades);
-}
-
-console.log(`Total trades: ${allTrades.length}`);
-```
-
-#### 3.2 Extracting token transfer information:
+#### 3.1 Extracting Pumpfun events (create/trade/complete):
 
 ```typescript
-import { TransferParser } from 'solana-dex-parser';
-
-
-// Setup connection
-const connection = new Connection('https://api.mainnet-beta.solana.com');
-// Get transaction
-const signature = 'your-transaction-signature';
-const tx = await connection.getParsedTransaction(signature, {
-  maxSupportedTransactionVersion: 0,
-});
-
-const transferParser = new TransferParser();
-const transfers = transferParser.parseTransfers(tx);
-
-console.log(transfers);
-```
-
-#### 3.3 Extracting Pumpfun events (create/trade/complete):
-
-```typescript
-import { PumpfunEventParser } from 'solana-dex-parser';
+import { PumpfunEventParser,TransactionAdapter } from 'solana-dex-parser';
   
 // Setup connection
 const connection = new Connection('https://api.mainnet-beta.solana.com');
@@ -270,12 +292,12 @@ const tx = await connection.getParsedTransaction(signature, {
   maxSupportedTransactionVersion: 0,
 });
 
-const eventParser = new PumpfunEventParser(tx);
+const eventParser = new PumpfunEventParser(new TransactionAdapter(tx));
 const events = eventParser.processEvents(); // PumpfunEvent[]
 
 console.log(events);
-
 ```
+
 ```typescript
 export interface PumpfunEvent {
   type: "TRADE" | "CREATE" | "COMPLETE";
@@ -286,7 +308,7 @@ export interface PumpfunEvent {
 }
 ```
 
-#### 3.4 Raydium v4 logs decode:
+#### 3.2 Raydium v4 logs decode:
 
 ```typescript
 import { decodeRaydiumLog, LogType, parseRaydiumSwapLog } from 'solana-dex-parser';
@@ -313,10 +335,10 @@ import { decodeRaydiumLog, LogType, parseRaydiumSwapLog } from 'solana-dex-parse
 ```
 
 ## Note
-- Jupiter Swap is obtained by parsing Instruction information, and the output only contains a transaction record after the sum (excluding the specific route swap record).
-- Other aggregators, such as OKX, output multiple swap transaction records (swap records per amm).
-- Except for specially specified parsers(Jupiter,Pumpfun,Moonshot), swap records are fetched by parsing transferActions
-- Orca Liquidity analysis, not yet support for OrcaV1,OrcaV2.
+- Jupiter Swap outputs aggregated transaction records
+- Other aggregators (e.g., OKX) output multiple swap transaction records per AMM
+- Most swap records are parsed from transfer actions except for Jupiter, Pumpfun, and Moonshot
+- Orca Liquidity analysis: OrcaV1 and OrcaV2 support is limited
 
 ## Development
 

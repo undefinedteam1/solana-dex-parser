@@ -1,22 +1,23 @@
-import { ParsedMessageAccount, ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
-import { decode as base58Decode } from 'bs58';
 import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
-import { convertToUiAmount, DexInfo, TokenAmount, TokenInfo, TradeInfo, TradeType, TransferData } from '../types';
-import { absBigInt, getTokenDecimals } from '../utils';
-import { attachTokenTransferInfo } from '../transfer-utils';
+import { convertToUiAmount, DexInfo, TokenAmount, TradeInfo, TradeType, TransferData } from '../types';
+import { absBigInt, getInstructionData } from '../utils';
+import { TransactionAdapter } from '../transaction-adapter';
+import { TransactionUtils } from '../transaction-utils';
 
 export class MoonshotParser {
+  private readonly utils: TransactionUtils;
+
   constructor(
-    private readonly txWithMeta: ParsedTransactionWithMeta,
+    private readonly adapter: TransactionAdapter,
     private readonly dexInfo: DexInfo,
-    private readonly splTokenMap: Map<string, TokenInfo>,
-    private readonly splDecimalsMap: Map<string, number>,
     private readonly transferActions: Record<string, TransferData[]>
-  ) {}
+  ) {
+    this.utils = new TransactionUtils(adapter);
+  }
 
   public processTrades(): TradeInfo[] {
     const trades: TradeInfo[] = [];
-    const instructions = this.txWithMeta.transaction.message.instructions;
+    const instructions = this.adapter.instructions;
 
     instructions.forEach((instruction: any, index: number) => {
       if (this.isTradeInstruction(instruction)) {
@@ -31,27 +32,23 @@ export class MoonshotParser {
     const trades: TradeInfo[] = [];
 
     // outer instruction
-    const instructions = this.txWithMeta.transaction.message.instructions;
+    const instructions = this.adapter.instructions;
     trades.push(
       ...instructions
-        .filter((instruction, index) => outerIndex == index && this.isTradeInstruction(instruction))
-        .map((instruction, index) =>
-          this.parseTradeInstruction(instruction as PartiallyDecodedInstruction, `${outerIndex}-${index}`)
-        )
-        .filter((transfer): transfer is TradeInfo => transfer !== null)
+        .filter((instruction: any, index: number) => outerIndex == index && this.isTradeInstruction(instruction))
+        .map((instruction: any, index: any) => this.parseTradeInstruction(instruction, `${outerIndex}-${index}`))
+        .filter((transfer: any): transfer is TradeInfo => transfer !== null)
     );
 
     // inner instruction
-    const innerInstructions = this.txWithMeta.meta?.innerInstructions;
+    const innerInstructions = this.adapter.innerInstructions;
     if (innerInstructions) {
       trades.push(
         ...innerInstructions
           .filter((set) => set.index === outerIndex)
           .flatMap((set) =>
             set.instructions
-              .map((instruction, index) =>
-                this.parseTradeInstruction(instruction as PartiallyDecodedInstruction, `${outerIndex}-${index}`)
-              )
+              .map((instruction, index) => this.parseTradeInstruction(instruction, `${outerIndex}-${index}`))
               .filter((transfer): transfer is TradeInfo => transfer !== null)
           )
       );
@@ -61,16 +58,16 @@ export class MoonshotParser {
   }
 
   public isTradeInstruction(instruction: any): boolean {
-    const programId =
-      instruction.programId || this.txWithMeta.transaction.message.accountKeys[instruction.programIdIndex];
-    return programId.toBase58() == DEX_PROGRAMS.MOONSHOT.id && instruction.accounts.length === 11;
+    const programId = this.adapter.getInstructionProgramId(instruction);
+    const accounts = this.adapter.getInstructionAccounts(instruction);
+    return programId == DEX_PROGRAMS.MOONSHOT.id && accounts && accounts.length === 11;
   }
 
-  private detectCollateralMint(accountKeys: ParsedMessageAccount[]): string {
-    if (accountKeys.some((key) => key.pubkey.toBase58() == TOKENS.USDC)) {
+  private detectCollateralMint(accountKeys: string[]): string {
+    if (accountKeys.some((key) => key == TOKENS.USDC)) {
       return TOKENS.USDC;
     }
-    if (accountKeys.some((key) => key.pubkey.toBase58() == TOKENS.USDT)) {
+    if (accountKeys.some((key) => key == TOKENS.USDT)) {
       return TOKENS.USDT;
     }
     return TOKENS.SOL;
@@ -79,20 +76,20 @@ export class MoonshotParser {
   private parseTradeInstruction(instruction: any, idx: string): TradeInfo | null {
     if (!('data' in instruction)) return null;
 
-    const decodedData = base58Decode(instruction.data);
-    const discriminator = decodedData.slice(0, 8);
+    const data = getInstructionData(instruction);
+    const discriminator = data.slice(0, 8);
     let tradeType: TradeType;
 
-    if (Buffer.from(discriminator).equals(DISCRIMINATORS.MOONSHOT.BUY)) {
+    if (discriminator.equals(DISCRIMINATORS.MOONSHOT.BUY)) {
       tradeType = 'BUY';
-    } else if (Buffer.from(discriminator).equals(DISCRIMINATORS.MOONSHOT.SELL)) {
+    } else if (discriminator.equals(DISCRIMINATORS.MOONSHOT.SELL)) {
       tradeType = 'SELL';
     } else {
       return null;
     }
 
-    const moonshotTokenMint = instruction.accounts[6].toBase58(); // meme
-    const accountKeys = this.txWithMeta.transaction.message.accountKeys;
+    const moonshotTokenMint = this.adapter.getInstructionAccounts(instruction)[6]; // meme
+    const accountKeys = this.adapter.accountKeys;
     const collateralMint = this.detectCollateralMint(accountKeys);
     const { tokenAmount, collateralAmount } = this.calculateAmounts(moonshotTokenMint, collateralMint);
 
@@ -129,44 +126,42 @@ export class MoonshotParser {
         amount: tradeType == 'BUY' ? tokenAmount.uiAmount : collateralAmount.uiAmount,
         decimals: tradeType == 'BUY' ? tokenAmount.decimals : collateralAmount.decimals,
       },
-      user: this.txWithMeta.transaction.message.accountKeys[0].pubkey.toBase58(),
+      user: this.adapter.signer,
       programId: DEX_PROGRAMS.MOONSHOT.id,
       amm: DEX_PROGRAMS.MOONSHOT.name,
       route: this.dexInfo.route || '',
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
+      slot: this.adapter.slot,
+      timestamp: this.adapter.blockTime,
+      signature: this.adapter.signature,
       idx,
     };
 
-    return attachTokenTransferInfo(trade, this.transferActions);
+    return this.utils.attachTokenTransferInfo(trade, this.transferActions);
   }
 
   private getTokenBalanceChanges(mint: string): bigint {
-    const signer = this.txWithMeta.transaction.message.accountKeys[0];
-    const signerPubkey = signer.pubkey.toBase58();
+    const signer = this.adapter.signer;
 
     if (mint == TOKENS.SOL) {
-      const meta = this.txWithMeta.meta;
-      if (!meta?.postBalances?.[0] || !meta?.preBalances?.[0]) {
+      if (!this.adapter.postBalances?.[0] || !this.adapter.preBalances?.[0]) {
         throw new Error('Insufficient balance information for SOL');
       }
-      return BigInt(meta.postBalances[0] - meta.preBalances[0]);
+      return BigInt(this.adapter.postBalances[0] - this.adapter.preBalances[0]);
     }
 
     let preAmount = BigInt(0);
     let postAmount = BigInt(0);
     let balanceFound = false;
 
-    this.txWithMeta.meta?.preTokenBalances?.forEach((preBalance) => {
-      if (preBalance.mint == mint && preBalance.owner == signerPubkey) {
+    this.adapter.preTokenBalances?.forEach((preBalance) => {
+      if (preBalance.mint == mint && preBalance.owner == signer) {
         preAmount = BigInt(preBalance.uiTokenAmount.amount);
         balanceFound = true;
       }
     });
 
-    this.txWithMeta.meta?.postTokenBalances?.forEach((postBalance) => {
-      if (postBalance.mint == mint && postBalance.owner == signerPubkey) {
+    this.adapter.postTokenBalances?.forEach((postBalance) => {
+      if (postBalance.mint == mint && postBalance.owner == signer) {
         postAmount = BigInt(postBalance.uiTokenAmount.amount);
         balanceFound = true;
       }
@@ -180,7 +175,7 @@ export class MoonshotParser {
   }
 
   private createTokenAmount(amount: bigint, mint: string): TokenAmount {
-    const decimals = getTokenDecimals(this.txWithMeta, mint);
+    const decimals = this.adapter.getTokenDecimals(mint);
     return {
       amount,
       uiAmount: convertToUiAmount(amount, decimals),

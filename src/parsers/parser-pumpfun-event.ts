@@ -1,42 +1,31 @@
-import { ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
+import { PartiallyDecodedInstruction } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import base58 from 'bs58';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
-import {
-  convertToUiAmount,
-  DexInfo,
-  PumpfunCompleteEvent,
-  PumpfunCreateEvent,
-  PumpfunEvent,
-  PumpfunTradeEvent,
-} from '../types';
+import { convertToUiAmount, PumpfunCompleteEvent, PumpfunCreateEvent, PumpfunEvent, PumpfunTradeEvent } from '../types';
+import { TransactionAdapter } from '../transaction-adapter';
+import { getInstructionData } from '../utils';
 
 export class PumpfunEventParser {
-  constructor(
-    private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo?: DexInfo
-  ) {}
+  constructor(private readonly adapter: TransactionAdapter) {}
 
   public processEvents(): PumpfunEvent[] {
-    return this.txWithMeta.transaction.message.instructions.reduce(
-      (events: PumpfunEvent[], instruction: any, index: number) => {
-        if (instruction.programId.toBase58() === DEX_PROGRAMS.PUMP_FUN.id) {
-          events.push(...this.parseInnerInstructions(index));
-        }
-        return events;
-      },
-      []
-    );
+    return this.adapter.instructions.reduce((events: PumpfunEvent[], instruction: any, index: number) => {
+      if (this.adapter.getInstructionProgramId(instruction) === DEX_PROGRAMS.PUMP_FUN.id) {
+        events.push(...this.parseInnerInstructions(index));
+      }
+      return events;
+    }, []);
   }
 
   public parseInnerInstructions(instructionIndex: number): PumpfunEvent[] {
-    const innerInstructions = this.txWithMeta.meta?.innerInstructions;
+    const innerInstructions = this.adapter.innerInstructions;
     if (!innerInstructions) return [];
 
     const txMeta = {
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
+      slot: this.adapter.slot,
+      timestamp: this.adapter.blockTime || 0,
+      signature: this.adapter.signature,
     };
     return innerInstructions
       .filter((set) => set.index === instructionIndex)
@@ -86,8 +75,8 @@ export class PumpfunEventParser {
 
   private isPumpFunTradeEvent(instruction: PartiallyDecodedInstruction): boolean {
     try {
-      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id) return false;
-      const data = base58.decode(instruction.data as string);
+      if (this.adapter.getInstructionProgramId(instruction) != DEX_PROGRAMS.PUMP_FUN.id) return false;
+      const data = getInstructionData(instruction);
       return Buffer.from(data.slice(0, 16)).equals(DISCRIMINATORS.PUMPFUN.TRADE_EVENT);
     } catch {
       return false;
@@ -96,7 +85,7 @@ export class PumpfunEventParser {
 
   private parseTradeEvent(instruction: PartiallyDecodedInstruction): PumpfunTradeEvent | null {
     try {
-      const data = base58.decode(instruction.data as string);
+      const data = getInstructionData(instruction);
       return this.decodeTradeEvent(data.slice(16));
     } catch (error) {
       console.error('Failed to parse PumpFun trade event:', error);
@@ -119,19 +108,20 @@ export class PumpfunEventParser {
     };
   }
 
-  private isPumpFunCreateEvent(instruction: PartiallyDecodedInstruction): boolean {
+  private isPumpFunCreateEvent(instruction: any): boolean {
     try {
-      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id) return false;
-      const data = base58.decode(instruction.data as string);
+      const programId = this.adapter.getInstructionProgramId(instruction);
+      if (programId != DEX_PROGRAMS.PUMP_FUN.id) return false;
+      const data = getInstructionData(instruction);
       return Buffer.from(data.slice(0, 16)).equals(DISCRIMINATORS.PUMPFUN.CREATE_EVENT);
     } catch {
       return false;
     }
   }
 
-  private parseCreateEvent(instruction: PartiallyDecodedInstruction): PumpfunCreateEvent | null {
+  private parseCreateEvent(instruction: any): PumpfunCreateEvent | null {
     try {
-      const data = base58.decode(instruction.data as string);
+      const data = getInstructionData(instruction);
       return this.decodeCreateEvent(data.slice(16));
     } catch (error) {
       console.error('Failed to parse PumpFun create event:', error);
@@ -151,19 +141,20 @@ export class PumpfunEventParser {
     };
   }
 
-  private isPumpFunCompleteEvent(instruction: PartiallyDecodedInstruction): boolean {
+  private isPumpFunCompleteEvent(instruction: any): boolean {
     try {
-      if (instruction.programId.toBase58() != DEX_PROGRAMS.PUMP_FUN.id) return false;
-      const data = base58.decode(instruction.data as string);
+      const programId = this.adapter.getInstructionProgramId(instruction);
+      if (programId != DEX_PROGRAMS.PUMP_FUN.id) return false;
+      const data = getInstructionData(instruction);
       return Buffer.from(data.slice(0, 16)).equals(DISCRIMINATORS.PUMPFUN.COMPLETE_EVENT);
     } catch {
       return false;
     }
   }
 
-  private parseCompleteEvent(instruction: PartiallyDecodedInstruction): PumpfunCompleteEvent | null {
+  private parseCompleteEvent(instruction: any): PumpfunCompleteEvent | null {
     try {
-      const data = base58.decode(instruction.data as string);
+      const data = getInstructionData(instruction);
       return this.decodeCompleteEvent(data.slice(16));
     } catch (error) {
       console.error('Failed to parse PumpFun complete event:', error);

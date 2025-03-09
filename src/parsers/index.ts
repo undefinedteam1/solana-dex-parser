@@ -1,4 +1,3 @@
-export * from './parser-default';
 export * from './parser-jupiter';
 export * from './parser-raydium';
 export * from './parser-raydium-liquidity';
@@ -10,4 +9,3 @@ export * from './parser-orca';
 export * from './parser-orca-liquidity';
 export * from './parser-pumpfun';
 export * from './parser-pumpfun-event';
-export * from './transfer-parser';

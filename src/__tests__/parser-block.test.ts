@@ -25,7 +25,7 @@ describe('Parser', () => {
 
         // const trades = await parser.parseTransaction(signature);
         const s1 = Date.now();
-        const block = await connection.getParsedBlock(323648209, {
+        const block = await connection.getBlock(325565462, {
           commitment: 'confirmed',
           maxSupportedTransactionVersion: 0,
           transactionDetails: 'full',
@@ -41,9 +41,9 @@ describe('Parser', () => {
             return;
           }
           const trades = parser.parseTrades({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any);
-          const ls = parser.parseLiquidity({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any);
+          // const ls = parser.parseLiquidity({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any);
           ts.push(...trades);
-          liqs.push(...ls);
+          // liqs.push(...ls);
         })
         const s3 = Date.now();
 

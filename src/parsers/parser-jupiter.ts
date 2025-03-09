@@ -1,11 +1,14 @@
-import { ParsedTransactionWithMeta, PartiallyDecodedInstruction, PublicKey } from '@solana/web3.js';
-import bs58 from 'bs58';
-import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
+import { PublicKey } from '@solana/web3.js';
 import { deserializeUnchecked } from 'borsh';
-import { convertToUiAmount, DexInfo, TokenInfo, TradeInfo, TransferData } from '../types';
-import { getAMMs, getTradeType } from '../utils';
-import { attachTokenTransferInfo } from '../transfer-utils';
+import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
+import { DexInfo, TradeInfo, TransferData } from '../types';
+import { getAMMs, getInstructionData, getTradeType } from '../utils';
+import { TransactionAdapter } from '../transaction-adapter';
+import { TransactionUtils } from '../transaction-utils';
 
+/**
+ * Interface for Jupiter swap event data
+ */
 export interface JupiterSwapEvent {
   amm: PublicKey;
   inputMint: PublicKey;
@@ -14,13 +17,18 @@ export interface JupiterSwapEvent {
   outputAmount: bigint;
 }
 
+/**
+ * Extended Jupiter swap event data with decimals and index
+ */
 export interface JupiterSwapEventData extends JupiterSwapEvent {
   inputMintDecimals: number;
   outputMintDecimals: number;
   idx: string;
 }
 
-// Borsh class definition for Jupiter events
+/**
+ * Borsh layout for Jupiter swap events
+ */
 class JupiterLayout {
   amm: Uint8Array;
   inputMint: Uint8Array;
@@ -69,6 +77,9 @@ class JupiterLayout {
   }
 }
 
+/**
+ * Intermediate swap info for processing Jupiter events
+ */
 export interface JupiterSwapInfo {
   amms: string[];
   tokenIn: Map<string, bigint>;
@@ -77,99 +88,119 @@ export interface JupiterSwapInfo {
   idx: string;
 }
 
+/**
+ * Parser for Jupiter DEX transactions
+ */
 export class JupiterParser {
-  constructor(
-    private readonly txWithMeta: ParsedTransactionWithMeta,
-    private readonly dexInfo: DexInfo,
-    private readonly splTokenMap: Map<string, TokenInfo>,
-    private readonly splDecimalsMap: Map<string, number>,
-    private readonly transferActions: Record<string, TransferData[]>
-  ) {}
+  private readonly utils: TransactionUtils;
 
-  public processTrades(): TradeInfo[] {
-    return this.txWithMeta.transaction.message.instructions.reduce(
-      (trades: TradeInfo[], instruction: any, index: number) => {
-        if (this.isTradeInstruction(instruction)) {
-          const instructionTrades = this.processInstructionTrades(instruction, index);
-          trades.push(...instructionTrades);
-        }
-        return trades;
-      },
-      []
-    );
+  constructor(
+    private readonly adapter: TransactionAdapter,
+    private readonly dexInfo: DexInfo,
+    private readonly transferActions: Record<string, TransferData[]>
+  ) {
+    this.utils = new TransactionUtils(adapter);
   }
 
-  public processInstructionTrades(instruction: any, outerIndex: number, innerIndex?: number): TradeInfo[] {
+  /**
+   * Process trades from transaction
+   */
+  public processTrades(): TradeInfo[] {
+    const trades: TradeInfo[] = [];
+
+    this.adapter.instructions.forEach((ix: any, idx: number) => {
+      if (this.isTradeInstruction(ix)) {
+        const trade = this.processInstruction(ix, idx);
+        trades.push(...trade);
+      }
+    });
+
+    return trades;
+  }
+
+  /**
+   * Process instruction
+   */
+  private processInstruction(instruction: any, idx: number): TradeInfo[] {
     try {
-      const curIdx = innerIndex === undefined ? outerIndex.toString() : `${outerIndex}-${innerIndex}`;
-      const events = this.processJupiterSwaps(outerIndex).filter((it) => it.idx >= curIdx);
+      const events = this.processJupiterSwaps(idx);
       const data = this.processSwapData(events);
       return data ? [data] : [];
     } catch (error) {
-      console.log('Error processing Jupiter trades:', error, this.txWithMeta.transaction.signatures[0]);
+      console.error('Process instruction error:', error);
       return [];
     }
   }
 
-  public isTradeInstruction(instruction: any): boolean {
-    return [DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(instruction.programId.toBase58());
+  /**
+   * Check if instruction is a trade instruction
+   */
+  private isTradeInstruction(instruction: any): boolean {
+    const programId = this.adapter.getInstructionProgramId(instruction);
+    return [DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(programId);
   }
 
+  /**
+   * Process Jupiter swap events
+   */
   private processJupiterSwaps(instructionIndex: number): JupiterSwapEventData[] {
-    const innerInstructions = this.txWithMeta.meta?.innerInstructions;
+    const innerInstructions = this.adapter.innerInstructions;
     if (!innerInstructions) return [];
 
     return innerInstructions
       .filter((set) => set.index === instructionIndex)
       .flatMap((set) =>
         set.instructions
-          .filter((instruction) => this.isJupiterRouteEventInstruction(instruction as PartiallyDecodedInstruction))
-          .map((instruction, idx) =>
-            this.parseJupiterRouteEventInstruction(
-              instruction as PartiallyDecodedInstruction,
-              `${instructionIndex}-${idx}`
-            )
-          )
-          .filter((transfer): transfer is JupiterSwapEventData => transfer !== null)
+          .filter((ix) => this.isJupiterRouteEventInstruction(ix))
+          .map((ix, idx) => this.parseJupiterRouteEventInstruction(ix, `${instructionIndex}-${idx}`))
+          .filter((event): event is JupiterSwapEventData => event !== null)
       );
   }
 
-  private isJupiterRouteEventInstruction(instruction: PartiallyDecodedInstruction): boolean {
-    if (instruction.programId.toBase58() != DEX_PROGRAMS.JUPITER.id || instruction.data?.length < 16) {
-      return false;
-    }
+  /**
+   * Check if instruction is a Jupiter route event
+   */
+  private isJupiterRouteEventInstruction(instruction: any): boolean {
+    const programId = this.adapter.getInstructionProgramId(instruction);
+    if (programId !== DEX_PROGRAMS.JUPITER.id) return false;
 
-    const decodedData = bs58.decode(instruction.data.toString());
-    return Buffer.from(decodedData.slice(0, 16)).equals(Buffer.from(DISCRIMINATORS.JUPITER.ROUTE_EVENT));
+    const data = getInstructionData(instruction);
+    if (!data || data.length < 16) return false;
+
+    return Buffer.from(data.slice(0, 16)).equals(Buffer.from(DISCRIMINATORS.JUPITER.ROUTE_EVENT));
   }
 
-  private parseJupiterRouteEventInstruction(
-    instruction: PartiallyDecodedInstruction,
-    idx: string
-  ): JupiterSwapEventData | null {
+  /**
+   * Parse Jupiter route event instruction
+   */
+  private parseJupiterRouteEventInstruction(instruction: any, idx: string): JupiterSwapEventData | null {
     try {
-      const decodedData = bs58.decode(instruction.data.toString());
-      const eventData = decodedData.slice(16); // Skip discriminator
+      const data = getInstructionData(instruction);
+      if (!data) return null;
 
+      if (data.length < 16) return null;
+
+      const eventData = data.slice(16);
       const layout = deserializeUnchecked(JupiterLayout.schema, JupiterLayout, Buffer.from(eventData));
-
       const swapEvent = layout.toSwapEvent();
 
       return {
         ...swapEvent,
-        inputMintDecimals: this.splDecimalsMap.get(swapEvent.inputMint.toBase58()) || 0,
-        outputMintDecimals: this.splDecimalsMap.get(swapEvent.outputMint.toBase58()) || 0,
+        inputMintDecimals: this.adapter.getTokenDecimals(swapEvent.inputMint.toBase58()) || 0,
+        outputMintDecimals: this.adapter.getTokenDecimals(swapEvent.outputMint.toBase58()) || 0,
         idx,
       };
     } catch (error) {
-      throw `Failed to parse Jupiter route event: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error('Parse Jupiter route event error:', error);
+      return null;
     }
   }
 
+  /**
+   * Process swap data from events
+   */
   private processSwapData(events: JupiterSwapEventData[]): TradeInfo | null {
-    if (events.length === 0) {
-      return null; // throw "No events provided";
-    }
+    if (events.length === 0) return null;
 
     const intermediateInfo: JupiterSwapInfo = {
       amms: [],
@@ -179,25 +210,23 @@ export class JupiterParser {
       idx: '',
     };
 
-    for (const jupiterEvent of events) {
-      const inputMint = jupiterEvent.inputMint.toBase58();
-      const outputMint = jupiterEvent.outputMint.toBase58();
+    // Process events
+    for (const event of events) {
+      const inputMint = event.inputMint.toBase58();
+      const outputMint = event.outputMint.toBase58();
 
-      // Update token amounts
       intermediateInfo.tokenIn.set(
         inputMint,
-        (intermediateInfo.tokenIn.get(inputMint) || BigInt(0)) + jupiterEvent.inputAmount
+        (intermediateInfo.tokenIn.get(inputMint) || BigInt(0)) + event.inputAmount
       );
       intermediateInfo.tokenOut.set(
         outputMint,
-        (intermediateInfo.tokenOut.get(outputMint) || BigInt(0)) + jupiterEvent.outputAmount
+        (intermediateInfo.tokenOut.get(outputMint) || BigInt(0)) + event.outputAmount
       );
 
-      // Store decimals
-      intermediateInfo.decimals.set(inputMint, jupiterEvent.inputMintDecimals);
-      intermediateInfo.decimals.set(outputMint, jupiterEvent.outputMintDecimals);
-
-      intermediateInfo.idx = jupiterEvent.idx;
+      intermediateInfo.decimals.set(inputMint, event.inputMintDecimals);
+      intermediateInfo.decimals.set(outputMint, event.outputMintDecimals);
+      intermediateInfo.idx = event.idx;
     }
 
     // Remove intermediate tokens
@@ -209,63 +238,65 @@ export class JupiterParser {
       }
     }
 
-    if (intermediateInfo.tokenIn.size === 0 || intermediateInfo.tokenOut.size === 0) {
-      throw 'Invalid swap: all tokens were removed as intermediates';
-    }
-
-    return this.convertToSwapInfo(intermediateInfo);
+    return intermediateInfo.tokenIn.size > 0 && intermediateInfo.tokenOut.size > 0
+      ? this.convertToTradeInfo(intermediateInfo)
+      : null;
   }
 
-  private convertToSwapInfo(intermediateInfo: JupiterSwapInfo): TradeInfo | null {
-    if (intermediateInfo.tokenIn.size !== 1 || intermediateInfo.tokenOut.size !== 1) {
-      //throw `Invalid swap: expected 1 input and 1 output token, got ${intermediateInfo.tokenIn.size} input(s) and ${intermediateInfo.tokenOut.size} output(s)`;
-      return null;
-    }
+  /**
+   * Convert swap info to trade info
+   */
+  private convertToTradeInfo(info: JupiterSwapInfo): TradeInfo | null {
+    if (info.tokenIn.size !== 1 || info.tokenOut.size !== 1) return null;
 
-    const [inMintEntry] = Array.from(intermediateInfo.tokenIn.entries());
-    const [outMintEntry] = Array.from(intermediateInfo.tokenOut.entries());
+    const [[inMint, inAmount]] = Array.from(info.tokenIn.entries());
+    const [[outMint, outAmount]] = Array.from(info.tokenOut.entries());
+    const inDecimals = info.decimals.get(inMint) || 0;
+    const outDecimals = info.decimals.get(outMint) || 0;
 
-    if (!inMintEntry || !outMintEntry) {
-      throw 'Missing input or output token information';
-    }
-
-    const [inMint, inAmount] = inMintEntry;
-    const [outMint, outAmount] = outMintEntry;
-    const inMintDecimals = intermediateInfo.decimals.get(inMint) || 0;
-    const outMintDecimals = intermediateInfo.decimals.get(outMint) || 0;
-    // Determine signer based on DCA program presence
     const signerIndex = this.containsDCAProgram() ? 2 : 0;
-    const signer = this.txWithMeta.transaction.message.accountKeys[signerIndex].pubkey.toBase58();
-    const tradeType = getTradeType(inMint, outMint);
-    const amm = this.dexInfo.amm ?? getAMMs(Object.keys(this.transferActions))?.[0];
+    const signer = this.adapter.getAccountKey(signerIndex);
+
     const trade = {
-      type: tradeType,
+      type: getTradeType(inMint, outMint),
       inputToken: {
         mint: inMint,
-        amount: convertToUiAmount(inAmount, inMintDecimals),
-        decimals: inMintDecimals,
+        amount: Number(inAmount) / 10 ** inDecimals,
+        decimals: inDecimals,
       },
       outputToken: {
         mint: outMint,
-        amount: convertToUiAmount(outAmount, outMintDecimals),
-        decimals: outMintDecimals,
+        amount: Number(outAmount) / 10 ** outDecimals,
+        decimals: outDecimals,
       },
       user: signer,
       programId: this.dexInfo.programId,
-      amm: amm || '',
+      amm: this.dexInfo.amm || getAMMs(Object.keys(this.transferActions))?.[0] || '',
       route: this.dexInfo.route || '',
-      slot: this.txWithMeta.slot,
-      timestamp: this.txWithMeta.blockTime || 0,
-      signature: this.txWithMeta.transaction.signatures[0],
-      idx: intermediateInfo.idx,
+      slot: this.adapter.slot,
+      timestamp: this.adapter.blockTime,
+      signature: this.adapter.signature,
+      idx: info.idx,
     };
 
-    return attachTokenTransferInfo(trade, this.transferActions);
+    return this.utils.attachTokenTransferInfo(trade, this.transferActions);
   }
 
+  /**
+   * Check if transaction contains DCA program
+   */
   private containsDCAProgram(): boolean {
-    return this.txWithMeta.transaction.message.accountKeys.some(
-      (key) => key.pubkey.toBase58() == DEX_PROGRAMS.JUPITER_DCA.id
-    );
+    return this.adapter.accountKeys.some((key) => key === DEX_PROGRAMS.JUPITER_DCA.id);
+  }
+
+  /**
+   * Parse transfer actions
+   */
+  public parseTransferAction(transfer: [string, TransferData[]]): TradeInfo[] {
+    const [, transfers] = transfer;
+    if (transfers.length < 2) return [];
+
+    const trade = this.utils.processSwapData(transfers, this.dexInfo);
+    return trade ? [trade] : [];
   }
 }

@@ -1,18 +1,19 @@
-import { ParsedTransactionWithMeta } from '@solana/web3.js';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
-import { DexInfo, TokenInfo, TradeInfo, TransferData } from '../types';
-import { getTransferTokenInfo, processSwapData } from '../transfer-utils';
-import base58 from 'bs58';
-import { getProgramName } from '../utils';
+import { DexInfo, TradeInfo, TransferData } from '../types';
+import { getInstructionData, getProgramName } from '../utils';
+import { TransactionAdapter } from '../transaction-adapter';
+import { TransactionUtils } from '../transaction-utils';
 
 export class RaydiumParser {
+  private readonly utils: TransactionUtils;
+
   constructor(
-    private readonly txWithMeta: ParsedTransactionWithMeta,
+    private readonly adapter: TransactionAdapter,
     private readonly dexInfo: DexInfo,
-    private readonly splTokenMap: Map<string, TokenInfo>,
-    private readonly splDecimalsMap: Map<string, number>,
     private readonly transferActions: Record<string, TransferData[]>
-  ) {}
+  ) {
+    this.utils = new TransactionUtils(adapter);
+  }
 
   public processTrades(): TradeInfo[] {
     const trades: TradeInfo[] = [];
@@ -37,18 +38,16 @@ export class RaydiumParser {
       ].includes(programId)
     ) {
       const instruction = innerIndex
-        ? this.txWithMeta.meta?.innerInstructions?.find((it) => it.index == Number(outerIndex))?.instructions[
-            Number(innerIndex)
-          ]
-        : this.txWithMeta.transaction.message.instructions[Number(outerIndex)];
+        ? this.adapter.getInnerInstruction(Number(outerIndex), Number(innerIndex))
+        : this.adapter.instructions[Number(outerIndex)];
       if (this.notLiquidityEvent(instruction)) {
-        const trade = processSwapData(this.txWithMeta, transfer[1].slice(0, 2), {
+        const trade = this.utils.processSwapData(transfer[1].slice(0, 2), {
           ...this.dexInfo,
           amm: this.dexInfo.amm || getProgramName(programId),
         });
         if (trade) {
           if (transfer[1].length > 2) {
-            trade.fee = getTransferTokenInfo(transfer[1][2]) ?? undefined;
+            trade.fee = this.utils.getTransferTokenInfo(transfer[1][2]) ?? undefined;
           }
           trades.push(trade);
         }
@@ -59,7 +58,7 @@ export class RaydiumParser {
 
   private notLiquidityEvent(instruction: any): boolean {
     if (instruction.data) {
-      const data = base58.decode(instruction.data as string);
+      const data = getInstructionData(instruction);
       const a = Object.values(DISCRIMINATORS.RAYDIUM).some((it) => data.slice(0, 1).equals(it));
       const b = Object.values(DISCRIMINATORS.RAYDIUM_CL)
         .flatMap((it) => Object.values(it))

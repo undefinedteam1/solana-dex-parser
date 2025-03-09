@@ -1,67 +1,51 @@
-import { ParsedTransactionWithMeta, PartiallyDecodedInstruction } from '@solana/web3.js';
 import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
-import { PoolEvent, PoolEventType, TokenInfo, TransferData, convertToUiAmount } from '../types';
-import { TokenInfoExtractor } from '../token-extractor';
-import { getLPTransfers, processTransferInnerInstruction } from '../transfer-utils';
-import base58 from 'bs58';
-import { getPoolEventBase } from '../utils';
+import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from '../types';
+import { TransactionAdapter } from '../transaction-adapter';
+import { TransactionUtils } from '../transaction-utils';
+import { getInstructionData } from '../utils';
 
 // Base parser class with shared utilities
 abstract class BaseMeteoraParser {
-  constructor(
-    protected readonly txWithMeta: ParsedTransactionWithMeta,
-    protected readonly splTokenMap: Map<string, TokenInfo>,
-    protected readonly splDecimalsMap: Map<string, number>
-  ) {}
+  protected readonly utils: TransactionUtils;
+  constructor(protected readonly adapter: TransactionAdapter) {
+    this.utils = new TransactionUtils(adapter);
+  }
 
   protected getInstructionId(index: number, innerIndex?: number): string {
     return innerIndex === undefined ? index.toString() : `${index}-${innerIndex}`;
   }
 
-  protected parseTransfers(
-    instruction: PartiallyDecodedInstruction,
-    index: number,
-    innerIndex?: number
-  ): TransferData[] {
+  protected parseTransfers(instruction: any, index: number, innerIndex?: number): TransferData[] {
     const curIdx = this.getInstructionId(index, innerIndex);
-    const accounts = instruction.accounts.map((acc) => acc.toBase58());
-    return processTransferInnerInstruction(this.txWithMeta, index, this.splTokenMap, this.splDecimalsMap).filter(
-      (transfer) => accounts.includes(transfer.info.destination) && transfer.idx >= curIdx
-    );
+    const accounts = this.adapter.getInstructionAccounts(instruction);
+    return this.utils
+      .processTransferInstructions(index)
+      .filter((transfer) => accounts.includes(transfer.info.destination) && transfer.idx >= curIdx);
   }
 
   abstract getPoolAction(data: Buffer): any | PoolEventType | null;
-  abstract parseInstruction(
-    instruction: PartiallyDecodedInstruction,
-    index: number,
-    innerIndex?: number
-  ): PoolEvent | null;
+  abstract parseInstruction(instruction: any, index: number, innerIndex?: number): PoolEvent | null;
 }
 
 // Main parser for Meteora liquidity events
 export class MeteoraLiquidityParser {
-  private readonly tokenExtractor: TokenInfoExtractor;
-  private readonly splTokenMap: Map<string, TokenInfo>;
-  private readonly splDecimalsMap: Map<string, number>;
-
-  constructor(private readonly txWithMeta: ParsedTransactionWithMeta) {
-    this.tokenExtractor = new TokenInfoExtractor(txWithMeta);
-    this.splTokenMap = this.tokenExtractor.extractSPLTokenInfo();
-    this.splDecimalsMap = this.tokenExtractor.extractDecimals();
+  private readonly utils: TransactionUtils;
+  constructor(private readonly adapter: TransactionAdapter) {
+    this.utils = new TransactionUtils(adapter);
   }
 
   // Process top-level instructions and fallback to inner instructions
   public processLiquidity(): PoolEvent[] {
-    const events = this.txWithMeta.transaction.message.instructions
-      .map((instr, idx) => this.processInstruction(instr, idx))
-      .filter((event): event is PoolEvent => event !== null);
+    const events = this.adapter.instructions
+      .map((instr: any, idx: number) => this.processInstruction(instr, idx))
+      .filter((event: any): event is PoolEvent => event !== null);
 
     return events.length > 0 ? events : this.processInnerInstructions();
   }
 
   private processInnerInstructions(): PoolEvent[] {
     try {
-      return this.txWithMeta.transaction.message.instructions.flatMap((_, idx) => this.processInnerInstruction(idx));
+      return this.adapter.instructions.flatMap((_: any, idx: number) => this.processInnerInstruction(idx));
     } catch (error) {
       console.error('Error processing Meteora inner instructions:', error);
       return [];
@@ -69,7 +53,7 @@ export class MeteoraLiquidityParser {
   }
 
   private processInnerInstruction(outerIndex: number): PoolEvent[] {
-    return (this.txWithMeta.meta?.innerInstructions || [])
+    return (this.adapter.innerInstructions || [])
       .filter((set) => set.index === outerIndex)
       .flatMap((set) =>
         set.instructions
@@ -79,7 +63,7 @@ export class MeteoraLiquidityParser {
   }
 
   private processInstruction(instruction: any, index: number, innerIndex?: number): PoolEvent | null {
-    const programId = instruction.programId.toBase58();
+    const programId = this.adapter.getInstructionProgramId(instruction);
     const parser = this.getParser(programId);
     return parser ? parser.parseInstruction(instruction, index, innerIndex) : null;
   }
@@ -87,9 +71,9 @@ export class MeteoraLiquidityParser {
   private getParser(programId: string): BaseMeteoraParser | null {
     switch (programId) {
       case DEX_PROGRAMS.METEORA.id:
-        return new MeteoraDLMMPoolParser(this.txWithMeta, this.splTokenMap, this.splDecimalsMap);
+        return new MeteoraDLMMPoolParser(this.adapter);
       case DEX_PROGRAMS.METEORA_POOLS.id:
-        return new MeteoraPoolsPoolParser(this.txWithMeta, this.splTokenMap, this.splDecimalsMap);
+        return new MeteoraPoolsPoolParser(this.adapter);
       default:
         return null;
     }
@@ -118,13 +102,9 @@ class MeteoraDLMMPoolParser extends BaseMeteoraParser {
     return null;
   }
 
-  public parseInstruction(
-    instruction: PartiallyDecodedInstruction,
-    index: number,
-    innerIndex?: number
-  ): PoolEvent | null {
+  public parseInstruction(instruction: any, index: number, innerIndex?: number): PoolEvent | null {
     try {
-      const data = base58.decode(instruction.data as string);
+      const data = getInstructionData(instruction);
       const action = this.getPoolAction(data);
       if (!action) return null;
 
@@ -139,18 +119,15 @@ class MeteoraDLMMPoolParser extends BaseMeteoraParser {
   }
 
   // Parse ADD liquidity event
-  private parseAddLiquidityEvent(
-    instruction: PartiallyDecodedInstruction,
-    index: number,
-    transfers: TransferData[]
-  ): PoolEvent {
+  private parseAddLiquidityEvent(instruction: any, index: number, transfers: TransferData[]): PoolEvent {
     const [token0, token1] = this.normalizeTokens(transfers);
-    const programId = instruction.programId.toBase58();
+    const programId = this.adapter.getInstructionProgramId(instruction);
+    const accounts = this.adapter.getInstructionAccounts(instruction);
     return {
-      ...getPoolEventBase('ADD', this.txWithMeta, programId),
+      ...this.adapter.getPoolEventBase('ADD', programId),
       idx: this.getInstructionId(index),
-      poolId: instruction.accounts[1].toString(),
-      poolLpMint: instruction.accounts[1].toString(),
+      poolId: accounts[1],
+      poolLpMint: accounts[1],
       token0Mint: token0?.info.mint,
       token1Mint: token1?.info.mint,
       token0Amount: token0?.info.tokenAmount.uiAmount || 0,
@@ -159,35 +136,32 @@ class MeteoraDLMMPoolParser extends BaseMeteoraParser {
   }
 
   // Parse REMOVE liquidity event
-  private parseRemoveLiquidityEvent(
-    instruction: PartiallyDecodedInstruction,
-    index: number,
-    transfers: TransferData[]
-  ): PoolEvent {
+  private parseRemoveLiquidityEvent(instruction: any, index: number, transfers: TransferData[]): PoolEvent {
+    const accounts = this.adapter.getInstructionAccounts(instruction);
     let [token0, token1] = this.normalizeTokens(transfers);
-    if (token1 == undefined && token0?.info.mint == instruction.accounts[8].toString()) {
+    if (token1 == undefined && token0?.info.mint == accounts[8]) {
       token1 = token0;
       token0 = undefined;
-    } else if (token0 == undefined && token1?.info.mint == instruction.accounts[7].toString()) {
+    } else if (token0 == undefined && token1?.info.mint == accounts[7]) {
       token0 = token1;
       token1 = undefined;
     }
 
-    const programId = instruction.programId.toBase58();
+    const programId = this.adapter.getInstructionProgramId(instruction);
     return {
-      ...getPoolEventBase('REMOVE', this.txWithMeta, programId),
+      ...this.adapter.getPoolEventBase('REMOVE', programId),
       idx: this.getInstructionId(index),
-      poolId: instruction.accounts[1].toString(),
-      poolLpMint: instruction.accounts[1].toString(),
-      token0Mint: token0?.info.mint || instruction.accounts[7].toString(),
-      token1Mint: token1?.info.mint || instruction.accounts[8].toString(),
+      poolId: accounts[1],
+      poolLpMint: accounts[1],
+      token0Mint: token0?.info.mint || accounts[7],
+      token1Mint: token1?.info.mint || accounts[8],
       token0Amount: token0?.info.tokenAmount.uiAmount || 0,
       token1Amount: token1?.info.tokenAmount.uiAmount || 0,
     };
   }
 
   private normalizeTokens(transfers: TransferData[]): [TransferData | undefined, TransferData | undefined] {
-    let [token0, token1]: any[] = getLPTransfers(transfers);
+    let [token0, token1]: any[] = this.utils.getLPTransfers(transfers);
     if (transfers.length === 1 && transfers[0].info.mint == TOKENS.SOL) {
       token1 = transfers[0];
       token0 = undefined;
@@ -206,13 +180,9 @@ class MeteoraPoolsPoolParser extends BaseMeteoraParser {
     return null;
   }
 
-  public parseInstruction(
-    instruction: PartiallyDecodedInstruction,
-    index: number,
-    innerIndex?: number
-  ): PoolEvent | null {
+  public parseInstruction(instruction: any, index: number, innerIndex?: number): PoolEvent | null {
     try {
-      const data = base58.decode(instruction.data as string);
+      const data = getInstructionData(instruction);
       const action = this.getPoolAction(data);
       if (!action) return null;
 
@@ -235,92 +205,90 @@ class MeteoraPoolsPoolParser extends BaseMeteoraParser {
 
   // Parse CREATE liquidity event
   private parseCreateLiquidityEvent(
-    instruction: PartiallyDecodedInstruction,
+    instruction: any,
     index: number,
     data: Buffer,
     transfers: TransferData[]
   ): PoolEvent {
-    const [token0, token1] = getLPTransfers(transfers);
+    const accounts = this.adapter.getInstructionAccounts(instruction);
+    const [token0, token1] = this.utils.getLPTransfers(transfers);
     const lpToken = transfers.find((t) => t.type === 'mintTo');
-    const token0Mint = token0?.info.mint || instruction.accounts[3].toString();
-    const token1Mint = token1?.info.mint || instruction.accounts[4].toString();
-    const programId = instruction.programId.toBase58();
+    const token0Mint = token0?.info.mint || accounts[3];
+    const token1Mint = token1?.info.mint || accounts[4];
+    const programId = this.adapter.getInstructionProgramId(instruction);
     return {
-      ...getPoolEventBase('CREATE', this.txWithMeta, programId),
+      ...this.adapter.getPoolEventBase('CREATE', programId),
       idx: this.getInstructionId(index),
-      poolId: instruction.accounts[0].toString(),
-      poolLpMint: instruction.accounts[2].toString(),
+      poolId: accounts[0],
+      poolLpMint: accounts[2],
       token0Mint,
       token1Mint,
       token0Amount:
         token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(16), this.splDecimalsMap.get(token0Mint)),
+        convertToUiAmount(data.readBigUInt64LE(16), this.adapter.getTokenDecimals(token0Mint)),
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(8), this.splDecimalsMap.get(token1Mint)),
+        convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(token1Mint)),
       lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
     };
   }
 
   // Parse ADD liquidity event
-  private parseAddLiquidityEvent(
-    instruction: PartiallyDecodedInstruction,
-    index: number,
-    data: Buffer,
-    transfers: TransferData[]
-  ): PoolEvent {
-    const [token0, token1] = getLPTransfers(transfers);
+  private parseAddLiquidityEvent(instruction: any, index: number, data: Buffer, transfers: TransferData[]): PoolEvent {
+    const accounts = this.adapter.getInstructionAccounts(instruction);
+    const [token0, token1] = this.utils.getLPTransfers(transfers);
     const lpToken = transfers.find((t) => t.type === 'mintTo');
     const token0Mint = token0?.info.mint;
     const token1Mint = token1?.info.mint;
-    const programId = instruction.programId.toBase58();
+    const programId = this.adapter.getInstructionProgramId(instruction);
     return {
-      ...getPoolEventBase('ADD', this.txWithMeta, programId),
+      ...this.adapter.getPoolEventBase('ADD', programId),
       idx: this.getInstructionId(index),
-      poolId: instruction.accounts[0].toString(),
-      poolLpMint: instruction.accounts[1].toString(),
+      poolId: accounts[0],
+      poolLpMint: accounts[1],
       token0Mint,
       token1Mint,
       token0Amount:
         token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), this.splDecimalsMap.get(token0Mint)),
+        convertToUiAmount(data.readBigUInt64LE(24), this.adapter.getTokenDecimals(token0Mint)),
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(16), this.splDecimalsMap.get(token1Mint)),
+        convertToUiAmount(data.readBigUInt64LE(16), this.adapter.getTokenDecimals(token1Mint)),
       lpAmount:
         lpToken?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(8), this.splDecimalsMap.get(instruction.accounts[1].toString())),
+        convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
     };
   }
 
   // Parse REMOVE liquidity event
   private parseRemoveLiquidityEvent(
-    instruction: PartiallyDecodedInstruction,
+    instruction: any,
     index: number,
     data: Buffer,
     transfers: TransferData[]
   ): PoolEvent {
-    const [token0, token1] = getLPTransfers(transfers);
+    const [token0, token1] = this.utils.getLPTransfers(transfers);
     const lpToken = transfers.find((t) => t.type === 'burn');
     const token0Mint = token0?.info.mint;
     const token1Mint = token1?.info.mint;
-    const programId = instruction.programId.toBase58();
+    const programId = this.adapter.getInstructionProgramId(instruction);
+    const accounts = this.adapter.getInstructionAccounts(instruction);
     return {
-      ...getPoolEventBase('REMOVE', this.txWithMeta, programId),
+      ...this.adapter.getPoolEventBase('REMOVE', programId),
       idx: this.getInstructionId(index),
-      poolId: instruction.accounts[0].toString(),
-      poolLpMint: instruction.accounts[1].toString(),
+      poolId: accounts[0],
+      poolLpMint: accounts[1],
       token0Mint,
       token1Mint,
       token0Amount:
         token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), this.splDecimalsMap.get(token0Mint)),
+        convertToUiAmount(data.readBigUInt64LE(24), this.adapter.getTokenDecimals(token0Mint)),
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(16), this.splDecimalsMap.get(token1Mint)),
+        convertToUiAmount(data.readBigUInt64LE(16), this.adapter.getTokenDecimals(token1Mint)),
       lpAmount:
         lpToken?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(8), this.splDecimalsMap.get(instruction.accounts[1].toString())),
+        convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
     };
   }
 }

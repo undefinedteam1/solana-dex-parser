@@ -1,19 +1,20 @@
-import { ParsedTransactionWithMeta } from '@solana/web3.js';
 import { DEX_PROGRAMS, TOKENS } from '../constants';
-import { DexInfo, PumpfunEvent, PumpfunTradeEvent, TokenInfo, TradeInfo, TradeType, TransferData } from '../types';
+import { DexInfo, PumpfunEvent, PumpfunTradeEvent, TradeInfo, TradeType, TransferData } from '../types';
 import { PumpfunEventParser } from './parser-pumpfun-event';
-import { attachTokenTransferInfo } from '../transfer-utils';
+import { TransactionAdapter } from '../transaction-adapter';
+import { TransactionUtils } from '../transaction-utils';
 
 export class PumpfunParser {
   private eventParser: PumpfunEventParser;
+  private readonly utils: TransactionUtils;
+
   constructor(
-    private readonly txWithMeta: ParsedTransactionWithMeta,
+    private readonly adapter: TransactionAdapter,
     private readonly dexInfo: DexInfo,
-    private readonly splTokenMap: Map<string, TokenInfo>,
-    private readonly splDecimalsMap: Map<string, number>,
     private readonly transferActions: Record<string, TransferData[]>
   ) {
-    this.eventParser = new PumpfunEventParser(this.txWithMeta, dexInfo);
+    this.utils = new TransactionUtils(adapter);
+    this.eventParser = new PumpfunEventParser(this.adapter);
   }
 
   public processTrades(): TradeInfo[] {
@@ -64,6 +65,6 @@ export class PumpfunParser {
       idx: data.idx,
     };
 
-    return attachTokenTransferInfo(trade, this.transferActions);
+    return this.utils.attachTokenTransferInfo(trade, this.transferActions);
   }
 }

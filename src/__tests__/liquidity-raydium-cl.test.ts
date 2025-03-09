@@ -1,6 +1,7 @@
 import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
 import { RaydiumLiquidityParser } from '../parsers/parser-raydium-liquidity';
+import { TransactionAdapter } from '../transaction-adapter';
 
 dotenv.config();
 
@@ -166,11 +167,11 @@ describe('Liquidity', () => {
       // .filter((test: any) => test.test == true) // test only
       .forEach((test) => {
         it(`${test.type} > ${test.name} > ${test.desc} > ${test.signature} `, async () => {
-          const tx = await connection.getParsedTransaction(test.signature, {
+          const tx = await connection.getTransaction(test.signature, {
             maxSupportedTransactionVersion: 0,
           });
           if(!tx) throw new Error('Transaction not found');
-          const parser = new RaydiumLiquidityParser(tx);
+          const parser = new RaydiumLiquidityParser(new TransactionAdapter(tx));
           const events = parser.processLiquidity();
           // console.log('events', events);
           expect(events.length).toBeGreaterThanOrEqual(1);

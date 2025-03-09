@@ -25,7 +25,7 @@ describe('Parser', () => {
 
         // const trades = await parser.parseTransaction(signature);
         const s1 = Date.now();
-        const block = await connection.getBlock(325565462, {
+        const block = await connection.getParsedBlock(324994337, {
           commitment: 'confirmed',
           maxSupportedTransactionVersion: 0,
           transactionDetails: 'full',

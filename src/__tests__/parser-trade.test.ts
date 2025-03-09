@@ -20,9 +20,9 @@ describe('Dex Parser', () => {
   });
 
   describe('Parse Trades', () => {
-    const parser = new DexParser(connection);
+    const parser = new DexParser();
 
-    ["5QWYBSJReisnxHNpPpwLDXyvMV9ehajk15aTSPzjV7PvhvDSXPWW4btQyUUDeWvRteF1Vg7CkazHngtSaXAvThVE"
+    ["4mMjHfYTVReVY2vthXCUFpuGu6GEFc9RPz5MxRzdErN1HaRfWiqHDnupB9Fm1PuvnEbmHPouxg8DdqShkBbEb7Ht"
       // "2XYu86VrUXiwNNj8WvngcXGytrCsSrpay69Rt3XBz9YZvCQcZJLjvDfh9UWETFtFW47vi4xG2CkiarRJwSe6VekE",
       // "7YPF21r7JBDeoXuMJn6KSqDVYGrm821U87Cnje3xPvZpMUVaAEAvCGJPP6va2b5oMLAzGku5s3TcNAsN6zdXPRn"
     ]
@@ -41,7 +41,7 @@ describe('Dex Parser', () => {
           // const key3 = tx.meta?.loadedAddresses?.readonly.map((it)=>it.toBase58()) || [];
           // console.log(keys.length, '>>', key2?.length, '>>', key3?.length);
           // console.log([...keys, ...key2, ...key3]);
-          const trades = parser.parseTrades(tx as any);
+          const trades = parser.parseTrades(tx, { tryUnknowDEX: false});
           const liquidity = parser.parseLiquidity(tx as any);
           console.log('trades', trades, '> liquidity', liquidity);
           expect(trades.length).toBeGreaterThanOrEqual(1);

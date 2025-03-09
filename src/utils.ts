@@ -54,3 +54,10 @@ export const getAMMs = (transferActionKeys: string[]) => {
     })
     .filter((it) => it != null);
 };
+
+export const getTranferTokenMint = (token1?: string, token2?: string): string | undefined => {
+  if (token1 == token2) return token1;
+  if (token1 && token1 != TOKENS.SOL) return token1;
+  if (token2 && token2 != TOKENS.SOL) return token2;
+  return token1 || token2;
+}

@@ -2,6 +2,7 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { ParsedInstruction } from '@solana/web3.js';
 import { TOKENS } from './constants';
 import { TokenInfo, TransferData, convertToUiAmount } from './types';
+import { getTranferTokenMint } from './utils';
 
 export const isTransferCheck = (instruction: any): boolean => {
   return (
@@ -31,8 +32,11 @@ export const processTransfer = (
   const { info } = instruction.parsed;
   if (!info) return null;
 
-  let mint = splTokenMap.get(info.destination)?.mint;
-  if (!mint) mint = splTokenMap.get(info.source)?.mint;
+  const [token1, token2] = [splTokenMap.get(info.destination)?.mint, splTokenMap.get(info.source)?.mint];
+  if (!token1 && !token2) return null;
+
+  let mint = getTranferTokenMint(token1, token2);
+
   if (!mint && instruction.programId == TOKENS.NATIVE) mint = TOKENS.SOL;
   if (!mint) return null;
 

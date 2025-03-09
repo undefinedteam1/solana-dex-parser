@@ -1,7 +1,7 @@
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
 import { TokenInfo, TransferData, convertToUiAmount } from './types';
-import { getInstructionData } from './utils';
+import { getInstructionData, getTranferTokenMint } from './utils';
 
 export const isCompiledTransfer = (instruction: any): boolean => {
   const data = getInstructionData(instruction);
@@ -33,8 +33,10 @@ export const processCompiledTransfer = (
   const [source, destination] = [accounts[0], accounts[1]]; // source, destination,amount, authority
   if (data[0] == SPL_TOKEN_INSTRUCTION_TYPES.Transfer) authority = accounts[2];
 
-  let mint = splTokenMap.get(destination)?.mint;
-  if (!mint) mint = splTokenMap.get(source)?.mint;
+  const [token1, token2] = [splTokenMap.get(destination)?.mint, splTokenMap.get(source)?.mint];
+  if (!token1 && !token2) return null;
+
+  let mint = getTranferTokenMint(token1, token2);
   if (!mint && instruction.programId == TOKENS.NATIVE) mint = TOKENS.SOL;
   if (!mint) return null;
   const decimals = splDecimalsMap.get(mint);

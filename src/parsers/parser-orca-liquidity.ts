@@ -1,4 +1,3 @@
-import { PartiallyDecodedInstruction } from '@solana/web3.js';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
 import { convertToUiAmount, PoolEvent, PoolEventType, TransferData } from '../types';
 import { TransactionAdapter } from '../transaction-adapter';
@@ -74,7 +73,7 @@ class OrcaPoolParser {
   }
 
   public parseInstruction(
-    instruction: PartiallyDecodedInstruction,
+    instruction: any,
     index: number,
     innerIndex?: number
   ): PoolEvent | null {
@@ -102,7 +101,7 @@ class OrcaPoolParser {
   }
 
   protected parseTransfers(
-    instruction: PartiallyDecodedInstruction,
+    instruction: any,
     index: number,
     innerIndex?: number
   ): TransferData[] {
@@ -114,7 +113,7 @@ class OrcaPoolParser {
   }
 
   private parseAddLiquidityEvent(
-    instruction: PartiallyDecodedInstruction,
+    instruction: any,
     index: number,
     data: any,
     transfers: TransferData[]
@@ -142,7 +141,7 @@ class OrcaPoolParser {
   }
 
   private parseRemoveLiquidityEvent(
-    instruction: PartiallyDecodedInstruction,
+    instruction: any,
     index: number,
     data: any,
     transfers: TransferData[]

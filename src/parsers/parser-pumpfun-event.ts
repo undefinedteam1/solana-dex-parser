@@ -1,4 +1,3 @@
-import { PartiallyDecodedInstruction } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import base58 from 'bs58';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
@@ -33,8 +32,8 @@ export class PumpfunEventParser {
         set.instructions
           .flatMap((ix, idx: number) => {
             const events: PumpfunEvent[] = [];
-            if (this.isPumpFunCreateEvent(ix as PartiallyDecodedInstruction)) {
-              const event = this.parseCreateEvent(ix as PartiallyDecodedInstruction);
+            if (this.isPumpFunCreateEvent(ix)) {
+              const event = this.parseCreateEvent(ix);
               if (event) {
                 events.push({
                   type: 'CREATE',
@@ -44,8 +43,8 @@ export class PumpfunEventParser {
                 });
               }
             }
-            if (this.isPumpFunTradeEvent(ix as PartiallyDecodedInstruction)) {
-              const event = this.parseTradeEvent(ix as PartiallyDecodedInstruction);
+            if (this.isPumpFunTradeEvent(ix)) {
+              const event = this.parseTradeEvent(ix);
               if (event) {
                 events.push({
                   type: 'TRADE',
@@ -56,8 +55,8 @@ export class PumpfunEventParser {
               }
             }
 
-            if (this.isPumpFunCompleteEvent(ix as PartiallyDecodedInstruction)) {
-              const event = this.parseCompleteEvent(ix as PartiallyDecodedInstruction);
+            if (this.isPumpFunCompleteEvent(ix)) {
+              const event = this.parseCompleteEvent(ix);
               if (event) {
                 events.push({
                   type: 'COMPLETE',
@@ -73,7 +72,7 @@ export class PumpfunEventParser {
       );
   }
 
-  private isPumpFunTradeEvent(instruction: PartiallyDecodedInstruction): boolean {
+  private isPumpFunTradeEvent(instruction: any): boolean {
     try {
       if (this.adapter.getInstructionProgramId(instruction) != DEX_PROGRAMS.PUMP_FUN.id) return false;
       const data = getInstructionData(instruction);
@@ -83,7 +82,7 @@ export class PumpfunEventParser {
     }
   }
 
-  private parseTradeEvent(instruction: PartiallyDecodedInstruction): PumpfunTradeEvent | null {
+  private parseTradeEvent(instruction: any): PumpfunTradeEvent | null {
     try {
       const data = getInstructionData(instruction);
       return this.decodeTradeEvent(data.slice(16));

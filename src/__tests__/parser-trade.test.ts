@@ -22,7 +22,7 @@ describe('Dex Parser', () => {
   describe('Parse Trades', () => {
     const parser = new DexParser();
 
-    ["4mMjHfYTVReVY2vthXCUFpuGu6GEFc9RPz5MxRzdErN1HaRfWiqHDnupB9Fm1PuvnEbmHPouxg8DdqShkBbEb7Ht"
+    ["7YPF21r7JBDeoXuMJn6KSqDVYGrm821U87Cnje3xPvZpMUVaAEAvCGJPP6va2b5oMLAzGku5s3TcNAsN6zdXPRn"
       // "2XYu86VrUXiwNNj8WvngcXGytrCsSrpay69Rt3XBz9YZvCQcZJLjvDfh9UWETFtFW47vi4xG2CkiarRJwSe6VekE",
       // "7YPF21r7JBDeoXuMJn6KSqDVYGrm821U87Cnje3xPvZpMUVaAEAvCGJPP6va2b5oMLAzGku5s3TcNAsN6zdXPRn"
     ]

@@ -7,7 +7,7 @@ import { TradeType } from './types';
  */
 export const getInstructionData = (instruction: any): Buffer => {
   if ('data' in instruction) {
-    if (typeof instruction.data === 'string') return base58.decode(instruction.data);
+    if (typeof instruction.data === 'string') return Buffer.from(base58.decode(instruction.data)); // compatible with both bs58 v4.0.1 and v6.0.0
     if (instruction.data instanceof Uint8Array) return Buffer.from(instruction.data);
   }
   return instruction.data;

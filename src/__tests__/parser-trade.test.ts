@@ -22,7 +22,7 @@ describe('Dex Parser', () => {
   describe('Parse Trades', () => {
     const parser = new DexParser();
 
-    ["7YPF21r7JBDeoXuMJn6KSqDVYGrm821U87Cnje3xPvZpMUVaAEAvCGJPP6va2b5oMLAzGku5s3TcNAsN6zdXPRn"
+    ["2mhzHtDy6Yxye5G3KokjwsyyvyWkDDo6WctmkwqnugexVeJLLVxnziFgD7HMeqjjnVbru7ayBzEXgSw32N26jChp"
       // "2XYu86VrUXiwNNj8WvngcXGytrCsSrpay69Rt3XBz9YZvCQcZJLjvDfh9UWETFtFW47vi4xG2CkiarRJwSe6VekE",
       // "7YPF21r7JBDeoXuMJn6KSqDVYGrm821U87Cnje3xPvZpMUVaAEAvCGJPP6va2b5oMLAzGku5s3TcNAsN6zdXPRn"
     ]
@@ -35,12 +35,7 @@ describe('Dex Parser', () => {
           });
    
           if (!tx) { throw new Error(`Transaction not found > ${signature}`); }
-          // console.log('accountKeys', tx.transaction.message.accountKeys.length, tx.transaction.message.accountKeys.map((it)=>it.pubkey.toBase58()));
-          // const keys = tx.transaction.message.staticAccountKeys.map((it)=>it.toBase58()) || [];
-          // const key2 = tx.meta?.loadedAddresses?.writable.map((it)=>it.toBase58()) || [];
-          // const key3 = tx.meta?.loadedAddresses?.readonly.map((it)=>it.toBase58()) || [];
-          // console.log(keys.length, '>>', key2?.length, '>>', key3?.length);
-          // console.log([...keys, ...key2, ...key3]);
+
           const trades = parser.parseTrades(tx, { tryUnknowDEX: false});
           const liquidity = parser.parseLiquidity(tx as any);
           console.log('trades', trades, '> liquidity', liquidity);

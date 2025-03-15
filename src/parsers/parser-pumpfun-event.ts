@@ -96,7 +96,7 @@ export class PumpfunEventParser {
     const reader = new BinaryReader(data);
 
     return {
-      mint: base58.encode(reader.readFixedArray(32)),
+      mint: base58.encode(Buffer.from(reader.readFixedArray(32))),
       solAmount: convertToUiAmount(reader.readU64()),
       tokenAmount: convertToUiAmount(reader.readU64(), 6),
       isBuy: reader.readU8() === 1,
@@ -134,7 +134,7 @@ export class PumpfunEventParser {
       name: reader.readString(),
       symbol: reader.readString(),
       uri: reader.readString(),
-      mint: base58.encode(reader.readFixedArray(32)),
+      mint: base58.encode(Buffer.from(reader.readFixedArray(32))),
       bondingCurve: base58.encode(reader.readFixedArray(32)),
       user: base58.encode(reader.readFixedArray(32)),
     };
@@ -165,7 +165,7 @@ export class PumpfunEventParser {
     const reader = new BinaryReader(data);
     return {
       user: base58.encode(reader.readFixedArray(32)),
-      mint: base58.encode(reader.readFixedArray(32)),
+      mint: base58.encode(Buffer.from(reader.readFixedArray(32))),
       bondingCurve: base58.encode(reader.readFixedArray(32)),
       timestamp: reader.readI64(),
     };

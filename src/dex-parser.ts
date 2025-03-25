@@ -8,6 +8,8 @@ import { MeteoraLiquidityParser } from './parsers/parser-meteora-liquidity';
 import { OrcaLiquidityParser } from './parsers/parser-orca-liquidity';
 import { TransactionAdapter } from './transaction-adapter';
 import { TransactionUtils } from './transaction-utils';
+import { PumpswapParser } from './parsers/parser-pumpswap';
+import { PumpswapLiquidityParser } from './parsers/parser-pumpswap-liquidity';
 
 /**
  * Interface for DEX trade parsers
@@ -46,6 +48,7 @@ export class DexParser {
     [DEX_PROGRAMS.METEORA.id]: MeteoraParser,
     [DEX_PROGRAMS.METEORA_POOLS.id]: MeteoraParser,
     [DEX_PROGRAMS.PUMP_FUN.id]: PumpfunParser,
+    [DEX_PROGRAMS.PUMP_SWAP.id]: PumpswapParser,
     [DEX_PROGRAMS.RAYDIUM_ROUTE.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_CL.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_CPMM.id]: RaydiumParser,
@@ -64,6 +67,8 @@ export class DexParser {
     [DEX_PROGRAMS.RAYDIUM_CPMM.id]: RaydiumLiquidityParser,
     [DEX_PROGRAMS.RAYDIUM_CL.id]: RaydiumLiquidityParser,
     [DEX_PROGRAMS.ORCA.id]: OrcaLiquidityParser,
+    [DEX_PROGRAMS.PUMP_FUN.id]: PumpswapLiquidityParser,
+    [DEX_PROGRAMS.PUMP_SWAP.id]: PumpswapLiquidityParser,
   };
 
   /**

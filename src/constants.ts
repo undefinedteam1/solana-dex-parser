@@ -124,6 +124,11 @@ export const DEX_PROGRAMS = {
     name: 'Pumpfun',
     tags: ['amm'],
   },
+  PUMP_SWAP: {
+    id: 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA',
+    name: 'Pumpswap',
+    tags: ['amm'],
+  },
   LIFINITY: {
     id: 'EewxydAPCCVuNEyrVN68PuSYdQ7wKn27V9Gjeoi8dy3S',
     name: 'Lifinity',
@@ -187,6 +192,13 @@ export const DISCRIMINATORS = {
     COMPLETE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 95, 114, 97, 156, 212, 46, 152, 8]),
     BUY: new Uint8Array([102, 6, 61, 18, 1, 218, 235, 234]),
     SELL: new Uint8Array([51, 230, 133, 164, 1, 127, 131, 173]), // SELL
+  },
+  PUMPSWAP: {
+    CREATE_POOL: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 177, 49, 12, 210, 160, 118, 167, 116]),
+    ADD_LIQUIDITY: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 120, 248, 61, 83, 31, 142, 107, 144]),
+    REMOVE_LIQUIDITY: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 22, 9, 133, 26, 160, 44, 71, 192]),
+    BUY: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 103, 244, 82, 31, 44, 245, 119, 119]),
+    SELL: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 62, 47, 55, 10, 165, 3, 220, 42]), // SELL
   },
   MOONSHOT: {
     BUY: new Uint8Array([102, 6, 61, 18, 1, 218, 235, 234]),

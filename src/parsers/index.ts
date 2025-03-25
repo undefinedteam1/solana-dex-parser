@@ -9,3 +9,4 @@ export * from './parser-orca';
 export * from './parser-orca-liquidity';
 export * from './parser-pumpfun';
 export * from './parser-pumpfun-event';
+export * from './parser-pumpswap-event';

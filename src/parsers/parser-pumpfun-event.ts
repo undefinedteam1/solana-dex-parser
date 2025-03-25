@@ -191,6 +191,13 @@ export class BinaryReader {
     return value;
   }
 
+  readU16(): number {
+    this.checkBounds(2);
+    const value = this.buffer.readUint16LE(this.offset);
+    this.offset += 2;
+    return value;
+  }
+
   readU64(): bigint {
     this.checkBounds(8);
     const value = this.buffer.readBigUInt64LE(this.offset);
@@ -216,6 +223,10 @@ export class BinaryReader {
     this.offset += length;
 
     return content;
+  }
+
+  readPubkey(): string {
+    return base58.encode(Buffer.from(this.readFixedArray(32)));
   }
 
   private checkBounds(length: number) {

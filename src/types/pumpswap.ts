@@ -34,7 +34,7 @@ export interface PumpswapSellEvent {
   lpFee: bigint;
   protocolFeeBasisPoints: bigint;
   protocolFee: bigint;
-  quoteAmountOutWithLpFee: bigint;
+  quoteAmountOutWithoutLpFee: bigint;
   userQuoteAmountOut: bigint;
   pool: string;
   user: string;

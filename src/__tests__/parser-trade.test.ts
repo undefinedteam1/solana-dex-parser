@@ -22,7 +22,7 @@ describe('Dex Parser', () => {
   describe('Parse Trades', () => {
     const parser = new DexParser();
 
-    ["23ACnYkaTqpHDvSJkhwqFb72KUXUjL4Bd8kwLNyRS1nzjxMxjrBnp7A5Gfogr9typ8imsckGfqWrCNhJg68MDsyL"
+    ["2H9jpGjXTxPqt6ZLfnJm2RXj3x7PxMis8fYqmHnYhDYPB5F6bQCcxyRNrXBT7nRpE7Qs9pv7uZvy3FvBX5rsnhoq"
     ]
       .forEach((signature) => {
         it(`${signature} `, async () => {

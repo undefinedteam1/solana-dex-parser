@@ -191,7 +191,7 @@ export class PumpswapEventParser {
       lpFee: reader.readU64(),
       protocolFeeBasisPoints: reader.readU64(),
       protocolFee: reader.readU64(),
-      quoteAmountOutWithLpFee: reader.readU64(),
+      quoteAmountOutWithoutLpFee: reader.readU64(),
       userQuoteAmountOut: reader.readU64(),
       pool: reader.readPubkey(),
       user: reader.readPubkey(),

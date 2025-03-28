@@ -1,7 +1,7 @@
 import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../constants';
-import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from '../types';
 import { TransactionAdapter } from '../transaction-adapter';
 import { TransactionUtils } from '../transaction-utils';
+import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from '../types';
 import { getInstructionData } from '../utils';
 
 // Base parser class with shared utilities
@@ -132,6 +132,8 @@ class MeteoraDLMMPoolParser extends BaseMeteoraParser {
       token1Mint: token1?.info.mint,
       token0Amount: token0?.info.tokenAmount.uiAmount || 0,
       token1Amount: token1?.info.tokenAmount.uiAmount || 0,
+      token0Decimals: this.adapter.getTokenDecimals(token0!.info.mint),
+      token1Decimals: this.adapter.getTokenDecimals(token1!.info.mint),
     };
   }
 
@@ -157,6 +159,8 @@ class MeteoraDLMMPoolParser extends BaseMeteoraParser {
       token1Mint: token1?.info.mint || accounts[8],
       token0Amount: token0?.info.tokenAmount.uiAmount || 0,
       token1Amount: token1?.info.tokenAmount.uiAmount || 0,
+      token0Decimals: this.adapter.getTokenDecimals(token0!.info.mint || accounts[7]),
+      token1Decimals: this.adapter.getTokenDecimals(token1!.info.mint || accounts[8]),
     };
   }
 
@@ -216,6 +220,7 @@ class MeteoraPoolsPoolParser extends BaseMeteoraParser {
     const token0Mint = token0?.info.mint || accounts[3];
     const token1Mint = token1?.info.mint || accounts[4];
     const programId = this.adapter.getInstructionProgramId(instruction);
+    const [token0Decimals, token1Decimals] = [this.adapter.getTokenDecimals(token0Mint), this.adapter.getTokenDecimals(token1Mint)];
     return {
       ...this.adapter.getPoolEventBase('CREATE', programId),
       idx: this.getInstructionId(index),
@@ -225,10 +230,12 @@ class MeteoraPoolsPoolParser extends BaseMeteoraParser {
       token1Mint,
       token0Amount:
         token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(16), this.adapter.getTokenDecimals(token0Mint)),
+        convertToUiAmount(data.readBigUInt64LE(16), token0Decimals),
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(token1Mint)),
+        convertToUiAmount(data.readBigUInt64LE(8), token1Decimals),
+      token0Decimals: token0Decimals,
+      token1Decimals: token1Decimals,
       lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
     };
   }
@@ -241,6 +248,8 @@ class MeteoraPoolsPoolParser extends BaseMeteoraParser {
     const token0Mint = token0?.info.mint;
     const token1Mint = token1?.info.mint;
     const programId = this.adapter.getInstructionProgramId(instruction);
+    const [token0Decimals, token1Decimals] = [this.adapter.getTokenDecimals(token0Mint), this.adapter.getTokenDecimals(token1Mint)];
+
     return {
       ...this.adapter.getPoolEventBase('ADD', programId),
       idx: this.getInstructionId(index),
@@ -254,9 +263,12 @@ class MeteoraPoolsPoolParser extends BaseMeteoraParser {
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(data.readBigUInt64LE(16), this.adapter.getTokenDecimals(token1Mint)),
+      token0Decimals: token0Decimals,
+      token1Decimals: token1Decimals,
       lpAmount:
         lpToken?.info.tokenAmount.uiAmount ||
         convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
+
     };
   }
 
@@ -273,6 +285,8 @@ class MeteoraPoolsPoolParser extends BaseMeteoraParser {
     const token1Mint = token1?.info.mint;
     const programId = this.adapter.getInstructionProgramId(instruction);
     const accounts = this.adapter.getInstructionAccounts(instruction);
+    const [token0Decimals, token1Decimals] = [this.adapter.getTokenDecimals(token0Mint), this.adapter.getTokenDecimals(token1Mint)];
+
     return {
       ...this.adapter.getPoolEventBase('REMOVE', programId),
       idx: this.getInstructionId(index),
@@ -286,6 +300,8 @@ class MeteoraPoolsPoolParser extends BaseMeteoraParser {
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
         convertToUiAmount(data.readBigUInt64LE(16), this.adapter.getTokenDecimals(token1Mint)),
+      token0Decimals: token0Decimals,
+      token1Decimals: token1Decimals,
       lpAmount:
         lpToken?.info.tokenAmount.uiAmount ||
         convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),

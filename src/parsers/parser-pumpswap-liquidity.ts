@@ -52,15 +52,17 @@ export class PumpswapLiquidityParser {
       token1Mint: event.quoteMint,
       token0Amount: convertToUiAmount(event.baseAmountIn, event.baseMintDecimals),
       token1Amount: convertToUiAmount(event.quoteAmountIn, event.quoteMintDecimals),
+      token0Decimals: event.baseMintDecimals,
+      token1Decimals: event.quoteMintDecimals,
     };
   }
 
   private parseDepositEvent(data: PumpswapEvent): PoolEvent {
     const event = data.data as PumpswapDepositEvent;
     const token0Mint = this.adapter.splTokenMap.get(event.userBaseTokenAccount)!.mint;
-    const token0Decimal = this.adapter.getTokenDecimals(token0Mint);
+    const token0Decimals = this.adapter.getTokenDecimals(token0Mint);
     const token1Mint = this.adapter.splTokenMap.get(event.userQuoteTokenAccount)!.mint;
-    const token1Decimal = this.adapter.getTokenDecimals(token1Mint);
+    const token1Decimals = this.adapter.getTokenDecimals(token1Mint);
     return {
       ...this.adapter.getPoolEventBase('ADD', DEX_PROGRAMS.PUMP_SWAP.id),
       idx: data.idx,
@@ -68,17 +70,19 @@ export class PumpswapLiquidityParser {
       poolLpMint: this.adapter.splTokenMap.get(event.userPoolTokenAccount)!.mint,
       token0Mint: token0Mint,
       token1Mint: token1Mint,
-      token0Amount: convertToUiAmount(event.baseAmountIn, token0Decimal),
-      token1Amount: convertToUiAmount(event.quoteAmountIn, token1Decimal),
+      token0Amount: convertToUiAmount(event.baseAmountIn, token0Decimals),
+      token1Amount: convertToUiAmount(event.quoteAmountIn,token1Decimals),
+      token0Decimals: token0Decimals,
+      token1Decimals: token1Decimals,
     };
   }
 
   private parseWithdrawEvent(data: PumpswapEvent): PoolEvent {
     const event = data.data as PumpswapWithdrawEvent;
     const token0Mint = this.adapter.splTokenMap.get(event.userBaseTokenAccount)!.mint;
-    const token0Decimal = this.adapter.getTokenDecimals(token0Mint);
+    const token0Decimals = this.adapter.getTokenDecimals(token0Mint);
     const token1Mint = this.adapter.splTokenMap.get(event.userQuoteTokenAccount)!.mint;
-    const token1Decimal = this.adapter.getTokenDecimals(token1Mint);
+    const token1Decimals = this.adapter.getTokenDecimals(token1Mint);
     return {
       ...this.adapter.getPoolEventBase('REMOVE', DEX_PROGRAMS.PUMP_SWAP.id),
       idx: data.idx,
@@ -86,8 +90,10 @@ export class PumpswapLiquidityParser {
       poolLpMint: this.adapter.splTokenMap.get(event.userPoolTokenAccount)!.mint,
       token0Mint: token0Mint,
       token1Mint: token1Mint,
-      token0Amount: convertToUiAmount(event.baseAmountOut, token0Decimal),
-      token1Amount: convertToUiAmount(event.quoteAmountOut, token1Decimal),
+      token0Amount: convertToUiAmount(event.baseAmountOut, token0Decimals),
+      token1Amount: convertToUiAmount(event.quoteAmountOut,token1Decimals),
+      token0Decimals: token0Decimals,
+      token1Decimals: token1Decimals,
     };
   }
 }

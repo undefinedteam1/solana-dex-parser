@@ -32,6 +32,8 @@ export interface PoolEvent extends PoolEventBase {
    */
   token0Amount?: number;
 
+  token0Decimals?: number;
+
   /**
    * Token B mint address (SOL/USDC/USDT)
    */
@@ -41,6 +43,8 @@ export interface PoolEvent extends PoolEventBase {
    * Token B amount (SOL/USDC/USDT)
    */
   token1Amount?: number;
+
+  token1Decimals?: number;
 
   /**
    * Lp amount

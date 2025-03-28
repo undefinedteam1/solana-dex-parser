@@ -1,7 +1,7 @@
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../constants';
-import { convertToUiAmount, PoolEvent, PoolEventType, TransferData } from '../types';
 import { TransactionAdapter } from '../transaction-adapter';
 import { TransactionUtils } from '../transaction-utils';
+import { convertToUiAmount, PoolEvent, PoolEventType, TransferData } from '../types';
 import { getInstructionData } from '../utils';
 
 export class OrcaLiquidityParser {
@@ -57,7 +57,7 @@ class OrcaPoolParser {
   constructor(
     private readonly adapter: TransactionAdapter,
     private readonly utils: TransactionUtils
-  ) {}
+  ) { }
 
   public getPoolAction(data: any): PoolEventType | null {
     const instructionType = data.slice(0, 8);
@@ -110,6 +110,8 @@ class OrcaPoolParser {
     const token1Mint = token1?.info.mint;
     const programId = this.adapter.getInstructionProgramId(instruction);
     const accounts = this.adapter.getInstructionAccounts(instruction);
+    const [token0Decimals, token1Decimals] = [this.adapter.getTokenDecimals(token0Mint), this.adapter.getTokenDecimals(token1Mint)];
+
     return {
       ...this.adapter.getPoolEventBase('ADD', programId),
       idx: index.toString(),
@@ -119,10 +121,12 @@ class OrcaPoolParser {
       token1Mint: token1Mint,
       token0Amount:
         token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(32), this.adapter.getTokenDecimals(token0Mint)),
+        convertToUiAmount(data.readBigUInt64LE(32), token0Decimals),
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), this.adapter.getTokenDecimals(token1Mint)),
+        convertToUiAmount(data.readBigUInt64LE(24), token1Decimals),
+      token0Decimals: token0Decimals,
+      token1Decimals: token1Decimals,
       lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])) || 0,
     };
   }
@@ -133,6 +137,8 @@ class OrcaPoolParser {
     const token1Mint = token1?.info.mint;
     const programId = this.adapter.getInstructionProgramId(instruction);
     const accounts = this.adapter.getInstructionAccounts(instruction);
+    const [token0Decimals, token1Decimals] = [this.adapter.getTokenDecimals(token0Mint), this.adapter.getTokenDecimals(token1Mint)];
+
     return {
       ...this.adapter.getPoolEventBase('REMOVE', programId),
       idx: index.toString(),
@@ -142,10 +148,12 @@ class OrcaPoolParser {
       token1Mint: token1Mint,
       token0Amount:
         token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(32), this.adapter.getTokenDecimals(token0Mint)),
+        convertToUiAmount(data.readBigUInt64LE(32), token0Decimals),
       token1Amount:
         token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), this.adapter.getTokenDecimals(token1Mint)),
+        convertToUiAmount(data.readBigUInt64LE(24), token1Decimals),
+      token0Decimals: token0Decimals,
+      token1Decimals: token1Decimals,
       lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
     };
   }

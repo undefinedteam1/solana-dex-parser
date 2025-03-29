@@ -1,7 +1,6 @@
 import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
-import { MeteoraLiquidityParser } from '../parsers/parser-meteora-liquidity';
-import { TransactionAdapter } from '../transaction-adapter';
+import { DexParser } from '../dex-parser';
 
 dotenv.config();
 
@@ -201,8 +200,8 @@ describe('Liquidity', () => {
             maxSupportedTransactionVersion: 0,
           });
           if(!tx) throw new Error('Transaction not found');
-          const parser = new MeteoraLiquidityParser(new TransactionAdapter(tx));
-          const events = parser.processLiquidity();
+          const parser = new DexParser();
+          const events = parser.parseLiquidity(tx);
           // console.log(events);
           expect(events.length).toBeGreaterThanOrEqual(1);
           expect(events[0].type).toEqual(test.type);

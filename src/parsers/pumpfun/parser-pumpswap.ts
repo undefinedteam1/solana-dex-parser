@@ -1,49 +1,30 @@
-import { DEX_PROGRAMS } from '../constants';
-import {
-  convertToUiAmount,
-  DexInfo,
-  PumpswapBuyEvent,
-  PumpswapEvent,
-  PumpswapSellEvent,
-  TradeInfo,
-  TransferData,
-} from '../types';
-import { PumpswapEventParser } from './parser-pumpswap-event';
-import { TransactionAdapter } from '../transaction-adapter';
-import { TransactionUtils } from '../transaction-utils';
+import { DEX_PROGRAMS } from "../../constants";
+import { TransactionAdapter } from "../../transaction-adapter";
+import { ClassifiedInstruction, convertToUiAmount, DexInfo, PumpswapBuyEvent, PumpswapEvent, PumpswapSellEvent, TradeInfo, TransferData } from "../../types";
+import { BaseParser } from "../base-parser";
+import { PumpswapEventParser } from "./parser-pumpswap-event";
 
-export class PumpswapParser {
+export class PumpswapParser extends BaseParser {
   private eventParser: PumpswapEventParser;
-  private readonly utils: TransactionUtils;
 
   constructor(
-    private readonly adapter: TransactionAdapter,
-    private readonly dexInfo: DexInfo,
-    private readonly transferActions: Record<string, TransferData[]>
+    adapter: TransactionAdapter,
+    dexInfo: DexInfo,
+    transferActions: Record<string, TransferData[]>,
+    classifiedInstructions: ClassifiedInstruction[]
   ) {
-    this.utils = new TransactionUtils(adapter);
-    this.eventParser = new PumpswapEventParser(this.adapter);
+    super(adapter, dexInfo, transferActions, classifiedInstructions);
+    this.eventParser = new PumpswapEventParser(adapter);
   }
 
   public processTrades(): TradeInfo[] {
-    const events = this.eventParser.processEvents().filter((it) => ['BUY', 'SELL'].includes(it.type));
-    return events.length > 0 ? this.processSwapData(events) : [];
-  }
+    const events = this.eventParser
+      .parseInstructions(this.classifiedInstructions)
+      .filter(event => ['BUY', 'SELL'].includes(event.type));
 
-  public parseTransferAction(transfer: [string, TransferData[]]): TradeInfo[] {
-    const [, idxs] = transfer[0].split(':');
-    const [outerIndex] = idxs.split('-');
-    const events = this.parseInnerInstructions(Number(outerIndex));
-    return events.length > 0 ? this.processSwapData(events) : [];
-  }
-
-  private parseInnerInstructions(instructionIndex: number): PumpswapEvent[] {
-    return this.eventParser.processInnerInstruction(instructionIndex).filter((it) => ['BUY', 'SELL'].includes(it.type));
-  }
-
-  private processSwapData(events: PumpswapEvent[]): TradeInfo[] {
-    if (!events.length) return [];
-    return events.map((event) => (event.type == 'BUY' ? this.createBuyInfo(event) : this.createSellInfo(event)));
+    return events.map(event => 
+      event.type === 'BUY' ? this.createBuyInfo(event) : this.createSellInfo(event)
+    );
   }
 
   private createBuyInfo(data: PumpswapEvent): TradeInfo {

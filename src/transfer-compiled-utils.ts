@@ -44,6 +44,7 @@ export const processCompiledTransfer = (
 
   return {
     type: 'transfer',
+    programId: instruction.programId,
     info: {
       authority: authority || '',
       destination: destination || '',
@@ -72,6 +73,7 @@ export const processCompiledTransferCheck = (
   const decimals = splDecimalsMap.get(mint) || data.readUint8(9);
   return {
     type: 'transferChecked',
+    programId: instruction.programId,
     info: {
       authority: authority || '',
       destination: destination || '',
@@ -146,6 +148,7 @@ export const processCompiledExtraAction = (
 
   return {
     type: type,
+    programId: instruction.programId,
     info: {
       authority: authority || '',
       destination: destination || '',

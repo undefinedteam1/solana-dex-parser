@@ -1,24 +1,26 @@
-import { DEX_PROGRAMS } from '../constants';
-import {
-  convertToUiAmount,
-  PoolEvent,
-  PumpswapCreatePoolEvent,
-  PumpswapDepositEvent,
-  PumpswapEvent,
-  PumpswapWithdrawEvent,
-} from '../types';
-import { PumpswapEventParser } from './parser-pumpswap-event';
-import { TransactionAdapter } from '../transaction-adapter';
+import { DEX_PROGRAMS } from "../../constants";
+import { TransactionAdapter } from "../../transaction-adapter";
+import { ClassifiedInstruction, convertToUiAmount, PoolEvent, PumpswapCreatePoolEvent, PumpswapDepositEvent, PumpswapEvent, PumpswapWithdrawEvent, TransferData } from "../../types";
+import { BaseLiquidityParser } from "../base-liquidity-parser";
+import { PumpswapEventParser } from "./parser-pumpswap-event";
 
-export class PumpswapLiquidityParser {
+export class PumpswapLiquidityParser extends BaseLiquidityParser {
   private eventParser: PumpswapEventParser;
 
-  constructor(private readonly adapter: TransactionAdapter) {
-    this.eventParser = new PumpswapEventParser(this.adapter);
+  constructor(
+    adapter: TransactionAdapter,
+    transferActions: Record<string, TransferData[]>,
+    classifiedInstructions: ClassifiedInstruction[]
+  ) {
+    super(adapter, transferActions, classifiedInstructions);
+    this.eventParser = new PumpswapEventParser(adapter);
   }
 
   public processLiquidity(): PoolEvent[] {
-    const events = this.eventParser.processEvents().filter((it) => ['CREATE', 'ADD', 'REMOVE'].includes(it.type));
+    const events = this.eventParser
+      .parseInstructions(this.classifiedInstructions)
+      .filter(event => ['CREATE', 'ADD', 'REMOVE'].includes(event.type));
+
     return events.length > 0 ? this.parseLiquidityEvents(events) : [];
   }
 
@@ -71,7 +73,7 @@ export class PumpswapLiquidityParser {
       token0Mint: token0Mint,
       token1Mint: token1Mint,
       token0Amount: convertToUiAmount(event.baseAmountIn, token0Decimals),
-      token1Amount: convertToUiAmount(event.quoteAmountIn,token1Decimals),
+      token1Amount: convertToUiAmount(event.quoteAmountIn, token1Decimals),
       token0Decimals: token0Decimals,
       token1Decimals: token1Decimals,
     };
@@ -91,7 +93,7 @@ export class PumpswapLiquidityParser {
       token0Mint: token0Mint,
       token1Mint: token1Mint,
       token0Amount: convertToUiAmount(event.baseAmountOut, token0Decimals),
-      token1Amount: convertToUiAmount(event.quoteAmountOut,token1Decimals),
+      token1Amount: convertToUiAmount(event.quoteAmountOut, token1Decimals),
       token0Decimals: token0Decimals,
       token1Decimals: token1Decimals,
     };

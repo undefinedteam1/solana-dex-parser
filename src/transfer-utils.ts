@@ -45,6 +45,7 @@ export const processTransfer = (
 
   return {
     type: 'transfer',
+    programId: instruction.programId,
     info: {
       authority: info.authority || '',
       destination: info.destination || '',
@@ -61,7 +62,7 @@ export const processTransfer = (
 };
 
 export const processTransferCheck = (
-  instruction: ParsedInstruction,
+  instruction: any,
   idx: string,
   splDecimalsMap: Map<string, number>
 ): TransferData | null => {
@@ -73,6 +74,7 @@ export const processTransferCheck = (
 
   return {
     type: 'transferChecked',
+    programId: instruction.programId,
     info: {
       authority: info.authority || '',
       destination: info.destination || '',
@@ -114,6 +116,7 @@ export const processExtraAction = (
 
   return {
     type: type,
+    programId: instruction.programId,
     info: {
       authority: info.authority || info.mintAuthority || '',
       destination: info.destination || '',

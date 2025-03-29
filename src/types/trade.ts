@@ -51,6 +51,7 @@ export interface TransferInfo {
 
 export interface TransferData {
   type: 'transfer' | 'transferChecked' | string;
+  programId: string;
   info: {
     authority: string;
     destination: string;

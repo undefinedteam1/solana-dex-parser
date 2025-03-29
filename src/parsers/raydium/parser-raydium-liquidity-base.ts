@@ -1,7 +1,7 @@
-import { convertToUiAmount, PoolEvent, PoolEventType, TransferData } from '../types';
-import { TransactionAdapter } from '../transaction-adapter';
-import { TransactionUtils } from '../transaction-utils';
-import { getInstructionData } from '../utils';
+import { TOKENS } from "../../constants";
+import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from "../../types";
+import { getInstructionData } from "../../utils";
+import { BaseLiquidityParser } from "../base-liquidity-parser";
 
 export interface ParseEventConfig {
     eventType: PoolEventType;
@@ -14,37 +14,56 @@ export interface ParseEventConfig {
     };
 }
 
-export abstract class RaydiumLiquidityParserBase {
-
-    constructor(protected readonly adapter: TransactionAdapter,
-        private readonly utils: TransactionUtils
-    ) {
-    }
+export abstract class RaydiumLiquidityParserBase extends BaseLiquidityParser {
 
     abstract getPoolAction(data: Buffer): PoolEventType | { name: string; type: PoolEventType } | null;
 
-    public parseRaydiumInstruction(instruction: any, index: number, innerIndex?: number): PoolEvent | null {
+    abstract getEventConfig(
+        type: PoolEventType,
+        instructionType: PoolEventType | { name: string; type: PoolEventType }
+    ): ParseEventConfig | null;
+
+    public processLiquidity(): PoolEvent[] {
+        const events: PoolEvent[] = [];
+
+        this.classifiedInstructions.forEach(({ instruction, programId, outerIndex, innerIndex }) => {
+            const event = this.parseRaydiumInstruction(instruction, programId, outerIndex, innerIndex);
+            if (event) {
+                events.push(event);
+            }
+        });
+
+        return events;
+    }
+
+    protected parseRaydiumInstruction(
+        instruction: any,
+        programId: string,
+        outerIndex: number,
+        innerIndex?: number
+    ): PoolEvent | null {
         try {
             const data = getInstructionData(instruction);
             const instructionType = this.getPoolAction(data);
             if (!instructionType) return null;
 
+            const accounts = this.adapter.getInstructionAccounts(instruction);
             const type = typeof instructionType === 'string' ? instructionType : instructionType.type;
-            const transfers = this.getTransfersForInstruction(instruction, index, innerIndex);
+            const transfers = this.getTransfersForInstruction(programId, outerIndex, innerIndex).filter((it) =>
+                it.info.authority.length > 0 &&
+                accounts.includes(it.info.destination) &&
+                it.programId != TOKENS.NATIVE
+            );
+
             const config = this.getEventConfig(type, instructionType);
 
             if (!config) return null;
-            return this.parseEvent(instruction, index, data, transfers, config);
+            return this.parseEvent(instruction, outerIndex, data, transfers, config);
         } catch (error) {
             console.error('parseRaydiumInstruction error:', error);
             return null;
         }
     }
-
-    protected abstract getEventConfig(
-        type: PoolEventType,
-        instructionType: PoolEventType | { name: string; type: PoolEventType }
-    ): ParseEventConfig | null;
 
     protected parseEvent(
         instruction: any,
@@ -92,23 +111,5 @@ export abstract class RaydiumLiquidityParserBase {
             token1Decimals,
             lpAmount,
         };
-    }
-
-    protected getTransfersForInstruction(
-        instruction: any,
-        index: number,
-        innerIndex?: number,
-        filterTypes: string[] = ['mintTo', 'burn']
-    ): TransferData[] {
-        const curIdx = innerIndex === undefined ? index.toString() : `${index}-${innerIndex}`;
-        const accounts = this.adapter.getInstructionAccounts(instruction);
-
-        return this.utils
-            .processTransferInstructions(index, filterTypes)
-            .filter((it) =>
-                it.info.authority.length > 0 &&
-                accounts.includes(it.info.destination) &&
-                it.idx >= curIdx
-            );
     }
 }

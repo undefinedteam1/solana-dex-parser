@@ -6,4 +6,5 @@ export * from './src/transaction-adapter';
 export * from './src/transaction-utils';
 export * from './src/transfer-utils';
 export * from './src/transfer-compiled-utils';
+export * from './src/instruction-classifier';
 export * from './src/dex-parser';

@@ -1,8 +1,17 @@
-import { DEX_PROGRAMS } from "../../constants";
-import { TransactionAdapter } from "../../transaction-adapter";
-import { ClassifiedInstruction, convertToUiAmount, DexInfo, PumpswapBuyEvent, PumpswapEvent, PumpswapSellEvent, TradeInfo, TransferData } from "../../types";
-import { BaseParser } from "../base-parser";
-import { PumpswapEventParser } from "./parser-pumpswap-event";
+import { DEX_PROGRAMS } from '../../constants';
+import { TransactionAdapter } from '../../transaction-adapter';
+import {
+  ClassifiedInstruction,
+  convertToUiAmount,
+  DexInfo,
+  PumpswapBuyEvent,
+  PumpswapEvent,
+  PumpswapSellEvent,
+  TradeInfo,
+  TransferData,
+} from '../../types';
+import { BaseParser } from '../base-parser';
+import { PumpswapEventParser } from './parser-pumpswap-event';
 
 export class PumpswapParser extends BaseParser {
   private eventParser: PumpswapEventParser;
@@ -20,11 +29,9 @@ export class PumpswapParser extends BaseParser {
   public processTrades(): TradeInfo[] {
     const events = this.eventParser
       .parseInstructions(this.classifiedInstructions)
-      .filter(event => ['BUY', 'SELL'].includes(event.type));
+      .filter((event) => ['BUY', 'SELL'].includes(event.type));
 
-    return events.map(event => 
-      event.type === 'BUY' ? this.createBuyInfo(event) : this.createSellInfo(event)
-    );
+    return events.map((event) => (event.type === 'BUY' ? this.createBuyInfo(event) : this.createSellInfo(event)));
   }
 
   private createBuyInfo(data: PumpswapEvent): TradeInfo {

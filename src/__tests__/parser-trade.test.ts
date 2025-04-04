@@ -22,7 +22,7 @@ describe('Dex Parser', () => {
   describe('Parse Trades', () => {
     const parser = new DexParser();
 
-    ["4mxr44yo5Qi7Rabwbknkh8MNUEWAMKmzFQEmqUVdx5JpHEEuh59TrqiMCjZ7mgZMozRK1zW8me34w8Myi8Qi1tWP"
+    ["5iYnDMYjeULUSGvmjcrL1AoSeNhbG5o6EmxR2zBmGiYmHgrtJ6KbNHgFejkCtcxC2f2notoH98tYPffw4HHPzBbe",
     ]
       .forEach((signature) => {
         it(`${signature} `, async () => {
@@ -31,10 +31,10 @@ describe('Dex Parser', () => {
             maxSupportedTransactionVersion: 0,
           });
           if (!tx) { throw new Error(`Transaction not found > ${signature}`); }
-          const trades = parser.parseTrades(tx, { tryUnknowDEX: false});
-          // const liquidity = parser.parseLiquidity(tx as any);
-          console.log('trades', trades, '> liquidity');
-          expect(trades.length).toBeGreaterThanOrEqual(1);
+          const { trades, liquidities } = parser.parseAll(tx, { tryUnknowDEX: false });
+          console.log('trades', trades);
+          console.log('liquidity', liquidities);
+          expect(trades.length + liquidities.length).toBeGreaterThanOrEqual(1);
         });
       });
   });

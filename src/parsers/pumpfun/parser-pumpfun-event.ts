@@ -3,25 +3,33 @@ import { Buffer } from 'buffer';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
 import { InstructionClassifier } from '../../instruction-classifier';
 import { TransactionAdapter } from '../../transaction-adapter';
-import { ClassifiedInstruction, convertToUiAmount, EventParser, PumpfunCompleteEvent, PumpfunCreateEvent, PumpfunEvent, PumpfunTradeEvent } from '../../types';
+import {
+  ClassifiedInstruction,
+  convertToUiAmount,
+  EventParser,
+  PumpfunCompleteEvent,
+  PumpfunCreateEvent,
+  PumpfunEvent,
+  PumpfunTradeEvent,
+} from '../../types';
 import { getInstructionData } from '../../utils';
 
 export class PumpfunEventParser {
   constructor(private readonly adapter: TransactionAdapter) {}
 
   private readonly eventParsers: Record<string, EventParser<any>> = {
-    'TRADE': {
+    TRADE: {
       discriminator: DISCRIMINATORS.PUMPFUN.TRADE_EVENT,
-      decode: this.decodeTradeEvent.bind(this)
+      decode: this.decodeTradeEvent.bind(this),
     },
-    'CREATE': {
+    CREATE: {
       discriminator: DISCRIMINATORS.PUMPFUN.CREATE_EVENT,
-      decode: this.decodeCreateEvent.bind(this)
+      decode: this.decodeCreateEvent.bind(this),
     },
-    'COMPLETE': {
+    COMPLETE: {
       discriminator: DISCRIMINATORS.PUMPFUN.COMPLETE_EVENT,
-      decode: this.decodeCompleteEvent.bind(this)
-    }
+      decode: this.decodeCompleteEvent.bind(this),
+    },
   };
 
   public processEvents(): PumpfunEvent[] {

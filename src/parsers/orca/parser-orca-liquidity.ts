@@ -1,10 +1,9 @@
-import { DEX_PROGRAMS, DISCRIMINATORS } from "../../constants";
-import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from "../../types";
-import { getInstructionData } from "../../utils";
-import { BaseLiquidityParser } from "../base-liquidity-parser";
+import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
+import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from '../../types';
+import { getInstructionData } from '../../utils';
+import { BaseLiquidityParser } from '../base-liquidity-parser';
 
 export class OrcaLiquidityParser extends BaseLiquidityParser {
-
   public processLiquidity(): PoolEvent[] {
     const events: PoolEvent[] = [];
 
@@ -31,7 +30,7 @@ export class OrcaLiquidityParser extends BaseLiquidityParser {
       const action = this.getPoolAction(data);
       if (!action) return null;
 
-      const transfers = this.getTransfersForInstruction(programId, outerIndex, innerIndex, ['mintTo', 'burn']);
+      const transfers = this.getTransfersForInstruction(programId, outerIndex, innerIndex);
 
       switch (action) {
         case 'ADD':
@@ -65,7 +64,10 @@ export class OrcaLiquidityParser extends BaseLiquidityParser {
     const token1Mint = token1?.info.mint;
     const programId = this.adapter.getInstructionProgramId(instruction);
     const accounts = this.adapter.getInstructionAccounts(instruction);
-    const [token0Decimals, token1Decimals] = [this.adapter.getTokenDecimals(token0Mint), this.adapter.getTokenDecimals(token1Mint)];
+    const [token0Decimals, token1Decimals] = [
+      this.adapter.getTokenDecimals(token0Mint),
+      this.adapter.getTokenDecimals(token1Mint),
+    ];
 
     return {
       ...this.adapter.getPoolEventBase('ADD', programId),
@@ -74,12 +76,8 @@ export class OrcaLiquidityParser extends BaseLiquidityParser {
       poolLpMint: accounts[0],
       token0Mint: token0Mint,
       token1Mint: token1Mint,
-      token0Amount:
-        token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(32), token0Decimals),
-      token1Amount:
-        token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), token1Decimals),
+      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(32), token0Decimals),
+      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(24), token1Decimals),
       token0Decimals: token0Decimals,
       token1Decimals: token1Decimals,
       lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])) || 0,
@@ -92,7 +90,10 @@ export class OrcaLiquidityParser extends BaseLiquidityParser {
     const token1Mint = token1?.info.mint;
     const programId = this.adapter.getInstructionProgramId(instruction);
     const accounts = this.adapter.getInstructionAccounts(instruction);
-    const [token0Decimals, token1Decimals] = [this.adapter.getTokenDecimals(token0Mint), this.adapter.getTokenDecimals(token1Mint)];
+    const [token0Decimals, token1Decimals] = [
+      this.adapter.getTokenDecimals(token0Mint),
+      this.adapter.getTokenDecimals(token1Mint),
+    ];
 
     return {
       ...this.adapter.getPoolEventBase('REMOVE', programId),
@@ -101,12 +102,8 @@ export class OrcaLiquidityParser extends BaseLiquidityParser {
       poolLpMint: accounts[0],
       token0Mint: token0Mint,
       token1Mint: token1Mint,
-      token0Amount:
-        token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(32), token0Decimals),
-      token1Amount:
-        token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), token1Decimals),
+      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(32), token0Decimals),
+      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(24), token1Decimals),
       token0Decimals: token0Decimals,
       token1Decimals: token1Decimals,
       lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),

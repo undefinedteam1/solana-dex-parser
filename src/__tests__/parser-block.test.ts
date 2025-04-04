@@ -21,11 +21,10 @@ describe('Parser', () => {
 
     describe('parseTransaction', () => {
       it("block", async () => {
-        const parser = new DexParser(connection);
+        const parser = new DexParser();
 
-        // const trades = await parser.parseTransaction(signature);
         const s1 = Date.now();
-        const block = await connection.getParsedBlock(324994337, {
+        const block = await connection.getBlock(330422352, {
           commitment: 'confirmed',
           maxSupportedTransactionVersion: 0,
           transactionDetails: 'full',
@@ -40,15 +39,13 @@ describe('Parser', () => {
           if (tx.meta?.err) {
             return;
           }
-          const trades = parser.parseTrades({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any);
-          // const ls = parser.parseLiquidity({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any);
+          const {trades,liquidities} = parser.parseAll({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any, { tryUnknowDEX: false});
+         
           ts.push(...trades);
-          // liqs.push(...ls);
+          liqs.push(...liquidities);
         })
         const s3 = Date.now();
 
-        // console.log("Trades:", ts);
-        // console.log("Liquidity:", liqs);
         console.log(`Fetch block: ${(s2 - s1) / 1000} s > Parser: ${(s3 - s2) / 1000} s > Hits: ${ts.length + liqs.length} / ${block.transactions.length}`);
 
       });

@@ -1,36 +1,43 @@
-
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
 import { InstructionClassifier } from '../../instruction-classifier';
 import { TransactionAdapter } from '../../transaction-adapter';
-import { ClassifiedInstruction, EventParser, PumpswapBuyEvent, PumpswapCreatePoolEvent, PumpswapDepositEvent, PumpswapEvent, PumpswapSellEvent, PumpswapWithdrawEvent } from '../../types';
+import {
+  ClassifiedInstruction,
+  EventParser,
+  PumpswapBuyEvent,
+  PumpswapCreatePoolEvent,
+  PumpswapDepositEvent,
+  PumpswapEvent,
+  PumpswapSellEvent,
+  PumpswapWithdrawEvent,
+} from '../../types';
 import { getInstructionData } from '../../utils';
 import { BinaryReader } from './parser-pumpfun-event';
 
 export class PumpswapEventParser {
-
-  constructor(private readonly adapter: TransactionAdapter) { }
+  constructor(private readonly adapter: TransactionAdapter) {}
 
   private readonly eventParsers: Record<string, EventParser<any>> = {
-    'CREATE': {
+    CREATE: {
       discriminator: DISCRIMINATORS.PUMPSWAP.CREATE_POOL,
-      decode: this.decodeCreateEvent.bind(this)
+      decode: this.decodeCreateEvent.bind(this),
     },
-    'ADD': {
+    ADD: {
       discriminator: DISCRIMINATORS.PUMPSWAP.ADD_LIQUIDITY,
-      decode: this.decodeAddLiquidity.bind(this)
+      decode: this.decodeAddLiquidity.bind(this),
     },
-    'REMOVE': {
+    REMOVE: {
       discriminator: DISCRIMINATORS.PUMPSWAP.REMOVE_LIQUIDITY,
-      decode: this.decodeRemoveLiquidity.bind(this)
+      decode: this.decodeRemoveLiquidity.bind(this),
     },
-    'BUY': {
+    BUY: {
       discriminator: DISCRIMINATORS.PUMPSWAP.BUY,
-      decode: this.decodeBuyEvent.bind(this)
+      decode: this.decodeBuyEvent.bind(this),
     },
-    'SELL': {
+    SELL: {
       discriminator: DISCRIMINATORS.PUMPSWAP.SELL,
-      decode: this.decodeSellEvent.bind(this)
-    }
+      decode: this.decodeSellEvent.bind(this),
+    },
   };
 
   public processEvents(): PumpswapEvent[] {

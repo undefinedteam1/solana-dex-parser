@@ -1,8 +1,17 @@
-import { DEX_PROGRAMS } from "../../constants";
-import { TransactionAdapter } from "../../transaction-adapter";
-import { ClassifiedInstruction, convertToUiAmount, PoolEvent, PumpswapCreatePoolEvent, PumpswapDepositEvent, PumpswapEvent, PumpswapWithdrawEvent, TransferData } from "../../types";
-import { BaseLiquidityParser } from "../base-liquidity-parser";
-import { PumpswapEventParser } from "./parser-pumpswap-event";
+import { DEX_PROGRAMS } from '../../constants';
+import { TransactionAdapter } from '../../transaction-adapter';
+import {
+  ClassifiedInstruction,
+  convertToUiAmount,
+  PoolEvent,
+  PumpswapCreatePoolEvent,
+  PumpswapDepositEvent,
+  PumpswapEvent,
+  PumpswapWithdrawEvent,
+  TransferData,
+} from '../../types';
+import { BaseLiquidityParser } from '../base-liquidity-parser';
+import { PumpswapEventParser } from './parser-pumpswap-event';
 
 export class PumpswapLiquidityParser extends BaseLiquidityParser {
   private eventParser: PumpswapEventParser;
@@ -19,7 +28,7 @@ export class PumpswapLiquidityParser extends BaseLiquidityParser {
   public processLiquidity(): PoolEvent[] {
     const events = this.eventParser
       .parseInstructions(this.classifiedInstructions)
-      .filter(event => ['CREATE', 'ADD', 'REMOVE'].includes(event.type));
+      .filter((event) => ['CREATE', 'ADD', 'REMOVE'].includes(event.type));
 
     return events.length > 0 ? this.parseLiquidityEvents(events) : [];
   }

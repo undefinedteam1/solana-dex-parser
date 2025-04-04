@@ -1,5 +1,4 @@
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
-import { ParsedInstruction } from '@solana/web3.js';
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { TOKENS } from './constants';
 import { TokenInfo, TransferData, convertToUiAmount } from './types';
 import { getTranferTokenMint } from './utils';

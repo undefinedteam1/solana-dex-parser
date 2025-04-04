@@ -1,7 +1,7 @@
-import { DISCRIMINATORS } from "../../constants";
-import { TradeInfo } from "../../types";
-import { getProgramName, getInstructionData } from "../../utils";
-import { BaseParser } from "../base-parser";
+import { DISCRIMINATORS } from '../../constants';
+import { TradeInfo } from '../../types';
+import { getProgramName, getInstructionData } from '../../utils';
+import { BaseParser } from '../base-parser';
 
 export class RaydiumParser extends BaseParser {
   public processTrades(): TradeInfo[] {

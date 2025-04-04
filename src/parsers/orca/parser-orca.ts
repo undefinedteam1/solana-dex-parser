@@ -1,7 +1,7 @@
-import { DEX_PROGRAMS, DISCRIMINATORS } from "../../constants";
-import { TradeInfo } from "../../types";
-import { getInstructionData, getProgramName } from "../../utils";
-import { BaseParser } from "../base-parser";
+import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
+import { TradeInfo } from '../../types';
+import { getInstructionData, getProgramName } from '../../utils';
+import { BaseParser } from '../base-parser';
 
 export class OrcaParser extends BaseParser {
   public processTrades(): TradeInfo[] {

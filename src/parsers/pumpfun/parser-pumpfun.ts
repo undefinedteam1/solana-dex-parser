@@ -1,8 +1,16 @@
-import { DEX_PROGRAMS, TOKENS } from "../../constants";
-import { TransactionAdapter } from "../../transaction-adapter";
-import { ClassifiedInstruction, DexInfo, PumpfunEvent, PumpfunTradeEvent, TradeInfo, TradeType, TransferData } from "../../types";
-import { BaseParser } from "../base-parser";
-import { PumpfunEventParser } from "./parser-pumpfun-event";
+import { DEX_PROGRAMS, TOKENS } from '../../constants';
+import { TransactionAdapter } from '../../transaction-adapter';
+import {
+  ClassifiedInstruction,
+  DexInfo,
+  PumpfunEvent,
+  PumpfunTradeEvent,
+  TradeInfo,
+  TradeType,
+  TransferData,
+} from '../../types';
+import { BaseParser } from '../base-parser';
+import { PumpfunEventParser } from './parser-pumpfun-event';
 
 export class PumpfunParser extends BaseParser {
   private eventParser: PumpfunEventParser;
@@ -20,9 +28,9 @@ export class PumpfunParser extends BaseParser {
   public processTrades(): TradeInfo[] {
     const events = this.eventParser
       .parseInstructions(this.classifiedInstructions)
-      .filter(event => event.type === 'TRADE');
+      .filter((event) => event.type === 'TRADE');
 
-    return events.map(event => this.createTradeInfo(event));
+    return events.map((event) => this.createTradeInfo(event));
   }
 
   private createTradeInfo(data: PumpfunEvent): TradeInfo {

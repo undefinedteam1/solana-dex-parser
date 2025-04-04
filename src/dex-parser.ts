@@ -1,10 +1,34 @@
 import { Connection } from '@solana/web3.js';
 import { DEX_PROGRAMS } from './constants';
 import { InstructionClassifier } from './instruction-classifier';
-import { JupiterParser, MeteoraDLMMPoolParser, MeteoraParser, MeteoraPoolsParser, MoonshotParser, OrcaLiquidityParser, OrcaParser, PumpfunParser, PumpswapLiquidityParser, PumpswapParser, RaydiumCLPoolParser, RaydiumCPMMPoolParser, RaydiumParser, RaydiumV4PoolParser } from './parsers';
+import {
+  JupiterParser,
+  MeteoraDLMMPoolParser,
+  MeteoraParser,
+  MeteoraPoolsParser,
+  MoonshotParser,
+  OrcaLiquidityParser,
+  OrcaParser,
+  PumpfunParser,
+  PumpswapLiquidityParser,
+  PumpswapParser,
+  RaydiumCLPoolParser,
+  RaydiumCPMMPoolParser,
+  RaydiumParser,
+  RaydiumV4PoolParser,
+} from './parsers';
 import { TransactionAdapter } from './transaction-adapter';
 import { TransactionUtils } from './transaction-utils';
-import { ClassifiedInstruction, DexInfo, ParseConfig, ParseResult, PoolEvent, SolanaTransaction, TradeInfo, TransferData } from './types';
+import {
+  ClassifiedInstruction,
+  DexInfo,
+  ParseConfig,
+  ParseResult,
+  PoolEvent,
+  SolanaTransaction,
+  TradeInfo,
+  TransferData,
+} from './types';
 import { getProgramName } from './utils';
 
 /**
@@ -73,8 +97,9 @@ export class DexParser {
     parseType: 'trades' | 'liquidity' | 'all'
   ): ParseResult {
     const result: ParseResult = {
+      state: false,
       trades: [],
-      liquidities: []
+      liquidities: [],
     };
 
     try {
@@ -87,7 +112,7 @@ export class DexParser {
       if (!dexInfo.programId) return result;
       if (config?.programIds && !config.programIds.includes(dexInfo.programId)) return result;
 
-      const transferActions = utils.getTransferActions(["mintTo", "burn"]);
+      const transferActions = utils.getTransferActions(['mintTo', 'burn']);
 
       // Try specific parser first
       if ([DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(dexInfo.programId)) {
@@ -100,16 +125,12 @@ export class DexParser {
             jupiterInstructions
           );
           result.trades.push(...parser.processTrades());
-         
         }
         return result;
       }
 
-      // Try generic parsing 
-      const programIds = new Set([
-        dexInfo.programId,
-        ...Object.keys(transferActions).map(key => key.split(':')[0])
-      ]);
+      // Try generic parsing
+      const programIds = new Set([dexInfo.programId, ...Object.keys(transferActions).map((key) => key.split(':')[0])]);
 
       // Process instructions for each program
       for (const programId of programIds) {
@@ -128,8 +149,7 @@ export class DexParser {
             result.trades.push(...parser.processTrades());
           } else if (config?.tryUnknowDEX) {
             // Handle unknown DEX programs
-            const transfers = Object.entries(transferActions)
-              .find(([key]) => key.startsWith(programId))?.[1];
+            const transfers = Object.entries(transferActions).find(([key]) => key.startsWith(programId))?.[1];
             if (transfers && transfers.length >= 2) {
               const trade = utils.processSwapData(transfers, {
                 ...dexInfo,
@@ -152,19 +172,20 @@ export class DexParser {
 
       // Deduplicate trades
       if (result.trades.length > 0) {
-        result.trades = [...new Map(
-          result.trades.map((item) => [`${item.idx}-${item.signature}`, item])
-        ).values()];
+        result.trades = [...new Map(result.trades.map((item) => [`${item.idx}-${item.signature}`, item])).values()];
       }
-    } catch (error) {
-      console.error('Parse error:', error);
+    } catch (error: any) {
+      const msg = `Parse error:, ${tx?.transaction?.signatures?.[0]} ${error.message}`;
+      console.error(msg, error);
+      result.state = false;
+      result.msg = msg;
     }
 
     return result;
   }
 
   /**
-   * Parse transaction by signature
+   * Parse transaction by signature (Deprecated)
    */
   public async parseTransaction(signature: string, config?: ParseConfig): Promise<TradeInfo[]> {
     if (!this.connection) throw `Connection required!`;

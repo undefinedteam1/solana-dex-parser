@@ -1,7 +1,7 @@
 import { deserializeUnchecked } from 'borsh';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
 import { JupiterSwapEventData, JupiterSwapInfo, TradeInfo } from '../../types';
-import { getAMMs, getInstructionData, getProgramName, getTradeType } from '../../utils';
+import { getInstructionData, getProgramName, getTradeType } from '../../utils';
 import { BaseParser } from '../base-parser';
 import { JupiterLayout } from './layout';
 
@@ -10,11 +10,8 @@ export class JupiterParser extends BaseParser {
     const trades: TradeInfo[] = [];
 
     this.classifiedInstructions.forEach(({ instruction, programId, outerIndex, innerIndex }) => {
-      if (this.isJupiterRouteEventInstruction(instruction)) {
-        const event = this.parseJupiterRouteEventInstruction(
-          instruction,
-          `${outerIndex}-${innerIndex ?? 0}`
-        );
+      if (this.isJupiterRouteEventInstruction(instruction, programId)) {
+        const event = this.parseJupiterRouteEventInstruction(instruction, `${outerIndex}-${innerIndex ?? 0}`);
         if (event) {
           const data = this.processSwapData([event]);
           if (data) {
@@ -27,8 +24,7 @@ export class JupiterParser extends BaseParser {
     return trades;
   }
 
-  private isJupiterRouteEventInstruction(instruction: any): boolean {
-    const programId = this.adapter.getInstructionProgramId(instruction);
+  private isJupiterRouteEventInstruction(instruction: any, programId: string): boolean {
     if (programId !== DEX_PROGRAMS.JUPITER.id) return false;
 
     const data = getInstructionData(instruction);

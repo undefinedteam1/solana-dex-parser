@@ -19,6 +19,6 @@ export abstract class BaseParser {
   protected getTransfersForInstruction(programId: string, outerIndex: number, innerIndex?: number): TransferData[] {
     const key = `${programId}:${outerIndex}${innerIndex == undefined ? '' : `-${innerIndex}`}`;
     const transfers = this.transferActions[key] || [];
-    return transfers.filter(t => ["transfer", "transferChecked"].includes(t.type));
+    return transfers.filter((t) => ['transfer', 'transferChecked'].includes(t.type));
   }
 }

@@ -1,6 +1,6 @@
-import { DISCRIMINATORS } from "../../constants";
-import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from "../../types";
-import { MeteoraLiquidityParserBase } from "./parser-meteora-liquidity-base";
+import { DISCRIMINATORS } from '../../constants';
+import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from '../../types';
+import { MeteoraLiquidityParserBase } from './parser-meteora-liquidity-base';
 
 export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
   public getPoolAction(data: Buffer): PoolEventType | null {
@@ -25,7 +25,7 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
     const programId = this.adapter.getInstructionProgramId(instruction);
     const [token0Decimals, token1Decimals] = [
       this.adapter.getTokenDecimals(token0Mint),
-      this.adapter.getTokenDecimals(token1Mint)
+      this.adapter.getTokenDecimals(token1Mint),
     ];
 
     return {
@@ -35,10 +35,8 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
       poolLpMint: accounts[2],
       token0Mint,
       token1Mint,
-      token0Amount: token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(16), token0Decimals),
-      token1Amount: token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(8), token1Decimals),
+      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(16), token0Decimals),
+      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(8), token1Decimals),
       token0Decimals,
       token1Decimals,
       lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
@@ -59,7 +57,7 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
     const programId = this.adapter.getInstructionProgramId(instruction);
     const [token0Decimals, token1Decimals] = [
       this.adapter.getTokenDecimals(token0Mint),
-      this.adapter.getTokenDecimals(token1Mint)
+      this.adapter.getTokenDecimals(token1Mint),
     ];
 
     return {
@@ -69,13 +67,12 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
       poolLpMint: accounts[1],
       token0Mint,
       token1Mint,
-      token0Amount: token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), token0Decimals),
-      token1Amount: token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(16), token1Decimals),
+      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(24), token0Decimals),
+      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(16), token1Decimals),
       token0Decimals,
       token1Decimals,
-      lpAmount: lpToken?.info.tokenAmount.uiAmount ||
+      lpAmount:
+        lpToken?.info.tokenAmount.uiAmount ||
         convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
     };
   }
@@ -94,7 +91,7 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
     const programId = this.adapter.getInstructionProgramId(instruction);
     const [token0Decimals, token1Decimals] = [
       this.adapter.getTokenDecimals(token0Mint),
-      this.adapter.getTokenDecimals(token1Mint)
+      this.adapter.getTokenDecimals(token1Mint),
     ];
 
     return {
@@ -104,13 +101,12 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
       poolLpMint: accounts[1],
       token0Mint,
       token1Mint,
-      token0Amount: token0?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(24), token0Decimals),
-      token1Amount: token1?.info.tokenAmount.uiAmount ||
-        convertToUiAmount(data.readBigUInt64LE(16), token1Decimals),
+      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(24), token0Decimals),
+      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(16), token1Decimals),
       token0Decimals,
       token1Decimals,
-      lpAmount: lpToken?.info.tokenAmount.uiAmount ||
+      lpAmount:
+        lpToken?.info.tokenAmount.uiAmount ||
         convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
     };
   }

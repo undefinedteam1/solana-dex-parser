@@ -1,15 +1,15 @@
-import { TokenAmount } from "@solana/web3.js";
-import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from "../../constants";
-import { convertToUiAmount, TradeInfo, TradeType } from "../../types";
-import { absBigInt, getInstructionData } from "../../utils";
-import { BaseParser } from "../base-parser";
+import { TokenAmount } from '@solana/web3.js';
+import { DEX_PROGRAMS, DISCRIMINATORS, TOKENS } from '../../constants';
+import { convertToUiAmount, TradeInfo, TradeType } from '../../types';
+import { absBigInt, getInstructionData } from '../../utils';
+import { BaseParser } from '../base-parser';
 
 export class MoonshotParser extends BaseParser {
   public processTrades(): TradeInfo[] {
     const trades: TradeInfo[] = [];
 
     this.classifiedInstructions.forEach(({ instruction, programId, outerIndex, innerIndex }) => {
-      if (this.isTradeInstruction(instruction)) {
+      if (this.isTradeInstruction(instruction, programId)) {
         const trade = this.parseTradeInstruction(instruction, `${outerIndex}-${innerIndex ?? 0}`);
         if (trade) {
           trades.push(trade);
@@ -20,8 +20,7 @@ export class MoonshotParser extends BaseParser {
     return trades;
   }
 
-  private isTradeInstruction(instruction: any): boolean {
-    const programId = this.adapter.getInstructionProgramId(instruction);
+  private isTradeInstruction(instruction: any, programId: string): boolean {
     const accounts = this.adapter.getInstructionAccounts(instruction);
     return programId === DEX_PROGRAMS.MOONSHOT.id && accounts && accounts.length === 11;
   }
@@ -51,12 +50,12 @@ export class MoonshotParser extends BaseParser {
         type: tradeType,
         inputToken: {
           mint: tradeType === 'BUY' ? collateralMint : moonshotTokenMint,
-          amount: tradeType === 'BUY' ? collateralAmount.uiAmount ?? 0 : tokenAmount.uiAmount ?? 0,
+          amount: tradeType === 'BUY' ? (collateralAmount.uiAmount ?? 0) : (tokenAmount.uiAmount ?? 0),
           decimals: tradeType === 'BUY' ? collateralAmount.decimals : tokenAmount.decimals,
         },
         outputToken: {
           mint: tradeType === 'BUY' ? moonshotTokenMint : collateralMint,
-          amount: tradeType === 'BUY' ? tokenAmount.uiAmount ?? 0 : collateralAmount.uiAmount ?? 0,
+          amount: tradeType === 'BUY' ? (tokenAmount.uiAmount ?? 0) : (collateralAmount.uiAmount ?? 0),
           decimals: tradeType === 'BUY' ? tokenAmount.decimals : collateralAmount.decimals,
         },
         user: this.adapter.signer,

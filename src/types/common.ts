@@ -10,9 +10,9 @@ export interface ClassifiedInstruction {
 
 export interface ParseResult {
   state: boolean;
-  msg?: string;
   trades: TradeInfo[];
   liquidities: PoolEvent[];
+  msg?: string;
 }
 
 export type EventParser<T> = {

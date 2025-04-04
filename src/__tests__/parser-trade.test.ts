@@ -22,12 +22,12 @@ describe('Dex Parser', () => {
   describe('Parse Trades', () => {
     const parser = new DexParser();
 
-    ["5iYnDMYjeULUSGvmjcrL1AoSeNhbG5o6EmxR2zBmGiYmHgrtJ6KbNHgFejkCtcxC2f2notoH98tYPffw4HHPzBbe",
+    ["ucr3MkTsdSqTbkTcgLHFRK3dsPPX4t6FG1KNZatMz5vCvE3UCBCR51VZq9YThRkvZdj471WmmiL3JHu62YFmbBR",
     ]
       .forEach((signature) => {
         it(`${signature} `, async () => {
           const tx = await connection.getTransaction(signature, {
-            commitment: 'finalized',
+            commitment: 'confirmed',
             maxSupportedTransactionVersion: 0,
           });
           if (!tx) { throw new Error(`Transaction not found > ${signature}`); }

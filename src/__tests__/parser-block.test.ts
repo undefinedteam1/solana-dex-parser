@@ -24,7 +24,7 @@ describe('Parser', () => {
         const parser = new DexParser();
 
         const s1 = Date.now();
-        const block = await connection.getBlock(330422352, {
+        const block = await connection.getBlock(330422976, {
           commitment: 'confirmed',
           maxSupportedTransactionVersion: 0,
           transactionDetails: 'full',

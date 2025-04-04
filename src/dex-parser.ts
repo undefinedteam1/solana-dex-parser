@@ -86,7 +86,7 @@ export class DexParser {
     [DEX_PROGRAMS.PUMP_SWAP.id]: PumpswapLiquidityParser,
   };
 
-  constructor(private connection?: Connection) { }
+  constructor(private connection?: Connection) {}
 
   /**
    * Parse transaction with specific type
@@ -97,7 +97,7 @@ export class DexParser {
     parseType: 'trades' | 'liquidity' | 'all'
   ): ParseResult {
     const result: ParseResult = {
-      state: false,
+      state: true,
       trades: [],
       liquidities: [],
     };
@@ -174,9 +174,9 @@ export class DexParser {
       if (result.trades.length > 0) {
         result.trades = [...new Map(result.trades.map((item) => [`${item.idx}-${item.signature}`, item])).values()];
       }
-    } catch (error: any) {
-      const msg = `Parse error:, ${tx?.transaction?.signatures?.[0]} ${error.message}`;
-      console.error(msg, error);
+    } catch (error) {
+      const msg = `Parse error: ${tx?.transaction?.signatures?.[0]} ${error}`;
+      console.error(msg);
       result.state = false;
       result.msg = msg;
     }

@@ -31,6 +31,10 @@ export class TransactionAdapter {
     return this.tx.slot;
   }
 
+  get version() {
+    return this.tx.version;
+  }
+
   /**
    * Get transaction block time
    */
@@ -93,7 +97,13 @@ export class TransactionAdapter {
       const key2 = this.tx.meta?.loadedAddresses?.writable.map((it) => it.toBase58()) || [];
       const key3 = this.tx.meta?.loadedAddresses?.readonly.map((it) => it.toBase58()) || [];
       return [...keys, ...key2, ...key3];
-    } else {
+    } else if (this.version == 0) {
+      const keys = this.getAccountKeys(this.txMessage.accountKeys) || [];
+      const key2 = this.getAccountKeys(this.tx.meta?.loadedAddresses?.writable ?? []) || [];
+      const key3 = this.getAccountKeys(this.tx.meta?.loadedAddresses?.readonly ?? []) || [];
+      return [...keys, ...key2, ...key3];
+    }
+    else {
       return this.getAccountKeys(this.txMessage.accountKeys) || [];
     }
   }

@@ -102,8 +102,7 @@ export class TransactionAdapter {
       const key2 = this.getAccountKeys(this.tx.meta?.loadedAddresses?.writable ?? []) || [];
       const key3 = this.getAccountKeys(this.tx.meta?.loadedAddresses?.readonly ?? []) || [];
       return [...keys, ...key2, ...key3];
-    }
-    else {
+    } else {
       return this.getAccountKeys(this.txMessage.accountKeys) || [];
     }
   }

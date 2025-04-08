@@ -1,4 +1,3 @@
-import { Connection } from '@solana/web3.js';
 import { DEX_PROGRAMS } from './constants';
 import { InstructionClassifier } from './instruction-classifier';
 import {
@@ -86,7 +85,7 @@ export class DexParser {
     [DEX_PROGRAMS.PUMP_SWAP.id]: PumpswapLiquidityParser,
   };
 
-  constructor(private connection?: Connection) {}
+  constructor() {}
 
   /**
    * Parse transaction with specific type
@@ -108,9 +107,12 @@ export class DexParser {
       const classifier = new InstructionClassifier(adapter);
 
       // Get DEX information and validate
-      const dexInfo = utils.getDexInfo();
+      const dexInfo = utils.getDexInfo(classifier);
       if (!dexInfo.programId) return result;
-      if (config?.programIds && !config.programIds.includes(dexInfo.programId)) return result;
+
+      const allProgramIds = classifier.getAllProgramIds();
+      if (config?.programIds && !config.programIds.some((id) => allProgramIds.includes(id))) return result;
+      if (config?.ignoreProgramIds && config.ignoreProgramIds.some((id) => allProgramIds.includes(id))) return result;
 
       const transferActions = utils.getTransferActions(['mintTo', 'burn']);
 
@@ -129,11 +131,8 @@ export class DexParser {
         return result;
       }
 
-      // Try generic parsing
-      const programIds = new Set([dexInfo.programId, ...Object.keys(transferActions).map((key) => key.split(':')[0])]);
-
       // Process instructions for each program
-      for (const programId of programIds) {
+      for (const programId of allProgramIds) {
         const classifiedInstructions = classifier.getInstructions(programId);
 
         // Process trades if needed
@@ -182,19 +181,6 @@ export class DexParser {
     }
 
     return result;
-  }
-
-  /**
-   * Parse transaction by signature (Deprecated)
-   */
-  public async parseTransaction(signature: string, config?: ParseConfig): Promise<TradeInfo[]> {
-    if (!this.connection) throw `Connection required!`;
-    const tx = await this.connection.getTransaction(signature, {
-      commitment: 'confirmed',
-      maxSupportedTransactionVersion: 0,
-    });
-    if (!tx) throw `Can't fetch transaction! ${signature}`;
-    return this.parseTrades(tx as SolanaTransaction, config);
   }
 
   /**

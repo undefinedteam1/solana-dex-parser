@@ -17,6 +17,12 @@ export interface ParseConfig {
    * @default undefined
    */
   programIds?: string[];
+
+  /**
+   * if set, will ignore transactions from these programIds
+   * @default undefined
+   */
+  ignoreProgramIds?: string[];
 }
 
 export interface DexInfo {

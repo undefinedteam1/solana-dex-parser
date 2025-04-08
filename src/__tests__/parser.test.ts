@@ -20,7 +20,7 @@ describe('Dex Parser', () => {
   });
 
   describe('Parse Trades', () => {
-    const parser = new DexParser(connection);
+    const parser = new DexParser();
     const expectItem = (item: any, test: any) => {
       expect(item.type).toEqual(test.type);
       expect(item.user).toEqual(test.user);

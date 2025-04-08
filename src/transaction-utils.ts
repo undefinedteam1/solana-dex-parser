@@ -18,6 +18,7 @@ import {
   isCompiledExtraAction,
   processCompiledExtraAction,
 } from './transfer-compiled-utils';
+import { InstructionClassifier } from './instruction-classifier';
 
 export class TransactionUtils {
   constructor(private adapter: TransactionAdapter) {}
@@ -25,18 +26,11 @@ export class TransactionUtils {
   /**
    * Get DEX information from transaction
    */
-  getDexInfo(): DexInfo {
-    let mainProgramId: string | undefined;
+  getDexInfo(classifier: InstructionClassifier): DexInfo {
+    const programIds = classifier.getAllProgramIds();
+    if (!programIds.length) return {};
 
-    for (const ix of this.adapter.instructions) {
-      const instruction = this.adapter.getInstruction(ix);
-      const programId = instruction.programId;
-      if (!programId) continue;
-      if (SYSTEM_PROGRAMS.includes(programId)) continue;
-
-      const actionType = this.adapter.getInstructionType(instruction) || '';
-      if (['createIdempotent', '14'].includes(actionType)) continue;
-
+    for (const programId of programIds) {
       const dexProgram = Object.values(DEX_PROGRAMS).find((dex) => dex.id === programId);
       if (dexProgram) {
         const isRoute = !dexProgram.tags.includes('amm');
@@ -46,13 +40,9 @@ export class TransactionUtils {
           amm: !isRoute ? dexProgram.name : undefined,
         };
       }
-
-      if (!mainProgramId) {
-        mainProgramId = programId;
-      }
     }
 
-    return mainProgramId ? { programId: mainProgramId } : {};
+    return { programId: programIds[0] };
   }
 
   /**

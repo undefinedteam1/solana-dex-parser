@@ -1,5 +1,5 @@
 import { PoolEvent } from './pool';
-import { TradeInfo } from './trade';
+import { TradeInfo, TransferData } from './trade';
 
 export interface ClassifiedInstruction {
   instruction: any;
@@ -12,6 +12,7 @@ export interface ParseResult {
   state: boolean;
   trades: TradeInfo[];
   liquidities: PoolEvent[];
+  transfers: TransferData[];
   msg?: string;
 }
 

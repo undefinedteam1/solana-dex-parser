@@ -1,5 +1,5 @@
 import { MessageV0, PublicKey } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, AccountLayout } from '@solana/spl-token';
 import { PoolEventType, SolanaTransaction, TokenInfo } from './types';
 import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
 import { getInstructionData, getProgramName } from './utils';
@@ -91,6 +91,13 @@ export class TransactionAdapter {
     return this.tx.meta?.postTokenBalances;
   }
 
+  /**
+ * Get first signer account
+ */
+  get signer(): string {
+    return this.getAccountKey(0);
+  }
+
   extractAccountKeys() {
     if (this.isMessageV0) {
       const keys = this.txMessage.staticAccountKeys.map((it: any) => it.toBase58()) || [];
@@ -174,11 +181,20 @@ export class TransactionAdapter {
   }
 
   /**
-   * Get first signer account
-   */
-  get signer(): string {
-    return this.getAccountKey(0);
+ * Get token account owner
+ */
+  getTokenAccountOwner(accountKey: string): string | undefined {
+    const accountInfo = this.tx.meta?.postTokenBalances?.find(
+      (balance) => this.accountKeys[balance.accountIndex] === accountKey
+    );
+
+    if (accountInfo) {
+      return accountInfo.owner;
+    }
+
+    return undefined;
   }
+
 
   private readonly defaultSolInfo: TokenInfo = {
     mint: TOKENS.SOL,

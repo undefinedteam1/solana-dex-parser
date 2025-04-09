@@ -15,6 +15,11 @@ export const DEX_PROGRAMS = {
     name: 'JupiterV4',
     tags: ['route'],
   },
+  JUPITER_LIMIT_ORDER_V2: {
+    id: 'j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X',
+    name: 'JupiterLimitV2',
+    tags: ['amm'],
+  },
   PHOENIX: {
     id: 'PhoeNiXZ8ByJGLkxNfZRnkUfjvmuYqLR89jjFHGqdXY',
     name: 'Phoenix',

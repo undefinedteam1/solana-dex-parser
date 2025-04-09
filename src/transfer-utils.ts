@@ -2,6 +2,7 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { TOKENS } from './constants';
 import { TokenInfo, TransferData, convertToUiAmount } from './types';
 import { getTranferTokenMint } from './utils';
+import { TransactionAdapter } from './transaction-adapter';
 
 export const isTransferCheck = (instruction: any): boolean => {
   return (
@@ -25,13 +26,12 @@ export const isTransfer = (instruction: any): boolean => {
 export const processTransfer = (
   instruction: any,
   idx: string,
-  splTokenMap: Map<string, TokenInfo>,
-  splDecimalsMap: Map<string, number>
+  adapter: TransactionAdapter,
 ): TransferData | null => {
   const { info } = instruction.parsed;
   if (!info) return null;
 
-  const [token1, token2] = [splTokenMap.get(info.destination)?.mint, splTokenMap.get(info.source)?.mint];
+  const [token1, token2] = [adapter.splTokenMap.get(info.destination)?.mint, adapter.splTokenMap.get(info.source)?.mint];
   if (!token1 && !token2) return null;
 
   let mint = getTranferTokenMint(token1, token2);
@@ -39,15 +39,15 @@ export const processTransfer = (
   if (!mint && instruction.programId == TOKENS.NATIVE) mint = TOKENS.SOL;
   if (!mint) return null;
 
-  const decimals = splDecimalsMap.get(mint);
+  const decimals = adapter.splDecimalsMap.get(mint);
   if (typeof decimals === 'undefined') return null;
-
   return {
     type: 'transfer',
     programId: instruction.programId,
     info: {
       authority: info.authority || '',
       destination: info.destination || '',
+      destinationOwner: adapter.getTokenAccountOwner(info.destination),
       mint,
       source: info.source || '',
       tokenAmount: {
@@ -63,12 +63,12 @@ export const processTransfer = (
 export const processTransferCheck = (
   instruction: any,
   idx: string,
-  splDecimalsMap: Map<string, number>
+  adapter: TransactionAdapter
 ): TransferData | null => {
   const { info } = instruction.parsed;
   if (!info) return null;
 
-  const decimals = splDecimalsMap.get(info.mint);
+  const decimals = adapter.splDecimalsMap.get(info.mint);
   if (typeof decimals === 'undefined') return null;
 
   return {
@@ -77,6 +77,7 @@ export const processTransferCheck = (
     info: {
       authority: info.authority || '',
       destination: info.destination || '',
+      destinationOwner: adapter.getTokenAccountOwner(info.destination),
       mint: info.mint || '',
       source: info.source || '',
       tokenAmount: info.tokenAmount || {
@@ -100,17 +101,16 @@ export const isExtraAction = (instruction: any, type: string): boolean => {
 export const processExtraAction = (
   instruction: any,
   idx: string,
-  splTokenMap: Map<string, TokenInfo>,
-  splDecimalsMap: Map<string, number>,
+  adapter: TransactionAdapter,
   type: string
 ): TransferData | null => {
   const { info } = instruction.parsed;
   if (!info) return null;
 
-  const mint = info.mint || splTokenMap.get(info.destination)?.mint;
+  const mint = info.mint || adapter.splTokenMap.get(info.destination)?.mint;
   if (!mint) return null;
 
-  const decimals = splDecimalsMap.get(mint);
+  const decimals = adapter.splDecimalsMap.get(mint);
   if (typeof decimals === 'undefined') return null;
 
   return {
@@ -119,6 +119,7 @@ export const processExtraAction = (
     info: {
       authority: info.authority || info.mintAuthority || '',
       destination: info.destination || '',
+      destinationOwner: adapter.getTokenAccountOwner(info.destination),
       mint,
       source: info.source || '',
       tokenAmount: {

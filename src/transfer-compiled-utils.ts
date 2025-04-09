@@ -2,6 +2,7 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
 import { TokenInfo, TransferData, convertToUiAmount } from './types';
 import { getInstructionData, getTranferTokenMint } from './utils';
+import { TransactionAdapter } from './transaction-adapter';
 
 export const isCompiledTransfer = (instruction: any): boolean => {
   const data = getInstructionData(instruction);
@@ -23,8 +24,7 @@ export const isCompiledTransferCheck = (instruction: any): boolean => {
 export const processCompiledTransfer = (
   instruction: any,
   idx: string,
-  splTokenMap: Map<string, TokenInfo>,
-  splDecimalsMap: Map<string, number>
+  adapter: TransactionAdapter,
 ): TransferData | null => {
   const accounts = instruction.accounts as string[];
   const data = getInstructionData(instruction);
@@ -33,13 +33,13 @@ export const processCompiledTransfer = (
   const [source, destination] = [accounts[0], accounts[1]]; // source, destination,amount, authority
   if (data[0] == SPL_TOKEN_INSTRUCTION_TYPES.Transfer) authority = accounts[2];
 
-  const [token1, token2] = [splTokenMap.get(destination)?.mint, splTokenMap.get(source)?.mint];
+  const [token1, token2] = [adapter.splTokenMap.get(destination)?.mint, adapter.splTokenMap.get(source)?.mint];
   if (!token1 && !token2) return null;
 
   let mint = getTranferTokenMint(token1, token2);
   if (!mint && instruction.programId == TOKENS.NATIVE) mint = TOKENS.SOL;
   if (!mint) return null;
-  const decimals = splDecimalsMap.get(mint);
+  const decimals = adapter.splDecimalsMap.get(mint);
   if (typeof decimals === 'undefined') return null;
 
   return {
@@ -48,6 +48,7 @@ export const processCompiledTransfer = (
     info: {
       authority: authority || '',
       destination: destination || '',
+      destinationOwner: adapter.getTokenAccountOwner(destination || ''),
       mint,
       source: source || '',
       tokenAmount: {
@@ -63,20 +64,21 @@ export const processCompiledTransfer = (
 export const processCompiledTransferCheck = (
   instruction: any,
   idx: string,
-  splDecimalsMap: Map<string, number>
+  adapter: TransactionAdapter
 ): TransferData | null => {
   const accounts = instruction.accounts as string[];
   if (!accounts) null;
   const [source, mint, destination, authority] = [accounts[0], accounts[1], accounts[2], accounts[3]]; // source, mint, destination, authority,amount,decimals
   const data = getInstructionData(instruction);
   const amount = data.readBigUInt64LE(1);
-  const decimals = splDecimalsMap.get(mint) || data.readUint8(9);
+  const decimals = adapter.splDecimalsMap.get(mint) || data.readUint8(9);
   return {
     type: 'transferChecked',
     programId: instruction.programId,
     info: {
       authority: authority || '',
       destination: destination || '',
+      destinationOwner: adapter.getTokenAccountOwner(destination || ''),
       mint,
       source: source || '',
       tokenAmount: {
@@ -109,8 +111,7 @@ export const isCompiledExtraAction = (instruction: any, type: string): boolean =
 export const processCompiledExtraAction = (
   instruction: any,
   idx: string,
-  splTokenMap: Map<string, TokenInfo>,
-  splDecimalsMap: Map<string, number>,
+  adapter: TransactionAdapter,
   type: string
 ): TransferData | null => {
   const accounts = instruction.accounts as string[];
@@ -140,10 +141,10 @@ export const processCompiledExtraAction = (
       break;
   }
 
-  mint = mint || (destination && splTokenMap.get(destination)?.mint);
+  mint = mint || (destination && adapter.splTokenMap.get(destination)?.mint);
   if (!mint) return null;
 
-  decimals = decimals || splDecimalsMap.get(mint);
+  decimals = decimals || adapter.splDecimalsMap.get(mint);
   if (!decimals) return null;
 
   return {
@@ -152,6 +153,7 @@ export const processCompiledExtraAction = (
     info: {
       authority: authority || '',
       destination: destination || '',
+      destinationOwner: adapter.getTokenAccountOwner(destination || ''),
       mint,
       source: source || '',
       tokenAmount: {

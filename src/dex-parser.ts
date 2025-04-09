@@ -85,7 +85,7 @@ export class DexParser {
     [DEX_PROGRAMS.PUMP_SWAP.id]: PumpswapLiquidityParser,
   };
 
-  constructor() {}
+  constructor() { }
 
   /**
    * Parse transaction with specific type
@@ -93,12 +93,13 @@ export class DexParser {
   private parseWithClassifier(
     tx: SolanaTransaction,
     config: ParseConfig = { tryUnknowDEX: true },
-    parseType: 'trades' | 'liquidity' | 'all'
+    parseType: 'trades' | 'liquidity' | 'transfer' | 'all'
   ): ParseResult {
     const result: ParseResult = {
       state: true,
       trades: [],
       liquidities: [],
+      transfers: []
     };
 
     try {
@@ -111,10 +112,7 @@ export class DexParser {
       if (!dexInfo.programId) return result;
 
       const allProgramIds = classifier.getAllProgramIds();
-      if (config?.programIds && !config.programIds.some((id) => allProgramIds.includes(id))) return result;
-      if (config?.ignoreProgramIds && config.ignoreProgramIds.some((id) => allProgramIds.includes(id))) return result;
-
-      const transferActions = utils.getTransferActions(['mintTo', 'burn']);
+      const transferActions = utils.getTransferActions(['mintTo', 'burn', 'mintToChecked', 'burnChecked']);
 
       // Try specific parser first
       if ([DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(dexInfo.programId)) {
@@ -137,6 +135,10 @@ export class DexParser {
 
         // Process trades if needed
         if (parseType === 'trades' || parseType === 'all') {
+
+          if (config?.programIds && !config.programIds.some((id) => id == programId)) continue;
+          if (config?.ignoreProgramIds && config.ignoreProgramIds.some((id) => id == programId)) continue;
+
           const TradeParserClass = this.parserMap[programId];
           if (TradeParserClass) {
             const parser = new TradeParserClass(
@@ -161,10 +163,21 @@ export class DexParser {
 
         // Process liquidity if needed
         if (parseType === 'liquidity' || parseType === 'all') {
+
+          if (config?.programIds && !config.programIds.some((id) => id == programId)) continue;
+          if (config?.ignoreProgramIds && config.ignoreProgramIds.some((id) => id == programId)) continue;
+
           const LiquidityParserClass = this.parseLiquidityMap[programId];
           if (LiquidityParserClass) {
             const parser = new LiquidityParserClass(adapter, transferActions, classifiedInstructions);
             result.liquidities.push(...parser.processLiquidity());
+          }
+        }
+
+        // Process transfer if needed (if no trades and no liquidity)
+        if (parseType === 'transfer' || parseType === 'all') {
+          if (result.trades.length == 0 && result.liquidities.length == 0) {
+            result.transfers.push(...Object.values(transferActions).flat());
           }
         }
       }
@@ -195,6 +208,13 @@ export class DexParser {
    */
   public parseLiquidity(tx: SolanaTransaction): PoolEvent[] {
     return this.parseWithClassifier(tx, {}, 'liquidity').liquidities;
+  }
+
+  /**
+   * Parse transfers from transaction (if no trades and no liquidity)
+   */
+  public parseTransfers(tx: SolanaTransaction): TransferData[] {
+    return this.parseWithClassifier(tx, {}, 'transfer').transfers;
   }
 
   /**

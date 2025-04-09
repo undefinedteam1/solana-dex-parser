@@ -1,7 +1,14 @@
+import { DEX_PROGRAMS, SYSTEM_PROGRAMS, TOKENS } from './constants';
+import { InstructionClassifier } from './instruction-classifier';
 import { TransactionAdapter } from './transaction-adapter';
-import { DexInfo, TokenInfo, TradeInfo, TransferData, TransferInfo } from './types';
-import { SYSTEM_PROGRAMS, DEX_PROGRAMS, TOKENS } from './constants';
-import { getTradeType } from './utils';
+import {
+  isCompiledExtraAction,
+  isCompiledTransfer,
+  isCompiledTransferCheck,
+  processCompiledExtraAction,
+  processCompiledTransfer,
+  processCompiledTransferCheck,
+} from './transfer-compiled-utils';
 import {
   isExtraAction,
   isTransfer,
@@ -10,18 +17,11 @@ import {
   processTransfer,
   processTransferCheck,
 } from './transfer-utils';
-import {
-  isCompiledTransfer,
-  processCompiledTransfer,
-  isCompiledTransferCheck,
-  processCompiledTransferCheck,
-  isCompiledExtraAction,
-  processCompiledExtraAction,
-} from './transfer-compiled-utils';
-import { InstructionClassifier } from './instruction-classifier';
+import { DexInfo, TokenInfo, TradeInfo, TransferData, TransferInfo } from './types';
+import { getTradeType } from './utils';
 
 export class TransactionUtils {
-  constructor(private adapter: TransactionAdapter) {}
+  constructor(private adapter: TransactionAdapter) { }
 
   /**
    * Get DEX information from transaction
@@ -121,16 +121,16 @@ export class TransactionUtils {
    */
   parseParsedInstructionAction(instruction: any, idx: string, extraTypes?: string[]): TransferData | null {
     if (isTransfer(instruction)) {
-      return processTransfer(instruction, idx, this.adapter.splTokenMap, this.adapter.splDecimalsMap);
+      return processTransfer(instruction, idx, this.adapter);
     }
     if (isTransferCheck(instruction)) {
-      return processTransferCheck(instruction, idx, this.adapter.splDecimalsMap);
+      return processTransferCheck(instruction, idx, this.adapter);
     }
     if (extraTypes) {
       const actions = extraTypes
         .map((it) => {
           if (isExtraAction(instruction, it)) {
-            return processExtraAction(instruction, idx, this.adapter.splTokenMap, this.adapter.splDecimalsMap, it);
+            return processExtraAction(instruction, idx, this.adapter, it);
           }
         })
         .filter((it) => !!it);
@@ -145,10 +145,10 @@ export class TransactionUtils {
    */
   parseCompiledInstructionAction(instruction: any, idx: string, extraTypes?: string[]): TransferData | null {
     if (isCompiledTransfer(instruction)) {
-      return processCompiledTransfer(instruction, idx, this.adapter.splTokenMap, this.adapter.splDecimalsMap);
+      return processCompiledTransfer(instruction, idx, this.adapter);
     }
     if (isCompiledTransferCheck(instruction)) {
-      return processCompiledTransferCheck(instruction, idx, this.adapter.splDecimalsMap);
+      return processCompiledTransferCheck(instruction, idx, this.adapter);
     }
     if (extraTypes) {
       const actions = extraTypes
@@ -157,8 +157,7 @@ export class TransactionUtils {
             return processCompiledExtraAction(
               instruction,
               idx,
-              this.adapter.splTokenMap,
-              this.adapter.splDecimalsMap,
+              this.adapter,
               it
             );
           }
@@ -320,6 +319,7 @@ export class TransactionUtils {
         decimals: inputToken.decimals,
         authority: inputToken.authority,
         destination: inputToken.destination,
+        destinationOwner: inputToken.destinationOwner,
         source: inputToken.source,
       },
       outputToken: {
@@ -328,6 +328,7 @@ export class TransactionUtils {
         decimals: outputToken.decimals,
         authority: outputToken.authority,
         destination: outputToken.destination,
+        destinationOwner: outputToken.destinationOwner,
         source: outputToken.source,
       },
     };
@@ -366,13 +367,14 @@ export class TransactionUtils {
   getTransferTokenInfo(transfer: TransferData): TokenInfo | null {
     return transfer?.info
       ? {
-          mint: transfer.info.mint,
-          amount: transfer.info.tokenAmount.uiAmount,
-          decimals: transfer.info.tokenAmount.decimals,
-          authority: transfer.info.authority,
-          destination: transfer.info.destination,
-          source: transfer.info.source,
-        }
+        mint: transfer.info.mint,
+        amount: transfer.info.tokenAmount.uiAmount,
+        decimals: transfer.info.tokenAmount.decimals,
+        authority: transfer.info.authority,
+        destination: transfer.info.destination,
+        destinationOwner: transfer.info.destinationOwner,
+        source: transfer.info.source,
+      }
       : null;
   }
 
@@ -415,11 +417,13 @@ export class TransactionUtils {
       trade.inputToken.authority = inputTransfer.info.authority;
       trade.inputToken.source = inputTransfer.info.source;
       trade.inputToken.destination = inputTransfer.info.destination;
+      trade.inputToken.destinationOwner = this.adapter.getTokenAccountOwner(inputTransfer.info.destination);
     }
     if (outputTransfer) {
       trade.outputToken.authority = outputTransfer.info.authority;
       trade.outputToken.source = outputTransfer.info.source;
       trade.outputToken.destination = outputTransfer.info.destination;
+      trade.inputToken.destinationOwner = this.adapter.getTokenAccountOwner(outputTransfer.info.destination);
     }
     return trade;
   };

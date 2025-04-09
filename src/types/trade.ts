@@ -37,6 +37,7 @@ export interface TokenInfo {
   decimals: number;
   authority?: string;
   destination?: string;
+  destinationOwner?: string;
   source?: string;
 }
 
@@ -61,6 +62,7 @@ export interface TransferData {
   info: {
     authority: string;
     destination: string;
+    destinationOwner?: string;
     mint: string;
     source: string;
     tokenAmount: {

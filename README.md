@@ -2,6 +2,10 @@
 
 A TypeScript library for parsing Solana DEX swap transactions. Supports multiple DEX protocols including Jupiter, Raydium, Meteora, PumpFun, and Moonshot.
 
+## 🚀 What's New in 2.1.9
+- Added destinationOwner field (TransferData, TokenInfo)
+- Added transfer parser if needed (if no trades and no liquidity)
+
 ## 🚀 What's New in 2.0.6
 - Support Pumpfun AMM (Pumpswap)
 - Added Pumpswap events parser (Trade and Liquidity)

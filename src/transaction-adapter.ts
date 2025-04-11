@@ -203,6 +203,18 @@ export class TransactionAdapter {
     return undefined;
   }
 
+  getTokenAccountPreBalance(accountKey: string): number | undefined {
+    const accountInfo = this.tx.meta?.preTokenBalances?.find(
+      (balance) => this.accountKeys[balance.accountIndex] === accountKey
+    );
+
+    if (accountInfo) {
+      return accountInfo.uiTokenAmount?.uiAmount ?? undefined;
+    }
+
+    return undefined;
+  }
+
   private readonly defaultSolInfo: TokenInfo = {
     mint: TOKENS.SOL,
     amount: 0,

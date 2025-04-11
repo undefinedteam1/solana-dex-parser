@@ -380,8 +380,10 @@ export class TransactionUtils {
           destination: transfer.info.destination,
           destinationOwner: transfer.info.destinationOwner,
           destinationBalance: transfer.info.destinationBalance,
+          destinationPreBalance: transfer.info.destinationPreBalance,
           source: transfer.info.source,
           sourceBalance: transfer.info.sourceBalance,
+          sourcePreBalance: transfer.info.sourcePreBalance,
         }
       : null;
   }
@@ -426,20 +428,22 @@ export class TransactionUtils {
       trade.inputToken.authority = inputTransfer.info.authority;
       trade.inputToken.source = inputTransfer.info.source;
       trade.inputToken.destination = inputTransfer.info.destination;
-      trade.inputToken.destinationOwner = this.adapter.getTokenAccountOwner(inputTransfer.info.destination);
-      trade.inputToken.destinationBalance = this.adapter.getTokenAccountBalance(inputTransfer.info.destination);
-      trade.inputToken.sourceBalance = this.adapter.getTokenAccountBalance(
-        inputTransfer.info.authority || inputTransfer.info.source
-      );
+      trade.inputToken.destinationOwner = inputTransfer.info.destinationOwner;
+      trade.inputToken.destinationBalance = inputTransfer.info.destinationBalance;
+      trade.inputToken.destinationPreBalance = inputTransfer.info.destinationPreBalance;
+      trade.inputToken.sourceBalance = inputTransfer.info.sourceBalance;
+      trade.inputToken.sourcePreBalance = inputTransfer.info.sourcePreBalance;
     }
 
     if (outputTransfer) {
       trade.outputToken.authority = outputTransfer.info.authority;
       trade.outputToken.source = outputTransfer.info.source;
       trade.outputToken.destination = outputTransfer.info.destination;
-      trade.outputToken.destinationOwner = this.adapter.getTokenAccountOwner(outputTransfer.info.destination);
-      trade.outputToken.destinationBalance = this.adapter.getTokenAccountBalance(outputTransfer.info.destination);
-      trade.outputToken.sourceBalance = this.adapter.getTokenAccountBalance(outputTransfer.info.source);
+      trade.outputToken.destinationOwner = outputTransfer.info.destinationOwner;
+      trade.outputToken.destinationBalance = outputTransfer.info.destinationBalance;
+      trade.outputToken.destinationPreBalance = outputTransfer.info.destinationPreBalance;
+      trade.outputToken.sourceBalance = outputTransfer.info.sourceBalance;
+      trade.outputToken.sourcePreBalance = outputTransfer.info.sourcePreBalance;
     }
     return trade;
   };

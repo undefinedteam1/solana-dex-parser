@@ -39,8 +39,10 @@ export interface TokenInfo {
   destination?: string;
   destinationOwner?: string;
   destinationBalance?: number;
+  destinationPreBalance?: number;
   source?: string;
   sourceBalance?: number;
+  sourcePreBalance?: number;
 }
 
 export interface TokenAmount {
@@ -73,7 +75,9 @@ export interface TransferData {
       uiAmount: number;
     };
     sourceBalance?: number;
+    sourcePreBalance?: number;
     destinationBalance?: number;
+    destinationPreBalance?: number;
   };
   idx: string;
   timestamp: number;

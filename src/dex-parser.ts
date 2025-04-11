@@ -85,7 +85,7 @@ export class DexParser {
     [DEX_PROGRAMS.PUMP_SWAP.id]: PumpswapLiquidityParser,
   };
 
-  constructor() { }
+  constructor() {}
 
   /**
    * Parse transaction with specific type
@@ -99,7 +99,7 @@ export class DexParser {
       state: true,
       trades: [],
       liquidities: [],
-      transfers: []
+      transfers: [],
     };
 
     try {
@@ -109,21 +109,14 @@ export class DexParser {
 
       // Get DEX information and validate
       const dexInfo = utils.getDexInfo(classifier);
-      if (!dexInfo.programId) return result;
-
       const allProgramIds = classifier.getAllProgramIds();
       const transferActions = utils.getTransferActions(['mintTo', 'burn', 'mintToChecked', 'burnChecked']);
 
       // Try specific parser first
-      if ([DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(dexInfo.programId)) {
+      if (dexInfo.programId && [DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(dexInfo.programId)) {
         if (parseType === 'trades' || parseType === 'all') {
           const jupiterInstructions = classifier.getInstructions(dexInfo.programId);
-          const parser = new JupiterParser(
-            adapter,
-            { ...dexInfo, amm: dexInfo.amm || getProgramName(dexInfo.programId) },
-            transferActions,
-            jupiterInstructions
-          );
+          const parser = new JupiterParser(adapter, dexInfo, transferActions, jupiterInstructions);
           result.trades.push(...parser.processTrades());
         }
         return result;
@@ -135,7 +128,6 @@ export class DexParser {
 
         // Process trades if needed
         if (parseType === 'trades' || parseType === 'all') {
-
           if (config?.programIds && !config.programIds.some((id) => id == programId)) continue;
           if (config?.ignoreProgramIds && config.ignoreProgramIds.some((id) => id == programId)) continue;
 
@@ -143,7 +135,7 @@ export class DexParser {
           if (TradeParserClass) {
             const parser = new TradeParserClass(
               adapter,
-              { ...dexInfo, amm: dexInfo.amm || getProgramName(programId) },
+              { ...dexInfo, programId: programId, amm: getProgramName(programId) },
               transferActions,
               classifiedInstructions
             );
@@ -154,7 +146,8 @@ export class DexParser {
             if (transfers && transfers.length >= 2) {
               const trade = utils.processSwapData(transfers, {
                 ...dexInfo,
-                amm: dexInfo.amm || getProgramName(programId),
+                programId: programId,
+                amm: getProgramName(programId),
               });
               if (trade) result.trades.push(trade);
             }
@@ -163,7 +156,6 @@ export class DexParser {
 
         // Process liquidity if needed
         if (parseType === 'liquidity' || parseType === 'all') {
-
           if (config?.programIds && !config.programIds.some((id) => id == programId)) continue;
           if (config?.ignoreProgramIds && config.ignoreProgramIds.some((id) => id == programId)) continue;
 
@@ -173,22 +165,21 @@ export class DexParser {
             result.liquidities.push(...parser.processLiquidity());
           }
         }
-
-        // Process transfer if needed (if no trades and no liquidity)
-        if (parseType === 'transfer' || parseType === 'all') {
-          if (result.trades.length == 0 && result.liquidities.length == 0) {
-            result.transfers.push(...Object.values(transferActions).flat());
-          }
-        }
       }
-
       // Deduplicate trades
       if (result.trades.length > 0) {
         result.trades = [...new Map(result.trades.map((item) => [`${item.idx}-${item.signature}`, item])).values()];
       }
+
+      // Process transfer if needed (if no trades and no liquidity)
+      if (result.trades.length == 0 && result.liquidities.length == 0) {
+        if (parseType === 'transfer' || parseType === 'all') {
+          result.transfers.push(...Object.values(transferActions).flat());
+        }
+      }
     } catch (error) {
       const msg = `Parse error: ${tx?.transaction?.signatures?.[0]} ${error}`;
-      console.error(msg);
+      console.error(error);
       result.state = false;
       result.msg = msg;
     }

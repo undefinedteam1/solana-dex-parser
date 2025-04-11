@@ -1,7 +1,7 @@
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { MessageV0, PublicKey } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, AccountLayout } from '@solana/spl-token';
-import { PoolEventType, SolanaTransaction, TokenInfo } from './types';
 import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
+import { PoolEventType, SolanaTransaction, TokenInfo } from './types';
 import { getInstructionData, getProgramName } from './utils';
 
 /**
@@ -92,8 +92,8 @@ export class TransactionAdapter {
   }
 
   /**
- * Get first signer account
- */
+   * Get first signer account
+   */
   get signer(): string {
     return this.getAccountKey(0);
   }
@@ -121,11 +121,7 @@ export class TransactionAdapter {
     const isParsed = !this.isCompiledInstruction(instruction);
     return {
       programId: isParsed ? instruction.programId.toBase58() : this.accountKeys[instruction.programIdIndex],
-      accounts: isParsed
-        ? 'accounts' in instruction
-          ? instruction.accounts?.map((acc: PublicKey) => acc.toBase58())
-          : null
-        : instruction.accounts?.map((idx: number) => this.accountKeys[idx]),
+      accounts: this.getInstructionAccounts(instruction),
       data: 'data' in instruction ? instruction.data : '',
       parsed: 'parsed' in instruction ? instruction.parsed : undefined,
       program: instruction.program || '',
@@ -181,8 +177,8 @@ export class TransactionAdapter {
   }
 
   /**
- * Get token account owner
- */
+   * Get token account owner
+   */
   getTokenAccountOwner(accountKey: string): string | undefined {
     const accountInfo = this.tx.meta?.postTokenBalances?.find(
       (balance) => this.accountKeys[balance.accountIndex] === accountKey
@@ -195,6 +191,17 @@ export class TransactionAdapter {
     return undefined;
   }
 
+  getTokenAccountBalance(accountKey: string): number | undefined {
+    const accountInfo = this.tx.meta?.postTokenBalances?.find(
+      (balance) => this.accountKeys[balance.accountIndex] === accountKey
+    );
+
+    if (accountInfo) {
+      return accountInfo.uiTokenAmount?.uiAmount ?? undefined;
+    }
+
+    return undefined;
+  }
 
   private readonly defaultSolInfo: TokenInfo = {
     mint: TOKENS.SOL,

@@ -3,9 +3,11 @@ import { InstructionClassifier } from './instruction-classifier';
 import { TransactionAdapter } from './transaction-adapter';
 import {
   isCompiledExtraAction,
+  isCompiledNativeTransfer,
   isCompiledTransfer,
   isCompiledTransferCheck,
   processCompiledExtraAction,
+  processCompiledNatvieTransfer,
   processCompiledTransfer,
   processCompiledTransferCheck,
 } from './transfer-compiled-utils';
@@ -21,7 +23,7 @@ import { DexInfo, TokenInfo, TradeInfo, TransferData, TransferInfo } from './typ
 import { getTradeType } from './utils';
 
 export class TransactionUtils {
-  constructor(private adapter: TransactionAdapter) { }
+  constructor(private adapter: TransactionAdapter) {}
 
   /**
    * Get DEX information from transaction
@@ -51,10 +53,11 @@ export class TransactionUtils {
   getTransferActions(extraTypes?: string[]): Record<string, TransferData[]> {
     const actions: Record<string, TransferData[]> = {};
     const innerInstructions = this.adapter.innerInstructions;
-    if (!innerInstructions) return actions;
 
     let groupKey = '';
-    innerInstructions.forEach((set) => {
+
+    // process transfers of program instructions
+    innerInstructions?.forEach((set) => {
       const outerIndex = set.index;
       const outerInstruction = this.adapter.instructions[outerIndex];
       const outerProgramId = this.adapter.getInstructionProgramId(outerInstruction);
@@ -80,6 +83,21 @@ export class TransactionUtils {
         }
       });
     });
+
+    // process transfers without program
+    if (Object.keys(actions).length == 0) {
+      groupKey = 'transfer';
+      this.adapter.instructions?.forEach((ix: any, outerIndex: any) => {
+        const transferData = this.parseInstructionAction(ix, `${outerIndex}`, extraTypes);
+        if (transferData) {
+          if (actions[groupKey]) {
+            actions[groupKey].push(transferData);
+          } else {
+            actions[groupKey] = [transferData];
+          }
+        }
+      });
+    }
 
     return actions;
   }
@@ -147,6 +165,9 @@ export class TransactionUtils {
     if (isCompiledTransfer(instruction)) {
       return processCompiledTransfer(instruction, idx, this.adapter);
     }
+    if (isCompiledNativeTransfer(instruction)) {
+      return processCompiledNatvieTransfer(instruction, idx, this.adapter);
+    }
     if (isCompiledTransferCheck(instruction)) {
       return processCompiledTransferCheck(instruction, idx, this.adapter);
     }
@@ -154,12 +175,7 @@ export class TransactionUtils {
       const actions = extraTypes
         .map((it) => {
           if (isCompiledExtraAction(instruction, it)) {
-            return processCompiledExtraAction(
-              instruction,
-              idx,
-              this.adapter,
-              it
-            );
+            return processCompiledExtraAction(instruction, idx, this.adapter, it);
           }
         })
         .filter((it) => !!it);
@@ -314,22 +330,12 @@ export class TransactionUtils {
 
     return {
       inputToken: {
-        mint: inputToken.mint,
+        ...inputToken,
         amount: amounts.inputAmount,
-        decimals: inputToken.decimals,
-        authority: inputToken.authority,
-        destination: inputToken.destination,
-        destinationOwner: inputToken.destinationOwner,
-        source: inputToken.source,
-      },
+      } as TokenInfo,
       outputToken: {
-        mint: outputToken.mint,
+        ...outputToken,
         amount: amounts.outputAmount,
-        decimals: outputToken.decimals,
-        authority: outputToken.authority,
-        destination: outputToken.destination,
-        destinationOwner: outputToken.destinationOwner,
-        source: outputToken.source,
       },
     };
   }
@@ -367,14 +373,16 @@ export class TransactionUtils {
   getTransferTokenInfo(transfer: TransferData): TokenInfo | null {
     return transfer?.info
       ? {
-        mint: transfer.info.mint,
-        amount: transfer.info.tokenAmount.uiAmount,
-        decimals: transfer.info.tokenAmount.decimals,
-        authority: transfer.info.authority,
-        destination: transfer.info.destination,
-        destinationOwner: transfer.info.destinationOwner,
-        source: transfer.info.source,
-      }
+          mint: transfer.info.mint,
+          amount: transfer.info.tokenAmount.uiAmount,
+          decimals: transfer.info.tokenAmount.decimals,
+          authority: transfer.info.authority,
+          destination: transfer.info.destination,
+          destinationOwner: transfer.info.destinationOwner,
+          destinationBalance: transfer.info.destinationBalance,
+          source: transfer.info.source,
+          sourceBalance: transfer.info.sourceBalance,
+        }
       : null;
   }
 
@@ -413,17 +421,25 @@ export class TransactionUtils {
       .find(
         (it) => it.info.mint == trade.outputToken.mint && it.info.tokenAmount?.uiAmount == trade.outputToken.amount
       );
+
     if (inputTransfer) {
       trade.inputToken.authority = inputTransfer.info.authority;
       trade.inputToken.source = inputTransfer.info.source;
       trade.inputToken.destination = inputTransfer.info.destination;
       trade.inputToken.destinationOwner = this.adapter.getTokenAccountOwner(inputTransfer.info.destination);
+      trade.inputToken.destinationBalance = this.adapter.getTokenAccountBalance(inputTransfer.info.destination);
+      trade.inputToken.sourceBalance = this.adapter.getTokenAccountBalance(
+        inputTransfer.info.authority || inputTransfer.info.source
+      );
     }
+
     if (outputTransfer) {
       trade.outputToken.authority = outputTransfer.info.authority;
       trade.outputToken.source = outputTransfer.info.source;
       trade.outputToken.destination = outputTransfer.info.destination;
-      trade.inputToken.destinationOwner = this.adapter.getTokenAccountOwner(outputTransfer.info.destination);
+      trade.outputToken.destinationOwner = this.adapter.getTokenAccountOwner(outputTransfer.info.destination);
+      trade.outputToken.destinationBalance = this.adapter.getTokenAccountBalance(outputTransfer.info.destination);
+      trade.outputToken.sourceBalance = this.adapter.getTokenAccountBalance(outputTransfer.info.source);
     }
     return trade;
   };

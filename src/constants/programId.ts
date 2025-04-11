@@ -1,13 +1,8 @@
 export const DEX_PROGRAMS = {
-  // Dex Aggregators
+  // DEX Aggregators
   JUPITER: {
     id: 'JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4',
     name: 'Jupiter',
-    tags: ['route'],
-  },
-  JUPITER_DCA: {
-    id: 'DCAK36VfExkPdAkYUQg6ewgxyinvcEyPLyHjRbmveKFw',
-    name: 'JupiterDCA',
     tags: ['route'],
   },
   JUPITER_V4: {
@@ -15,9 +10,61 @@ export const DEX_PROGRAMS = {
     name: 'JupiterV4',
     tags: ['route'],
   },
+  JUPITER_DCA: {
+    id: 'DCAK36VfExkPdAkYUQg6ewgxyinvcEyPLyHjRbmveKFw',
+    name: 'JupiterDCA',
+    tags: ['route'],
+  },
   JUPITER_LIMIT_ORDER_V2: {
     id: 'j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X',
     name: 'JupiterLimitV2',
+    tags: ['amm'],
+  },
+  OKX_DEX: {
+    id: '6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma',
+    name: 'OKX',
+    tags: ['route'],
+  },
+  RAYDIUM_ROUTE: {
+    id: 'routeUGWgWzqBWFcrCfv8tritsqukccJPu3q5GPP3xS',
+    name: 'RaydiumRoute',
+    tags: ['route'],
+  },
+  SANCTUM: {
+    id: 'stkitrT1Uoy18Dk1fTrgPw8W6MVzoCfYoAFT4MLsmhq',
+    name: 'Sanctum',
+    tags: ['route'],
+  },
+
+  // Major DEX Protocols
+  RAYDIUM_V4: {
+    id: '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8',
+    name: 'RaydiumV4',
+    tags: ['amm'],
+  },
+  RAYDIUM_CPMM: {
+    id: 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
+    name: 'RaydiumCPMM',
+    tags: ['amm'],
+  },
+  RAYDIUM_CL: {
+    id: 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK',
+    name: 'RaydiumCL',
+    tags: ['amm'],
+  },
+  ORCA: {
+    id: 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc',
+    name: 'Orca',
+    tags: ['amm'],
+  },
+  ORCA_V2: {
+    id: '9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP',
+    name: 'OrcaV2',
+    tags: ['amm'],
+  },
+  ORCA_V1: {
+    id: 'DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1',
+    name: 'OrcaV1',
     tags: ['amm'],
   },
   PHOENIX: {
@@ -25,15 +72,32 @@ export const DEX_PROGRAMS = {
     name: 'Phoenix',
     tags: ['route', 'amm'],
   },
-  OKX_DEX: {
-    id: '6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma',
-    name: 'OKX',
-    tags: ['route'],
+  OPENBOOK: {
+    id: 'opnb2LAfJYbRMAHHvqjCwQxanZn7ReEHp1k81EohpZb',
+    name: 'Openbook',
+    tags: ['amm'],
   },
-  SANCTUM: {
-    id: 'stkitrT1Uoy18Dk1fTrgPw8W6MVzoCfYoAFT4MLsmhq',
-    name: 'Sanctum',
-    tags: ['route'],
+  METEORA: {
+    id: 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo',
+    name: 'MeteoraDLMM',
+    tags: ['amm'],
+  },
+  METEORA_POOLS: {
+    id: 'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB',
+    name: 'MeteoraPools',
+    tags: ['amm'],
+  },
+
+  // Vault Programs
+  METEORA_VAULT: {
+    id: '24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi',
+    name: 'MeteoraVault',
+    tags: ['vault'],
+  },
+  STABBEL_VAULT: {
+    id: 'vo1tWgqZMjG61Z2T9qUaMYKqZ75CYzMuaZ2LZP1n7HV',
+    name: 'StabbleVault',
+    tags: ['vault'],
   },
 
   // Trading Bot Programs
@@ -68,70 +132,25 @@ export const DEX_PROGRAMS = {
     tags: ['bot'],
   },
 
-  // DEX Protocol Programs
-  RAYDIUM_V4: {
-    id: '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8',
-    name: 'RaydiumV4',
+  // Other DEX Protocols
+  ALDRIN: {
+    id: 'AMM55ShdkoGRB5jVYPjWziwk8m5MpwyDgsMWHaMSQWH6',
+    name: 'Aldrin',
     tags: ['amm'],
   },
-  RAYDIUM_ROUTE: {
-    id: 'routeUGWgWzqBWFcrCfv8tritsqukccJPu3q5GPP3xS',
-    name: 'RaydiumRoute',
-    tags: ['route'],
-  },
-  RAYDIUM_CPMM: {
-    id: 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
-    name: 'RaydiumCPMM',
+  ALDRIN_V2: {
+    id: 'CURVGoZn8zycx6FXwwevgBTB2gVvdbGTEpvMJDbgs2t4',
+    name: 'Aldrin V2',
     tags: ['amm'],
   },
-  RAYDIUM_CL: {
-    id: 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK',
-    name: 'RaydiumCL',
+  CREMA: {
+    id: 'CLMM9tUoggJu2wagPkkqs9eFG4BWhVBZWkP1qv3Sp7tR',
+    name: 'Crema',
     tags: ['amm'],
   },
-  METEORA: {
-    id: 'LBUZKhRxPF3XUpBCjp4YzTKgLccjZhTSDM9YuVaPwxo',
-    name: 'MeteoraDLMM', //DLMM
-    tags: ['amm'],
-  },
-  METEORA_VAULT: {
-    id: '24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi',
-    name: 'MeteoraVault',
-    tags: ['vault'],
-  },
-  METEORA_POOLS: {
-    id: 'Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB',
-    name: 'MeteoraPools',
-    tags: ['amm'],
-  },
-  MOONSHOT: {
-    id: 'MoonCVVNZFSYkqNXP6bxHLPL6QQJiMagDL3qcqUQTrG',
-    name: 'Moonshot',
-    tags: ['amm'],
-  },
-  ORCA: {
-    id: 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc',
-    name: 'Orca',
-    tags: ['amm'],
-  },
-  ORCA_V2: {
-    id: '9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP',
-    name: 'OrcaV2',
-    tags: ['amm'],
-  },
-  ORCA_V1: {
-    id: 'DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1',
-    name: 'OrcaV1',
-    tags: ['amm'],
-  },
-  PUMP_FUN: {
-    id: '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P',
-    name: 'Pumpfun',
-    tags: ['amm'],
-  },
-  PUMP_SWAP: {
-    id: 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA',
-    name: 'Pumpswap',
+  GOOSEFX: {
+    id: 'GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT',
+    name: 'GooseFX GAMMA',
     tags: ['amm'],
   },
   LIFINITY: {
@@ -144,29 +163,54 @@ export const DEX_PROGRAMS = {
     name: 'LifinityV2',
     tags: ['amm'],
   },
+  MERCURIAL: {
+    id: 'MERLuDFBMmsHnsBPZw2sDQZHvXFMwp8EdjudcU2HKky',
+    name: 'Mercurial',
+    tags: ['amm'],
+  },
+  MOONSHOT: {
+    id: 'MoonCVVNZFSYkqNXP6bxHLPL6QQJiMagDL3qcqUQTrG',
+    name: 'Moonshot',
+    tags: ['amm'],
+  },
+  ONEDEX: {
+    id: 'DEXYosS6oEGvk8uCDayvwEZz4qEyDJRf9nFgYCaqPMTm',
+    name: '1Dex',
+    tags: ['amm'],
+  },
+  PUMP_FUN: {
+    id: '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P',
+    name: 'Pumpfun',
+    tags: ['amm'],
+  },
+  PUMP_SWAP: {
+    id: 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA',
+    name: 'Pumpswap',
+    tags: ['amm'],
+  },
+  SABER: {
+    id: 'SSwpkEEcbUqx4vtoEByFjSkhKdCT862DNVb52nZg1UZ',
+    name: 'Saber',
+    tags: ['amm'],
+  },
+  SAROS: {
+    id: 'SSwapUtytfBdBn1b9NUGG6foMVPtcWgpRU32HToDUZr',
+    name: 'Saros',
+    tags: ['amm'],
+  },
+  SOLFI: {
+    id: 'SoLFiHG9TfgtdUXUjWAxi3LtvYuFyDLVhBWxdMZxyCe',
+    name: 'SolFi',
+    tags: ['amm'],
+  },
   STABBEL: {
     id: 'swapNyd8XiQwJ6ianp9snpu4brUqFxadzvHebnAXjJZ',
     name: 'Stabble',
     tags: ['amm'],
   },
-  STABBEL_VAULT: {
-    id: 'vo1tWgqZMjG61Z2T9qUaMYKqZ75CYzMuaZ2LZP1n7HV',
-    name: 'StabbleVault',
-    tags: ['vault'],
-  },
   STABBEL_WEIGHT: {
     id: 'swapFpHZwjELNnjvThjajtiVmkz3yPQEHjLtka2fwHW',
     name: 'StabbleWeight',
-    tags: ['amm'],
-  },
-  KAMINO: {
-    id: '6LtLpnUFNByNXLyCoK9wA2MykKAmQNZKBdY8s47dehDc',
-    name: 'Kamino',
-    tags: ['amm'],
-  },
-  OPENBOOK: {
-    id: 'opnb2LAfJYbRMAHHvqjCwQxanZn7ReEHp1k81EohpZb',
-    name: 'Openbook',
     tags: ['amm'],
   },
 };

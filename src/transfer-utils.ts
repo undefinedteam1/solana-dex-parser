@@ -1,8 +1,8 @@
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { TOKENS } from './constants';
-import { TokenInfo, TransferData, convertToUiAmount } from './types';
-import { getTranferTokenMint } from './utils';
 import { TransactionAdapter } from './transaction-adapter';
+import { TransferData, convertToUiAmount } from './types';
+import { getTranferTokenMint } from './utils';
 
 export const isTransferCheck = (instruction: any): boolean => {
   return (
@@ -23,15 +23,14 @@ export const isTransfer = (instruction: any): boolean => {
   );
 };
 
-export const processTransfer = (
-  instruction: any,
-  idx: string,
-  adapter: TransactionAdapter,
-): TransferData | null => {
+export const processTransfer = (instruction: any, idx: string, adapter: TransactionAdapter): TransferData | null => {
   const { info } = instruction.parsed;
   if (!info) return null;
 
-  const [token1, token2] = [adapter.splTokenMap.get(info.destination)?.mint, adapter.splTokenMap.get(info.source)?.mint];
+  const [token1, token2] = [
+    adapter.splTokenMap.get(info.destination)?.mint,
+    adapter.splTokenMap.get(info.source)?.mint,
+  ];
   if (!token1 && !token2) return null;
 
   let mint = getTranferTokenMint(token1, token2);
@@ -45,7 +44,7 @@ export const processTransfer = (
     type: 'transfer',
     programId: instruction.programId,
     info: {
-      authority: info.authority || '',
+      authority: info.authority,
       destination: info.destination || '',
       destinationOwner: adapter.getTokenAccountOwner(info.destination),
       mint,
@@ -55,8 +54,12 @@ export const processTransfer = (
         decimals,
         uiAmount: convertToUiAmount(info.amount || info.lamports, decimals),
       },
+      sourceBalance: adapter.getTokenAccountBalance(info.source),
+      destinationBalance: adapter.getTokenAccountBalance(info.destination),
     },
     idx: idx,
+    timestamp: adapter.blockTime,
+    signature: adapter.signature,
   };
 };
 
@@ -75,7 +78,7 @@ export const processTransferCheck = (
     type: 'transferChecked',
     programId: instruction.programId,
     info: {
-      authority: info.authority || '',
+      authority: info.authority,
       destination: info.destination || '',
       destinationOwner: adapter.getTokenAccountOwner(info.destination),
       mint: info.mint || '',
@@ -85,8 +88,12 @@ export const processTransferCheck = (
         decimals,
         uiAmount: convertToUiAmount(info.amount, decimals),
       },
+      sourceBalance: adapter.getTokenAccountBalance(info.source),
+      destinationBalance: adapter.getTokenAccountBalance(info.destination),
     },
     idx,
+    timestamp: adapter.blockTime,
+    signature: adapter.signature,
   };
 };
 
@@ -127,7 +134,11 @@ export const processExtraAction = (
         decimals,
         uiAmount: convertToUiAmount(info.amount, decimals),
       },
+      sourceBalance: adapter.getTokenAccountBalance(info.source),
+      destinationBalance: adapter.getTokenAccountBalance(info.destination),
     },
     idx: idx,
+    timestamp: adapter.blockTime,
+    signature: adapter.signature,
   };
 };

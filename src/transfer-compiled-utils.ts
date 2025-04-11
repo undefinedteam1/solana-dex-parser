@@ -1,15 +1,17 @@
-import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
-import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
-import { TokenInfo, TransferData, convertToUiAmount } from './types';
-import { getInstructionData, getTranferTokenMint } from './utils';
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { SPL_TOKEN_INSTRUCTION_TYPES, SYSTEM_INSTRUCTION_TYPES, TOKENS } from './constants';
 import { TransactionAdapter } from './transaction-adapter';
+import { TransferData, convertToUiAmount } from './types';
+import { getInstructionData, getTranferTokenMint } from './utils';
 
 export const isCompiledTransfer = (instruction: any): boolean => {
   const data = getInstructionData(instruction);
-  return (
-    (instruction.programId == TOKEN_PROGRAM_ID.toBase58() && data[0] == SPL_TOKEN_INSTRUCTION_TYPES.Transfer) ||
-    (instruction.programId == TOKENS.NATIVE && data[0] == 2)
-  );
+  return instruction.programId == TOKEN_PROGRAM_ID.toBase58() && data[0] == SPL_TOKEN_INSTRUCTION_TYPES.Transfer;
+};
+
+export const isCompiledNativeTransfer = (instruction: any): boolean => {
+  const data = getInstructionData(instruction);
+  return instruction.programId == TOKENS.NATIVE && data[0] == SYSTEM_INSTRUCTION_TYPES.Transfer;
 };
 
 export const isCompiledTransferCheck = (instruction: any): boolean => {
@@ -24,7 +26,7 @@ export const isCompiledTransferCheck = (instruction: any): boolean => {
 export const processCompiledTransfer = (
   instruction: any,
   idx: string,
-  adapter: TransactionAdapter,
+  adapter: TransactionAdapter
 ): TransferData | null => {
   const accounts = instruction.accounts as string[];
   const data = getInstructionData(instruction);
@@ -46,7 +48,7 @@ export const processCompiledTransfer = (
     type: 'transfer',
     programId: instruction.programId,
     info: {
-      authority: authority || '',
+      authority: authority,
       destination: destination || '',
       destinationOwner: adapter.getTokenAccountOwner(destination || ''),
       mint,
@@ -56,8 +58,44 @@ export const processCompiledTransfer = (
         decimals,
         uiAmount: convertToUiAmount(amount, decimals),
       },
+      sourceBalance: adapter.getTokenAccountBalance(source),
+      destinationBalance: adapter.getTokenAccountBalance(destination),
     },
     idx: idx,
+    timestamp: adapter.blockTime,
+    signature: adapter.signature,
+  };
+};
+
+export const processCompiledNatvieTransfer = (
+  instruction: any,
+  idx: string,
+  adapter: TransactionAdapter
+): TransferData | null => {
+  const accounts = instruction.accounts as string[];
+  const data = getInstructionData(instruction);
+  const amount = data.readBigUInt64LE(4);
+  const [source, destination] = [accounts[0], accounts[1]]; // source,amount,destination
+  const decimals = 9;
+  return {
+    type: 'transfer',
+    programId: instruction.programId,
+    info: {
+      destination: destination || '',
+      destinationOwner: adapter.getTokenAccountOwner(destination || ''),
+      mint: TOKENS.SOL,
+      source: source || '',
+      tokenAmount: {
+        amount: amount.toString(),
+        decimals,
+        uiAmount: convertToUiAmount(amount, decimals),
+      },
+      sourceBalance: adapter.getTokenAccountBalance(source),
+      destinationBalance: adapter.getTokenAccountBalance(destination),
+    },
+    idx: idx,
+    timestamp: adapter.blockTime,
+    signature: adapter.signature,
   };
 };
 
@@ -76,7 +114,7 @@ export const processCompiledTransferCheck = (
     type: 'transferChecked',
     programId: instruction.programId,
     info: {
-      authority: authority || '',
+      authority: authority,
       destination: destination || '',
       destinationOwner: adapter.getTokenAccountOwner(destination || ''),
       mint,
@@ -86,8 +124,12 @@ export const processCompiledTransferCheck = (
         decimals,
         uiAmount: convertToUiAmount(amount, decimals),
       },
+      sourceBalance: adapter.getTokenAccountBalance(source),
+      destinationBalance: adapter.getTokenAccountBalance(destination),
     },
     idx: idx,
+    timestamp: adapter.blockTime,
+    signature: adapter.signature,
   };
 };
 
@@ -151,7 +193,7 @@ export const processCompiledExtraAction = (
     type: type,
     programId: instruction.programId,
     info: {
-      authority: authority || '',
+      authority: authority,
       destination: destination || '',
       destinationOwner: adapter.getTokenAccountOwner(destination || ''),
       mint,
@@ -161,7 +203,11 @@ export const processCompiledExtraAction = (
         decimals,
         uiAmount: convertToUiAmount(amount, decimals),
       },
+      sourceBalance: source ? adapter.getTokenAccountBalance(source) : undefined,
+      destinationBalance: destination ? adapter.getTokenAccountBalance(destination) : undefined,
     },
     idx: idx,
+    timestamp: adapter.blockTime,
+    signature: adapter.signature,
   };
 };

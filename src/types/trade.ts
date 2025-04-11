@@ -38,7 +38,9 @@ export interface TokenInfo {
   authority?: string;
   destination?: string;
   destinationOwner?: string;
+  destinationBalance?: number;
   source?: string;
+  sourceBalance?: number;
 }
 
 export interface TokenAmount {
@@ -60,7 +62,7 @@ export interface TransferData {
   type: 'transfer' | 'transferChecked' | string;
   programId: string;
   info: {
-    authority: string;
+    authority?: string;
     destination: string;
     destinationOwner?: string;
     mint: string;
@@ -70,8 +72,12 @@ export interface TransferData {
       decimals: number;
       uiAmount: number;
     };
+    sourceBalance?: number;
+    destinationBalance?: number;
   };
   idx: string;
+  timestamp: number;
+  signature: string;
 }
 
 export type TradeType = 'BUY' | 'SELL';

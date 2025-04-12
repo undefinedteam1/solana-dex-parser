@@ -2,16 +2,22 @@
 
 A TypeScript library for parsing Solana DEX swap transactions. Supports multiple DEX protocols including Jupiter, Raydium, Meteora, PumpFun, and Moonshot.
 
-## 🚀 What's New in 2.1.9
+## 🚀 What's New
+
+### 2.2.5
+- Added `rawAmount` configuration option
+  - When `rawAmount: true`, amounts will be returned as raw values (string for large numbers)
+  - When `rawAmount: false` (default), amounts will be converted to UI amounts
+
+### 2.1.9
 - Added destinationOwner field (TransferData, TokenInfo)
 - Added transfer parser if needed (if no trades and no liquidity)
 
-## 🚀 What's New in 2.0.6
+### 2.0.6
 - Support Pumpfun AMM (Pumpswap)
 - Added Pumpswap events parser (Trade and Liquidity)
   
-## 🚀 What's New in 2.0.0
-
+### 2.0.0
 Major refactoring with enhanced transaction parsing support:
 - Support for multiple transaction formats:
   - `getTransaction`/`getParsedTransaction`
@@ -73,7 +79,50 @@ yarn add solana-dex-parser
 
 ### Configuration Options
 
-The DexParser class doesn't require any configuration. It automatically detects the DEX protocol used in the transaction and applies the appropriate parsing logic.
+The DexParser class supports the following configuration:
+
+```typescript
+interface ParseConfig {
+  tryUnknowDEX?: boolean;   // Try to parse unknown DEX programs，results may be inaccurate (default: false)
+  programIds?: string[];    // Only parse specific program IDs
+  ignoreProgramIds?: string[]; // Ignore specific program IDs
+  rawAmount?: boolean;      // Return raw amounts instead of UI amounts (default: false)
+}
+```
+
+
+### Parse All (Trades, Liquidity and Transfers)
+Parse all types of transactions including DEX trades, liquidity operations, and token transfers.
+
+```typescript
+import { Connection } from '@solana/web3.js';
+import { DexParser } from 'solana-dex-parser';
+
+async function parseAll() {
+  const connection = new Connection('https://api.mainnet-beta.solana.com');
+  const signature = 'your-transaction-signature';
+  
+  const tx = await connection.getTransaction(signature, {
+    maxSupportedTransactionVersion: 0,
+  });
+
+  // Parse all types of transactions in one call
+  const parser = new DexParser();
+  const result = parser.parseAll(tx, {
+    rawAmount: true,    // Return raw amounts as strings
+    tryUnknowDEX: true, // Try to parse unknown DEX programs
+  });
+
+  console.log({
+    trades: result.trades,         // DEX trading activities
+    liquidities: result.liquidities, // Liquidity operations
+    transfers: result.transfers,     // Regular token transfers (non-DEX)
+    state: result.state,          // Parsing state
+    msg: result.msg,             // Error message if any
+  });
+}
+
+```
 
 ### 1. Basic Usage > Swap (Buy and Sell)
 
@@ -95,7 +144,10 @@ async function parseSwap() {
 
   // Parse trades
   const parser = new DexParser();
-  const trades = await parser.parseTrades(tx);
+  const trades = await parser.parseTrades(tx, {
+    rawAmount: true,  // bigint string
+    tryUnknowDEX: false,  // only parse known DEX programs
+  });
   console.log("trades:", trades);
 }
 
@@ -104,41 +156,43 @@ async function parseSwap() {
 #### Output
 
 ```
- [
+ trades [
       {
         type: 'BUY',
         inputToken: {
           mint: 'So11111111111111111111111111111111111111112',
           amount: 0.099009801,
           decimals: 9,
-          authority: '',
-          destination: '8Wyi1ikEcLsHKA7daP1JmUrAyEc96jLn3tzLnuMwN5nH',
-          source: '5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB'
+          authority: undefined,                                     
+          source: '5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB',   
+          destination: '8Wyi1ikEcLsHKA7daP1JmUrAyEc96jLn3tzLnuMwN5nH', 
+          destinationOwner: undefined,                              
+          destinationBalance: undefined,
+          destinationPreBalance: undefined,
+          sourceBalance: undefined,
+          sourcePreBalance: undefined
         },
         outputToken: {
           mint: 'B3Pza9YDAaTrMtxR5JeFFEGKSdJSyNLnj49nSYHDpump',
-          amount: 1070376.821916,
+          amount: 1070376.821916,                                   // Raw amount or uiAmount (config set by rawAmount option)
           decimals: 6,
-          authority: '8Wyi1ikEcLsHKA7daP1JmUrAyEc96jLn3tzLnuMwN5nH',
-          destination: '3QvZvTSWt4gS1Vyiz1zR3afJjETzaev9JKJ3J356Sk1b',
-          source: 'E7v5iScw1vUupebaDd7grmjVrSgsgdhVpm4w2bbDxbPn'
+          authority: '8Wyi1ikEcLsHKA7daP1JmUrAyEc96jLn3tzLnuMwN5nH', // Transfer authority (sender)
+          source: 'E7v5iScw1vUupebaDd7grmjVrSgsgdhVpm4w2bbDxbPn', // Source token account
+          destination: '3QvZvTSWt4gS1Vyiz1zR3afJjETzaev9JKJ3J356Sk1b', // Destination token account
+          destinationOwner: '5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB', // Owner of the destination account
+          destinationBalance: 1383049.394757,                               // postTokenBalance
+          destinationPreBalance: 312672.572841,                             // preTokenBalance
+          sourceBalance: 516380474.293765,
+          sourcePreBalance: 517450851.115681
         },
         user: '5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB',
-        programId: '6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma',
+        programId: '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P',
         amm: 'Pumpfun',
         route: 'OKX',
         slot: 324037348,
         timestamp: 1740898227,
         signature: '648cwSysqKXnb3XLPy577Lu4oBk7jimaY8p95JGfS9QUNabYar5pzfcRdu518TWw3dbopquJnMne9qx22xuf8xqn',
-        idx: '7-2',
-        fee: {
-          mint: 'So11111111111111111111111111111111111111112',
-          amount: 0.000990098,
-          decimals: 9,
-          authority: '',
-          destination: 'CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM',
-          source: '5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB'
-        }
+        idx: '7-5'
       }
     ]
 ```

@@ -64,9 +64,9 @@ export class JupiterParser extends BaseParser {
   private buildIntermediateInfo(events: JupiterSwapEventData[]): JupiterSwapInfo {
     const info: JupiterSwapInfo = {
       amms: [],
-      tokenIn: new Map(),
-      tokenOut: new Map(),
-      decimals: new Map(),
+      tokenIn: new Map<string, bigint>(),
+      tokenOut: new Map<string, bigint>(),
+      decimals: new Map<string, number>(),
       idx: '',
     };
 
@@ -74,8 +74,8 @@ export class JupiterParser extends BaseParser {
       const inputMint = event.inputMint.toBase58();
       const outputMint = event.outputMint.toBase58();
 
-      info.tokenIn.set(inputMint, (info.tokenIn.get(inputMint) || BigInt(0)) + event.inputAmount);
-      info.tokenOut.set(outputMint, (info.tokenOut.get(outputMint) || BigInt(0)) + event.outputAmount);
+      info.tokenIn.set(inputMint, BigInt((info.tokenIn.get(inputMint) || BigInt(0)) + event.inputAmount));
+      info.tokenOut.set(outputMint, BigInt((info.tokenOut.get(outputMint) || BigInt(0)) + event.outputAmount));
       info.decimals.set(inputMint, event.inputMintDecimals);
       info.decimals.set(outputMint, event.outputMintDecimals);
       info.idx = event.idx;
@@ -103,7 +103,6 @@ export class JupiterParser extends BaseParser {
     const [[outMint, outAmount]] = Array.from(info.tokenOut.entries());
     const inDecimals = info.decimals.get(inMint) || 0;
     const outDecimals = info.decimals.get(outMint) || 0;
-
     const signerIndex = this.containsDCAProgram() ? 2 : 0;
     const signer = this.adapter.getAccountKey(signerIndex);
 
@@ -111,12 +110,12 @@ export class JupiterParser extends BaseParser {
       type: getTradeType(inMint, outMint),
       inputToken: {
         mint: inMint,
-        amount: Number(inAmount) / 10 ** inDecimals,
+        amount: this.adapter.getFormatAmount(inAmount, undefined, inDecimals),
         decimals: inDecimals,
       },
       outputToken: {
         mint: outMint,
-        amount: Number(outAmount) / 10 ** outDecimals,
+        amount: this.adapter.getFormatAmount(outAmount, undefined, outDecimals),
         decimals: outDecimals,
       },
       user: signer,
@@ -127,7 +126,7 @@ export class JupiterParser extends BaseParser {
       timestamp: this.adapter.blockTime,
       signature: this.adapter.signature,
       idx: info.idx,
-    };
+    } as TradeInfo;
 
     return this.utils.attachTokenTransferInfo(trade, this.transferActions);
   }

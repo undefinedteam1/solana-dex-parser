@@ -2,7 +2,6 @@ import { DEX_PROGRAMS } from '../../constants';
 import { TransactionAdapter } from '../../transaction-adapter';
 import {
   ClassifiedInstruction,
-  convertToUiAmount,
   DexInfo,
   PumpswapBuyEvent,
   PumpswapEvent,
@@ -44,17 +43,17 @@ export class PumpswapParser extends BaseParser {
       type: 'BUY',
       inputToken: {
         mint: inputMint,
-        amount: convertToUiAmount(event.quoteAmountInWithLpFee, inputDecimal),
+        amount: this.adapter.getFormatAmount(event.quoteAmountInWithLpFee, undefined, inputDecimal),
         decimals: inputDecimal,
       },
       outputToken: {
         mint: outputMint,
-        amount: convertToUiAmount(event.baseAmountOut, ouptDecimal),
+        amount: this.adapter.getFormatAmount(event.baseAmountOut, undefined, ouptDecimal),
         decimals: ouptDecimal,
       },
       fee: {
         mint: inputMint,
-        amount: convertToUiAmount(event.protocolFee, inputDecimal),
+        amount: this.adapter.getFormatAmount(event.protocolFee, undefined, inputDecimal),
         decimals: inputDecimal,
       },
       user: event.user,
@@ -80,17 +79,17 @@ export class PumpswapParser extends BaseParser {
       type: 'SELL',
       inputToken: {
         mint: inputMint,
-        amount: convertToUiAmount(event.baseAmountIn, inputDecimal),
+        amount: this.adapter.getFormatAmount(event.baseAmountIn, undefined, inputDecimal),
         decimals: inputDecimal,
       },
       outputToken: {
         mint: outputMint,
-        amount: convertToUiAmount(event.userQuoteAmountOut, ouptDecimal),
+        amount: this.adapter.getFormatAmount(event.userQuoteAmountOut, undefined, ouptDecimal),
         decimals: ouptDecimal,
       },
       fee: {
         mint: outputMint,
-        amount: convertToUiAmount(event.protocolFee, ouptDecimal),
+        amount: this.adapter.getFormatAmount(event.protocolFee, undefined, ouptDecimal),
         decimals: ouptDecimal,
       },
       user: event.user,

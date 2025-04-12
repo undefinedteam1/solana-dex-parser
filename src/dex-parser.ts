@@ -1,4 +1,4 @@
-import { DEX_PROGRAMS } from './constants';
+import { DEX_PROGRAM_IDS, DEX_PROGRAMS } from './constants';
 import { InstructionClassifier } from './instruction-classifier';
 import {
   JupiterParser,
@@ -92,7 +92,7 @@ export class DexParser {
    */
   private parseWithClassifier(
     tx: SolanaTransaction,
-    config: ParseConfig = { tryUnknowDEX: true },
+    config: ParseConfig = { tryUnknowDEX: false },
     parseType: 'trades' | 'liquidity' | 'transfer' | 'all'
   ): ParseResult {
     const result: ParseResult = {
@@ -103,7 +103,7 @@ export class DexParser {
     };
 
     try {
-      const adapter = new TransactionAdapter(tx);
+      const adapter = new TransactionAdapter(tx, config);
       const utils = new TransactionUtils(adapter);
       const classifier = new InstructionClassifier(adapter);
 
@@ -174,7 +174,9 @@ export class DexParser {
       // Process transfer if needed (if no trades and no liquidity)
       if (result.trades.length == 0 && result.liquidities.length == 0) {
         if (parseType === 'transfer' || parseType === 'all') {
-          result.transfers.push(...Object.values(transferActions).flat());
+          if (!allProgramIds.some((id) => DEX_PROGRAM_IDS.includes(id))) {
+            result.transfers.push(...Object.values(transferActions).flat());
+          }
         }
       }
     } catch (error) {
@@ -190,28 +192,28 @@ export class DexParser {
   /**
    * Parse trades from transaction
    */
-  public parseTrades(tx: SolanaTransaction, config: ParseConfig = { tryUnknowDEX: true }): TradeInfo[] {
+  public parseTrades(tx: SolanaTransaction, config?: ParseConfig): TradeInfo[] {
     return this.parseWithClassifier(tx, config, 'trades').trades;
   }
 
   /**
    * Parse liquidity events from transaction
    */
-  public parseLiquidity(tx: SolanaTransaction): PoolEvent[] {
-    return this.parseWithClassifier(tx, {}, 'liquidity').liquidities;
+  public parseLiquidity(tx: SolanaTransaction, config?: ParseConfig): PoolEvent[] {
+    return this.parseWithClassifier(tx, config, 'liquidity').liquidities;
   }
 
   /**
    * Parse transfers from transaction (if no trades and no liquidity)
    */
-  public parseTransfers(tx: SolanaTransaction): TransferData[] {
-    return this.parseWithClassifier(tx, {}, 'transfer').transfers;
+  public parseTransfers(tx: SolanaTransaction, config?: ParseConfig): TransferData[] {
+    return this.parseWithClassifier(tx, config, 'transfer').transfers;
   }
 
   /**
    * Parse both trades and liquidity events from transaction
    */
-  public parseAll(tx: SolanaTransaction, config: ParseConfig = { tryUnknowDEX: true }): ParseResult {
+  public parseAll(tx: SolanaTransaction, config?: ParseConfig): ParseResult {
     return this.parseWithClassifier(tx, config, 'all');
   }
 }

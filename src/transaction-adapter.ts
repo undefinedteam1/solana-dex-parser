@@ -1,7 +1,7 @@
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { MessageV0, PublicKey } from '@solana/web3.js';
 import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
-import { PoolEventType, SolanaTransaction, TokenInfo } from './types';
+import { convertToUiAmount, ParseConfig, PoolEventType, SolanaTransaction, TokenInfo } from './types';
 import { getInstructionData, getProgramName } from './utils';
 
 /**
@@ -12,7 +12,10 @@ export class TransactionAdapter {
   public readonly splTokenMap: Map<string, TokenInfo> = new Map();
   public readonly splDecimalsMap: Map<string, number> = new Map();
 
-  constructor(private tx: SolanaTransaction) {
+  constructor(
+    private tx: SolanaTransaction,
+    public config?: ParseConfig
+  ) {
     this.accountKeys = this.extractAccountKeys();
     this.extractTokenInfo();
   }
@@ -191,25 +194,25 @@ export class TransactionAdapter {
     return undefined;
   }
 
-  getTokenAccountBalance(accountKey: string): number | undefined {
+  getTokenAccountBalance(accountKey: string): number | string | undefined {
     const accountInfo = this.tx.meta?.postTokenBalances?.find(
       (balance) => this.accountKeys[balance.accountIndex] === accountKey
     );
 
     if (accountInfo) {
-      return accountInfo.uiTokenAmount?.uiAmount ?? undefined;
+      return this.config?.rawAmount ? accountInfo.uiTokenAmount.amount : (accountInfo.uiTokenAmount?.uiAmount ?? 0);
     }
 
     return undefined;
   }
 
-  getTokenAccountPreBalance(accountKey: string): number | undefined {
+  getTokenAccountPreBalance(accountKey: string): number | string | undefined {
     const accountInfo = this.tx.meta?.preTokenBalances?.find(
       (balance) => this.accountKeys[balance.accountIndex] === accountKey
     );
 
     if (accountInfo) {
-      return accountInfo.uiTokenAmount?.uiAmount ?? undefined;
+      return this.config?.rawAmount ? accountInfo.uiTokenAmount.amount : (accountInfo.uiTokenAmount?.uiAmount ?? 0);
     }
 
     return undefined;
@@ -226,6 +229,13 @@ export class TransactionAdapter {
    */
   isSupportedToken(mint: string): boolean {
     return Object.values(TOKENS).includes(mint);
+  }
+
+  /**
+   * Get rawAmount or uiAmount
+   */
+  getFormatAmount(amount: bigint | string, uiAmount?: number, decimals?: number): number | string {
+    return this.config?.rawAmount ? amount.toString() : uiAmount || convertToUiAmount(amount, decimals);
   }
 
   /**
@@ -293,7 +303,7 @@ export class TransactionAdapter {
       if (!this.splTokenMap.has(accountKey)) {
         const tokenInfo: TokenInfo = {
           mint: balance.mint,
-          amount: Number(balance.uiTokenAmount.uiAmount || 0),
+          amount: this.config?.rawAmount ? balance.uiTokenAmount.amount : Number(balance.uiTokenAmount.uiAmount || 0),
           decimals: balance.uiTokenAmount.decimals,
         };
         this.splTokenMap.set(accountKey, tokenInfo);
@@ -402,27 +412,11 @@ export class TransactionAdapter {
     }
 
     if (source && !this.splTokenMap.has(source)) {
-      this.splTokenMap.set(
-        source,
-        this.defaultSolInfo
-        // {
-        //   mint: mint ? mint : TOKENS.SOL,
-        //   amount: amount && decimals ? convertToUiAmount(amount, decimals) : 0,
-        //   decimals: decimals || 9,
-        // }
-      );
+      this.splTokenMap.set(source, this.defaultSolInfo);
     }
 
     if (destination && !this.splTokenMap.has(destination)) {
-      this.splTokenMap.set(
-        destination,
-        this.defaultSolInfo
-        // {
-        //   mint: mint ? mint : TOKENS.SOL,
-        //   amount: amount && decimals ? convertToUiAmount(amount, decimals) : 0,
-        //   decimals: decimals || 9,
-        // }
-      );
+      this.splTokenMap.set(destination, this.defaultSolInfo);
     }
 
     if (mint && decimals && !this.splDecimalsMap.has(mint)) {

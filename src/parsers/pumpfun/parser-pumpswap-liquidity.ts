@@ -2,7 +2,6 @@ import { DEX_PROGRAMS } from '../../constants';
 import { TransactionAdapter } from '../../transaction-adapter';
 import {
   ClassifiedInstruction,
-  convertToUiAmount,
   PoolEvent,
   PumpswapCreatePoolEvent,
   PumpswapDepositEvent,
@@ -61,8 +60,8 @@ export class PumpswapLiquidityParser extends BaseLiquidityParser {
       poolLpMint: event.lpMint,
       token0Mint: event.baseMint,
       token1Mint: event.quoteMint,
-      token0Amount: convertToUiAmount(event.baseAmountIn, event.baseMintDecimals),
-      token1Amount: convertToUiAmount(event.quoteAmountIn, event.quoteMintDecimals),
+      token0Amount: this.adapter.getFormatAmount(event.baseAmountIn, undefined, event.baseMintDecimals),
+      token1Amount: this.adapter.getFormatAmount(event.quoteAmountIn, undefined, event.quoteMintDecimals),
       token0Decimals: event.baseMintDecimals,
       token1Decimals: event.quoteMintDecimals,
     };
@@ -81,8 +80,8 @@ export class PumpswapLiquidityParser extends BaseLiquidityParser {
       poolLpMint: this.adapter.splTokenMap.get(event.userPoolTokenAccount)!.mint,
       token0Mint: token0Mint,
       token1Mint: token1Mint,
-      token0Amount: convertToUiAmount(event.baseAmountIn, token0Decimals),
-      token1Amount: convertToUiAmount(event.quoteAmountIn, token1Decimals),
+      token0Amount: this.adapter.getFormatAmount(event.baseAmountIn, undefined, token0Decimals),
+      token1Amount: this.adapter.getFormatAmount(event.quoteAmountIn, undefined, token1Decimals),
       token0Decimals: token0Decimals,
       token1Decimals: token1Decimals,
     };
@@ -101,8 +100,8 @@ export class PumpswapLiquidityParser extends BaseLiquidityParser {
       poolLpMint: this.adapter.splTokenMap.get(event.userPoolTokenAccount)!.mint,
       token0Mint: token0Mint,
       token1Mint: token1Mint,
-      token0Amount: convertToUiAmount(event.baseAmountOut, token0Decimals),
-      token1Amount: convertToUiAmount(event.quoteAmountOut, token1Decimals),
+      token0Amount: this.adapter.getFormatAmount(event.baseAmountOut, undefined, token0Decimals),
+      token1Amount: this.adapter.getFormatAmount(event.quoteAmountOut, undefined, token1Decimals),
       token0Decimals: token0Decimals,
       token1Decimals: token1Decimals,
     };

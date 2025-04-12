@@ -37,8 +37,14 @@ export class MeteoraDLMMPoolParser extends MeteoraLiquidityParserBase {
       poolLpMint: accounts[1],
       token0Mint: token0?.info.mint,
       token1Mint: token1?.info.mint,
-      token0Amount: token0?.info.tokenAmount.uiAmount || 0,
-      token1Amount: token1?.info.tokenAmount.uiAmount || 0,
+      token0Amount: this.adapter.getFormatAmount(
+        token0?.info.tokenAmount.amount || 0n,
+        token0?.info.tokenAmount.uiAmount || 0
+      ),
+      token1Amount: this.adapter.getFormatAmount(
+        token1?.info.tokenAmount.amount || 0n,
+        token1?.info.tokenAmount.uiAmount || 0
+      ),
       token0Decimals: token0 && this.adapter.getTokenDecimals(token0?.info.mint),
       token1Decimals: token1 && this.adapter.getTokenDecimals(token1?.info.mint),
     };
@@ -70,8 +76,14 @@ export class MeteoraDLMMPoolParser extends MeteoraLiquidityParserBase {
       poolLpMint: accounts[1],
       token0Mint: token0?.info.mint || accounts[7],
       token1Mint: token1?.info.mint || accounts[8],
-      token0Amount: token0?.info.tokenAmount.uiAmount || 0,
-      token1Amount: token1?.info.tokenAmount.uiAmount || 0,
+      token0Amount: this.adapter.getFormatAmount(
+        token0?.info.tokenAmount.amount || 0n,
+        token0?.info.tokenAmount.uiAmount || 0
+      ),
+      token1Amount: this.adapter.getFormatAmount(
+        token1?.info.tokenAmount.amount || 0n,
+        token1?.info.tokenAmount.uiAmount || 0
+      ),
       token0Decimals: this.adapter.getTokenDecimals(token0Mint),
       token1Decimals: this.adapter.getTokenDecimals(token1Mint),
     };

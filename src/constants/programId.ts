@@ -215,6 +215,8 @@ export const DEX_PROGRAMS = {
   },
 };
 
+export const DEX_PROGRAM_IDS = Object.values(DEX_PROGRAMS).map((dex) => dex.id);
+
 export const SYSTEM_PROGRAMS = [
   'ComputeBudget111111111111111111111111111111',
   '11111111111111111111111111111111',

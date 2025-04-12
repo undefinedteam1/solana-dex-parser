@@ -1,5 +1,5 @@
 import { TOKENS } from '../../constants';
-import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from '../../types';
+import { PoolEvent, PoolEventType, TransferData } from '../../types';
 import { getInstructionData } from '../../utils';
 import { BaseLiquidityParser } from '../base-liquidity-parser';
 
@@ -83,22 +83,28 @@ export abstract class RaydiumLiquidityParserBase extends BaseLiquidityParser {
       this.adapter.getTokenDecimals(token1Mint),
     ];
 
-    const token0Amount =
-      token0?.info.tokenAmount.uiAmount ||
-      (config.tokenAmountOffsets &&
-        convertToUiAmount(data.readBigUInt64LE(config.tokenAmountOffsets.token0), token0Decimals)) ||
-      0;
+    const token0Amount = this.adapter.getFormatAmount(
+      token0?.info.tokenAmount.amount ||
+        (config.tokenAmountOffsets && data.readBigUInt64LE(config.tokenAmountOffsets.token0)) ||
+        0n,
+      token0?.info.tokenAmount.uiAmount,
+      token0Decimals
+    );
 
-    const token1Amount =
-      token1?.info.tokenAmount.uiAmount ||
-      (config.tokenAmountOffsets &&
-        convertToUiAmount(data.readBigUInt64LE(config.tokenAmountOffsets.token1), token1Decimals)) ||
-      0;
+    const token1Amount = this.adapter.getFormatAmount(
+      token1?.info.tokenAmount.amount ||
+        (config.tokenAmountOffsets && data.readBigUInt64LE(config.tokenAmountOffsets.token1)) ||
+        0n,
+      token1?.info.tokenAmount.uiAmount,
+      token1Decimals
+    );
 
-    const lpAmount =
-      lpToken?.info.tokenAmount.uiAmount ||
-      (config.tokenAmountOffsets && convertToUiAmount(data.readBigUInt64LE(config.tokenAmountOffsets.lp))) ||
-      0;
+    const lpAmount = this.adapter.getFormatAmount(
+      lpToken?.info.tokenAmount.amount ||
+        (config.tokenAmountOffsets && data.readBigUInt64LE(config.tokenAmountOffsets.lp)) ||
+        0n,
+      lpToken?.info.tokenAmount.uiAmount
+    );
 
     return {
       ...this.adapter.getPoolEventBase(config.eventType, programId),

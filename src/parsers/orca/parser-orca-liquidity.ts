@@ -1,5 +1,5 @@
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
-import { PoolEvent, PoolEventType, TransferData, convertToUiAmount } from '../../types';
+import { PoolEvent, PoolEventType, TransferData } from '../../types';
 import { getInstructionData } from '../../utils';
 import { BaseLiquidityParser } from '../base-liquidity-parser';
 
@@ -76,11 +76,19 @@ export class OrcaLiquidityParser extends BaseLiquidityParser {
       poolLpMint: accounts[0],
       token0Mint: token0Mint,
       token1Mint: token1Mint,
-      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(32), token0Decimals),
-      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(24), token1Decimals),
+      token0Amount: this.adapter.getFormatAmount(
+        token0?.info.tokenAmount.amount || data.readBigUInt64LE(32),
+        token0?.info.tokenAmount.uiAmount,
+        token0Decimals
+      ),
+      token1Amount: this.adapter.getFormatAmount(
+        token1?.info.tokenAmount.amount || data.readBigUInt64LE(24),
+        token1?.info.tokenAmount.uiAmount,
+        token1Decimals
+      ),
       token0Decimals: token0Decimals,
       token1Decimals: token1Decimals,
-      lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])) || 0,
+      lpAmount: this.adapter.getFormatAmount(data.readBigUInt64LE(8), 0, this.adapter.getTokenDecimals(accounts[1])),
     };
   }
 
@@ -102,11 +110,23 @@ export class OrcaLiquidityParser extends BaseLiquidityParser {
       poolLpMint: accounts[0],
       token0Mint: token0Mint,
       token1Mint: token1Mint,
-      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(32), token0Decimals),
-      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(24), token1Decimals),
+      token0Amount: this.adapter.getFormatAmount(
+        token0?.info.tokenAmount.amount || data.readBigUInt64LE(32),
+        token0?.info.tokenAmount.uiAmount,
+        token0Decimals
+      ),
+      token1Amount: this.adapter.getFormatAmount(
+        token1?.info.tokenAmount.amount || data.readBigUInt64LE(24),
+        token1?.info.tokenAmount.uiAmount,
+        token1Decimals
+      ),
       token0Decimals: token0Decimals,
       token1Decimals: token1Decimals,
-      lpAmount: convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
+      lpAmount: this.adapter.getFormatAmount(
+        data.readBigUInt64LE(8),
+        undefined,
+        this.adapter.getTokenDecimals(accounts[1])
+      ),
     };
   }
 }

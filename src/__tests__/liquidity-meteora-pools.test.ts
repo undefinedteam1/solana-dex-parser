@@ -65,7 +65,7 @@ describe('Liquidity', () => {
           const tx = await connection.getTransaction(test.signature, {
             maxSupportedTransactionVersion: 0,
           });
-          if(!tx) throw new Error('Transaction not found');
+          if (!tx) throw new Error('Transaction not found');
           const parser = new DexParser();
           const events = parser.parseLiquidity(tx);
           expect(events.length).toEqual(1);

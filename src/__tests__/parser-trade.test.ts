@@ -1,6 +1,7 @@
 import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
 import { DexParser } from '../dex-parser';
+import { DEX_PROGRAMS } from '../constants';
 
 dotenv.config();
 
@@ -22,7 +23,7 @@ describe('Dex Parser', () => {
   describe('Parse Trades', () => {
     const parser = new DexParser();
 
-    ["3ZCmWEuYAG55tuJGnuLjdASYUf2MH9Lw9gFuW8eVmHi6m8qTjYTFpGQpQNhhd4393mpcu1Zd8rqizeqZ7Sd2KCuH",
+    ["648cwSysqKXnb3XLPy577Lu4oBk7jimaY8p95JGfS9QUNabYar5pzfcRdu518TWw3dbopquJnMne9qx22xuf8xqn",
     ]
       .forEach((signature) => {
         it(`${signature} `, async () => {
@@ -31,11 +32,16 @@ describe('Dex Parser', () => {
             maxSupportedTransactionVersion: 0,
           });
           if (!tx) { throw new Error(`Transaction not found > ${signature}`); }
-          const { trades, liquidities, transfers } = parser.parseAll(tx, { tryUnknowDEX: false });
+          const { trades, liquidities, transfers } = parser.parseAll(tx,
+            {
+              tryUnknowDEX: false,
+              // programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id],
+              rawAmount: false,
+            });
           console.log('trades', trades);
           console.log('liquidity', liquidities);
           console.log('transfer', transfers);
-          expect(trades.length + liquidities.length+transfers.length).toBeGreaterThanOrEqual(1);
+          expect(trades.length + liquidities.length + transfers.length).toBeGreaterThanOrEqual(1);
         });
       });
   });

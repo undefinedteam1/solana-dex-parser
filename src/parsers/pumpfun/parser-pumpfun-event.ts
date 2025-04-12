@@ -5,7 +5,6 @@ import { InstructionClassifier } from '../../instruction-classifier';
 import { TransactionAdapter } from '../../transaction-adapter';
 import {
   ClassifiedInstruction,
-  convertToUiAmount,
   EventParser,
   PumpfunCompleteEvent,
   PumpfunCreateEvent,
@@ -72,13 +71,13 @@ export class PumpfunEventParser {
 
     return {
       mint: base58.encode(Buffer.from(reader.readFixedArray(32))),
-      solAmount: convertToUiAmount(reader.readU64()),
-      tokenAmount: convertToUiAmount(reader.readU64(), 6),
+      solAmount: this.adapter.getFormatAmount(reader.readU64()),
+      tokenAmount: this.adapter.getFormatAmount(reader.readU64(), undefined, 6),
       isBuy: reader.readU8() === 1,
       user: base58.encode(reader.readFixedArray(32)),
       timestamp: reader.readI64(),
-      virtualSolReserves: convertToUiAmount(reader.readU64()),
-      virtualTokenReserves: convertToUiAmount(reader.readU64(), 6),
+      virtualSolReserves: this.adapter.getFormatAmount(reader.readU64()),
+      virtualTokenReserves: this.adapter.getFormatAmount(reader.readU64(), undefined, 6),
     };
   }
 

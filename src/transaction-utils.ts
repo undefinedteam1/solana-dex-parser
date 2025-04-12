@@ -425,12 +425,12 @@ export class TransactionUtils {
   attachTokenTransferInfo = (trade: TradeInfo, transferActions: Record<string, TransferData[]>): TradeInfo => {
     const inputTransfer = Object.values(transferActions)
       .flat()
-      .find((it) => it.info.mint == trade.inputToken.mint && it.info.tokenAmount?.uiAmount == trade.inputToken.amount);
+      .find((it) => it.info.mint == trade.inputToken.mint && it.info.tokenAmount?.amount == trade.inputToken.amountRaw);
 
     const outputTransfer = Object.values(transferActions)
       .flat()
       .find(
-        (it) => it.info.mint == trade.outputToken.mint && it.info.tokenAmount?.uiAmount == trade.outputToken.amount
+        (it) => it.info.mint == trade.outputToken.mint && it.info.tokenAmount?.amount == trade.outputToken.amountRaw
       );
 
     if (inputTransfer) {

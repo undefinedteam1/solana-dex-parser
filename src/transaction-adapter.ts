@@ -1,7 +1,7 @@
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { MessageV0, PublicKey, TokenBalance } from '@solana/web3.js';
+import { MessageV0, PublicKey, TokenAmount } from '@solana/web3.js';
 import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
-import { ParseConfig, PoolEventType, SolanaTransaction, TokenInfo } from './types';
+import { convertToUiAmount, ParseConfig, PoolEventType, SolanaTransaction, TokenInfo } from './types';
 import { getInstructionData, getProgramName } from './utils';
 
 /**
@@ -179,6 +179,10 @@ export class TransactionAdapter {
     return this.accountKeys[index];
   }
 
+  getAccountIndex(address: string): number {
+    return this.accountKeys.findIndex((it) => it == address);
+  }
+
   /**
    * Get token account owner
    */
@@ -194,19 +198,49 @@ export class TransactionAdapter {
     return undefined;
   }
 
-  getTokenAccountBalance(accountKeys: string[]): (TokenBalance | undefined)[] {
+  getAccountBalance(accountKeys: string[]): (TokenAmount | undefined)[] {
+    return accountKeys.map((accountKey) => {
+      if (accountKey == '') return undefined;
+      const index = this.accountKeys.findIndex((it) => it == accountKey);
+      if (index == -1) return undefined;
+      const amount = this.tx.meta?.postBalances[index] || 0;
+      return {
+        amount: amount.toString(),
+        uiAmount: convertToUiAmount(amount.toString()),
+        decimals: 9,
+      };
+    });
+  }
+
+  getAccountPreBalance(accountKeys: string[]): (TokenAmount | undefined)[] {
+    return accountKeys.map((accountKey) => {
+      if (accountKey == '') return undefined;
+      const index = this.accountKeys.findIndex((it) => it == accountKey);
+      if (index == -1) return undefined;
+      const amount = this.tx.meta?.preBalances[index] || 0;
+      return {
+        amount: amount.toString(),
+        uiAmount: convertToUiAmount(amount.toString()),
+        decimals: 9,
+      };
+    });
+  }
+
+  getTokenAccountBalance(accountKeys: string[]): (TokenAmount | undefined)[] {
     return accountKeys.map((accountKey) =>
       accountKey == ''
         ? undefined
         : this.tx.meta?.postTokenBalances?.find((balance) => this.accountKeys[balance.accountIndex] === accountKey)
+            ?.uiTokenAmount
     );
   }
 
-  getTokenAccountPreBalance(accountKeys: string[]): (TokenBalance | undefined)[] {
+  getTokenAccountPreBalance(accountKeys: string[]): (TokenAmount | undefined)[] {
     return accountKeys.map((accountKey) =>
       accountKey == ''
         ? undefined
         : this.tx.meta?.preTokenBalances?.find((balance) => this.accountKeys[balance.accountIndex] === accountKey)
+            ?.uiTokenAmount
     );
   }
 

@@ -15,7 +15,7 @@ export type SolanaTransaction =
 export interface ParseConfig {
   /**
    * If true, will try to parse unknown DEXes, results may be inaccurate
-   * @default false
+   * @default true
    */
   tryUnknowDEX?: boolean;
 

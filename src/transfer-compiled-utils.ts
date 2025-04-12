@@ -61,10 +61,10 @@ export const processCompiledTransfer = (
         decimals,
         uiAmount: convertToUiAmount(amount, decimals),
       },
-      sourceBalance: sourceBalance?.uiTokenAmount,
-      sourcePreBalance: sourcePreBalance?.uiTokenAmount,
-      destinationBalance: destinationBalance?.uiTokenAmount,
-      destinationPreBalance: destinationPreBalance?.uiTokenAmount,
+      sourceBalance: sourceBalance,
+      sourcePreBalance: sourcePreBalance,
+      destinationBalance: destinationBalance,
+      destinationPreBalance: destinationPreBalance,
     },
     idx: idx,
     timestamp: adapter.blockTime,
@@ -83,8 +83,8 @@ export const processCompiledNatvieTransfer = (
   const [source, destination] = [accounts[0], accounts[1]]; // source,amount,destination
   const decimals = 9;
 
-  const [sourceBalance, destinationBalance] = adapter.getTokenAccountBalance([source, destination]);
-  const [sourcePreBalance, destinationPreBalance] = adapter.getTokenAccountPreBalance([source, destination]);
+  const [sourceBalance, destinationBalance] = adapter.getAccountBalance([source, destination]);
+  const [sourcePreBalance, destinationPreBalance] = adapter.getAccountPreBalance([source, destination]);
 
   return {
     type: 'transfer',
@@ -99,10 +99,10 @@ export const processCompiledNatvieTransfer = (
         decimals,
         uiAmount: convertToUiAmount(amount, decimals),
       },
-      sourceBalance: sourceBalance?.uiTokenAmount,
-      sourcePreBalance: sourcePreBalance?.uiTokenAmount,
-      destinationBalance: destinationBalance?.uiTokenAmount,
-      destinationPreBalance: destinationPreBalance?.uiTokenAmount,
+      sourceBalance: sourceBalance,
+      sourcePreBalance: sourcePreBalance,
+      destinationBalance: destinationBalance,
+      destinationPreBalance: destinationPreBalance,
     },
     idx: idx,
     timestamp: adapter.blockTime,
@@ -139,10 +139,10 @@ export const processCompiledTransferCheck = (
         decimals,
         uiAmount: convertToUiAmount(amount, decimals),
       },
-      sourceBalance: sourceBalance?.uiTokenAmount,
-      sourcePreBalance: sourcePreBalance?.uiTokenAmount,
-      destinationBalance: destinationBalance?.uiTokenAmount,
-      destinationPreBalance: destinationPreBalance?.uiTokenAmount,
+      sourceBalance: sourceBalance,
+      sourcePreBalance: sourcePreBalance,
+      destinationBalance: destinationBalance,
+      destinationPreBalance: destinationPreBalance,
     },
     idx: idx,
     timestamp: adapter.blockTime,
@@ -226,10 +226,10 @@ export const processCompiledExtraAction = (
         decimals,
         uiAmount: convertToUiAmount(amount, decimals),
       },
-      sourceBalance: sourceBalance?.uiTokenAmount,
-      sourcePreBalance: sourcePreBalance?.uiTokenAmount,
-      destinationBalance: destinationBalance?.uiTokenAmount,
-      destinationPreBalance: destinationPreBalance?.uiTokenAmount,
+      sourceBalance: sourceBalance,
+      sourcePreBalance: sourcePreBalance,
+      destinationBalance: destinationBalance,
+      destinationPreBalance: destinationPreBalance,
     },
     idx: idx,
     timestamp: adapter.blockTime,

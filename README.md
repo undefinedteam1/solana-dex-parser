@@ -83,10 +83,9 @@ The DexParser class supports the following configuration:
 
 ```typescript
 interface ParseConfig {
-  tryUnknowDEX?: boolean;   // Try to parse unknown DEX programs，results may be inaccurate (default: false)
+  tryUnknowDEX?: boolean;   // Try to parse unknown DEX programs，results may be inaccurate (default: true)
   programIds?: string[];    // Only parse specific program IDs
   ignoreProgramIds?: string[]; // Ignore specific program IDs
-  rawAmount?: boolean;      // Return raw amounts instead of UI amounts (default: false)
 }
 ```
 
@@ -108,10 +107,7 @@ async function parseAll() {
 
   // Parse all types of transactions in one call
   const parser = new DexParser();
-  const result = parser.parseAll(tx, {
-    rawAmount: true,    // Return raw amounts as strings
-    tryUnknowDEX: true, // Try to parse unknown DEX programs
-  });
+  const result = parser.parseAll(tx);
 
   console.log({
     trades: result.trades,         // DEX trading activities
@@ -144,57 +140,90 @@ async function parseSwap() {
 
   // Parse trades
   const parser = new DexParser();
-  const trades = await parser.parseTrades(tx, {
-    rawAmount: true,  // bigint string
-    tryUnknowDEX: false,  // only parse known DEX programs
-  });
+  const trades = await parser.parseTrades(tx);
   console.log("trades:", trades);
 }
 
 ```
 
-#### Output
+#### Trades Output
 
 ```
- trades [
-      {
-        type: 'BUY',
-        inputToken: {
-          mint: 'So11111111111111111111111111111111111111112',
-          amount: 0.099009801,
-          decimals: 9,
-          authority: undefined,                                     
-          source: '5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB',   
-          destination: '8Wyi1ikEcLsHKA7daP1JmUrAyEc96jLn3tzLnuMwN5nH', 
-          destinationOwner: undefined,                              
-          destinationBalance: undefined,
-          destinationPreBalance: undefined,
-          sourceBalance: undefined,
-          sourcePreBalance: undefined
+ [
+    {
+        "type": "BUY",
+        "inputToken": {
+            "mint": "So11111111111111111111111111111111111111112",
+            "amount": 0.099009801,
+            "amountRaw": "99009801",
+            "decimals": 9,
+            "source": "5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB",
+            "destination": "8Wyi1ikEcLsHKA7daP1JmUrAyEc96jLn3tzLnuMwN5nH",
+            "destinationBalance": {
+                "amount": "24617904743",
+                "uiAmount": 24.617904743,
+                "decimals": 9
+            },
+            "destinationPreBalance": {
+                "amount": "24518894942",
+                "uiAmount": 24.518894942,
+                "decimals": 9
+            },
+            "sourceBalance": {
+                "amount": "266958890",
+                "uiAmount": 0.26695889,
+                "decimals": 9
+            },
+            "sourcePreBalance": {
+                "amount": "366963789",
+                "uiAmount": 0.366963789,
+                "decimals": 9
+            }
         },
-        outputToken: {
-          mint: 'B3Pza9YDAaTrMtxR5JeFFEGKSdJSyNLnj49nSYHDpump',
-          amount: 1070376.821916,                                   // Raw amount or uiAmount (config set by rawAmount option)
-          decimals: 6,
-          authority: '8Wyi1ikEcLsHKA7daP1JmUrAyEc96jLn3tzLnuMwN5nH', // Transfer authority (sender)
-          source: 'E7v5iScw1vUupebaDd7grmjVrSgsgdhVpm4w2bbDxbPn', // Source token account
-          destination: '3QvZvTSWt4gS1Vyiz1zR3afJjETzaev9JKJ3J356Sk1b', // Destination token account
-          destinationOwner: '5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB', // Owner of the destination account
-          destinationBalance: 1383049.394757,                               // postTokenBalance
-          destinationPreBalance: 312672.572841,                             // preTokenBalance
-          sourceBalance: 516380474.293765,
-          sourcePreBalance: 517450851.115681
+        "outputToken": {
+            "mint": "B3Pza9YDAaTrMtxR5JeFFEGKSdJSyNLnj49nSYHDpump",
+            "amount": 1070376.821916,
+            "amountRaw": "1070376821916",
+            "decimals": 6,
+            "authority": "8Wyi1ikEcLsHKA7daP1JmUrAyEc96jLn3tzLnuMwN5nH",
+            "source": "E7v5iScw1vUupebaDd7grmjVrSgsgdhVpm4w2bbDxbPn",
+            "destination": "3QvZvTSWt4gS1Vyiz1zR3afJjETzaev9JKJ3J356Sk1b",
+            "destinationOwner": "5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB",
+            "destinationBalance": {
+                "amount": "1383049394757",
+                "decimals": 6,
+                "uiAmount": 1383049.394757,
+                "uiAmountString": "1383049.394757"
+            },
+            "destinationPreBalance": {
+                "amount": "312672572841",
+                "decimals": 6,
+                "uiAmount": 312672.572841,
+                "uiAmountString": "312672.572841"
+            },
+            "sourceBalance": {
+                "amount": "516380474293765",
+                "decimals": 6,
+                "uiAmount": 516380474.293765,
+                "uiAmountString": "516380474.293765"
+            },
+            "sourcePreBalance": {
+                "amount": "517450851115681",
+                "decimals": 6,
+                "uiAmount": 517450851.115681,
+                "uiAmountString": "517450851.115681"
+            }
         },
-        user: '5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB',
-        programId: '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P',
-        amm: 'Pumpfun',
-        route: 'OKX',
-        slot: 324037348,
-        timestamp: 1740898227,
-        signature: '648cwSysqKXnb3XLPy577Lu4oBk7jimaY8p95JGfS9QUNabYar5pzfcRdu518TWw3dbopquJnMne9qx22xuf8xqn',
-        idx: '7-5'
-      }
-    ]
+        "user": "5o5VW6zPTwTk2j9fkQJ7ueHL4rcEtzDhcGafsxE71AyB",
+        "programId": "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P",
+        "amm": "Pumpfun",
+        "route": "OKX",
+        "slot": 324037348,
+        "timestamp": 1740898227,
+        "signature": "648cwSysqKXnb3XLPy577Lu4oBk7jimaY8p95JGfS9QUNabYar5pzfcRdu518TWw3dbopquJnMne9qx22xuf8xqn",
+        "idx": "7-5"
+    }
+]
 ```
 
 ### Block Transaction Parsing

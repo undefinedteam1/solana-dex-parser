@@ -92,7 +92,7 @@ export class DexParser {
    */
   private parseWithClassifier(
     tx: SolanaTransaction,
-    config: ParseConfig = { tryUnknowDEX: false },
+    config: ParseConfig = { tryUnknowDEX: true },
     parseType: 'trades' | 'liquidity' | 'transfer' | 'all'
   ): ParseResult {
     const result: ParseResult = {

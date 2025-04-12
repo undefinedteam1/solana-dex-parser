@@ -23,7 +23,7 @@ describe('Dex Parser', () => {
   describe('Parse Trades', () => {
     const parser = new DexParser();
 
-    ["4MSVpVBwxnYTQSF3bSrAB99a3pVr6P6bgoCRDsrBbDMA77WeQqoBDDDXqEh8WpnUy5U4GeotdCG9xyExjNTjYE1u",
+    ["648cwSysqKXnb3XLPy577Lu4oBk7jimaY8p95JGfS9QUNabYar5pzfcRdu518TWw3dbopquJnMne9qx22xuf8xqn",
     ]
       .forEach((signature) => {
         it(`${signature} `, async () => {
@@ -40,7 +40,7 @@ describe('Dex Parser', () => {
           console.log('trades', trades);
           console.log('liquidity', liquidities);
           console.log('transfer', transfers);
-        
+
           expect(trades.length + liquidities.length + transfers.length).toBeGreaterThanOrEqual(1);
         });
       });

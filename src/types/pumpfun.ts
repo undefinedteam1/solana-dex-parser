@@ -1,12 +1,12 @@
 export interface PumpfunTradeEvent {
   mint: string;
-  solAmount: number | string;
-  tokenAmount: number | string;
+  solAmount: bigint;
+  tokenAmount: bigint;
   isBuy: boolean;
   user: string;
   timestamp: bigint;
-  virtualSolReserves: number | string;
-  virtualTokenReserves: number | string;
+  virtualSolReserves: bigint;
+  virtualTokenReserves: bigint;
 }
 
 export interface PumpfunCreateEvent {

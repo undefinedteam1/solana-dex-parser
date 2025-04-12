@@ -2,6 +2,7 @@ import { DEX_PROGRAMS, TOKENS } from '../../constants';
 import { TransactionAdapter } from '../../transaction-adapter';
 import {
   ClassifiedInstruction,
+  convertToUiAmount,
   DexInfo,
   PumpfunEvent,
   PumpfunTradeEvent,
@@ -42,12 +43,14 @@ export class PumpfunParser extends BaseParser {
       type: tradeType,
       inputToken: {
         mint: isBuy ? TOKENS.SOL : event.mint,
-        amount: isBuy ? event.solAmount : event.tokenAmount,
+        amount: isBuy ? convertToUiAmount(event.solAmount) : convertToUiAmount(event.tokenAmount, 6),
+        amountRaw: isBuy ? event.solAmount.toString() : event.tokenAmount.toString(),
         decimals: isBuy ? 9 : 6,
       },
       outputToken: {
         mint: isBuy ? event.mint : TOKENS.SOL,
-        amount: isBuy ? event.tokenAmount : event.solAmount,
+        amount: isBuy ? convertToUiAmount(event.tokenAmount, 6) : convertToUiAmount(event.solAmount),
+        amountRaw: isBuy ? event.tokenAmount.toString() : event.solAmount.toString(),
         decimals: isBuy ? 6 : 9,
       },
       user: event.user,

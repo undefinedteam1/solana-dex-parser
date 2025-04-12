@@ -50,18 +50,14 @@ export class MoonshotParser extends BaseParser {
         type: tradeType,
         inputToken: {
           mint: tradeType === 'BUY' ? collateralMint : moonshotTokenMint,
-          amount:
-            tradeType === 'BUY'
-              ? this.adapter.getFormatAmount(collateralAmount.amount, collateralAmount.uiAmount ?? 0)
-              : this.adapter.getFormatAmount(tokenAmount.amount, tokenAmount.uiAmount ?? 0),
+          amount: tradeType === 'BUY' ? (collateralAmount.uiAmount ?? 0) : (tokenAmount.uiAmount ?? 0),
+          amountRaw: tradeType === 'BUY' ? collateralAmount.amount : tokenAmount.amount,
           decimals: tradeType === 'BUY' ? collateralAmount.decimals : tokenAmount.decimals,
         },
         outputToken: {
           mint: tradeType === 'BUY' ? moonshotTokenMint : collateralMint,
-          amount:
-            tradeType === 'BUY'
-              ? this.adapter.getFormatAmount(tokenAmount.amount, tokenAmount.uiAmount ?? 0)
-              : this.adapter.getFormatAmount(collateralAmount.amount, collateralAmount.uiAmount ?? 0),
+          amount: tradeType === 'BUY' ? (tokenAmount.uiAmount ?? 0) : (collateralAmount.uiAmount ?? 0),
+          amountRaw: tradeType === 'BUY' ? tokenAmount.amount : collateralAmount.amount,
           decimals: tradeType === 'BUY' ? tokenAmount.decimals : collateralAmount.decimals,
         },
         user: this.adapter.signer,

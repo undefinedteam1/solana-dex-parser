@@ -2,6 +2,7 @@ import { DEX_PROGRAMS } from '../../constants';
 import { TransactionAdapter } from '../../transaction-adapter';
 import {
   ClassifiedInstruction,
+  convertToUiAmount,
   DexInfo,
   PumpswapBuyEvent,
   PumpswapEvent,
@@ -43,17 +44,20 @@ export class PumpswapParser extends BaseParser {
       type: 'BUY',
       inputToken: {
         mint: inputMint,
-        amount: this.adapter.getFormatAmount(event.quoteAmountInWithLpFee, undefined, inputDecimal),
+        amount: convertToUiAmount(event.quoteAmountInWithLpFee, inputDecimal),
+        amountRaw: event.quoteAmountInWithLpFee.toString(),
         decimals: inputDecimal,
       },
       outputToken: {
         mint: outputMint,
-        amount: this.adapter.getFormatAmount(event.baseAmountOut, undefined, ouptDecimal),
+        amount: convertToUiAmount(event.baseAmountOut, ouptDecimal),
+        amountRaw: event.baseAmountOut.toString(),
         decimals: ouptDecimal,
       },
       fee: {
         mint: inputMint,
-        amount: this.adapter.getFormatAmount(event.protocolFee, undefined, inputDecimal),
+        amount: convertToUiAmount(event.protocolFee, inputDecimal),
+        amountRaw: event.protocolFee.toString(),
         decimals: inputDecimal,
       },
       user: event.user,
@@ -79,17 +83,20 @@ export class PumpswapParser extends BaseParser {
       type: 'SELL',
       inputToken: {
         mint: inputMint,
-        amount: this.adapter.getFormatAmount(event.baseAmountIn, undefined, inputDecimal),
+        amount: convertToUiAmount(event.baseAmountIn, inputDecimal),
+        amountRaw: event.baseAmountIn.toString(),
         decimals: inputDecimal,
       },
       outputToken: {
         mint: outputMint,
-        amount: this.adapter.getFormatAmount(event.userQuoteAmountOut, undefined, ouptDecimal),
+        amount: convertToUiAmount(event.userQuoteAmountOut, ouptDecimal),
+        amountRaw: event.userQuoteAmountOut.toString(),
         decimals: ouptDecimal,
       },
       fee: {
         mint: outputMint,
-        amount: this.adapter.getFormatAmount(event.protocolFee, undefined, ouptDecimal),
+        amount: convertToUiAmount(event.protocolFee, ouptDecimal),
+        amountRaw: event.protocolFee.toString(),
         decimals: ouptDecimal,
       },
       user: event.user,

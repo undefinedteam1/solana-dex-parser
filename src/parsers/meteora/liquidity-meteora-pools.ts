@@ -1,5 +1,5 @@
 import { DISCRIMINATORS } from '../../constants';
-import { PoolEvent, PoolEventType, TransferData } from '../../types';
+import { convertToUiAmount, PoolEvent, PoolEventType, TransferData } from '../../types';
 import { MeteoraLiquidityParserBase } from './parser-meteora-liquidity-base';
 
 export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
@@ -35,22 +35,14 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
       poolLpMint: accounts[2],
       token0Mint,
       token1Mint,
-      token0Amount: this.adapter.getFormatAmount(
-        token0?.info.tokenAmount.amount || data.readBigUInt64LE(16),
-        token0?.info.tokenAmount.uiAmount,
-        token0Decimals
-      ),
-      token1Amount: this.adapter.getFormatAmount(
-        token1?.info.tokenAmount.amount || data.readBigUInt64LE(8),
-        token1?.info.tokenAmount.uiAmount,
-        token1Decimals
-      ),
+      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(16), token0Decimals),
+      token0AmountRaw: token0?.info.tokenAmount.amount || data.readBigUInt64LE(16).toString(),
+      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(8), token1Decimals),
+      token1AmountRaw: token1?.info.tokenAmount.amount || data.readBigUInt64LE(8).toString(),
       token0Decimals,
       token1Decimals,
-      lpAmount: this.adapter.getFormatAmount(
-        lpToken?.info.tokenAmount.amount || 0n,
-        lpToken?.info.tokenAmount.uiAmount || 0
-      ),
+      lpAmount: lpToken?.info.tokenAmount.uiAmount || 0,
+      lpAmountRaw: lpToken?.info.tokenAmount.amount,
     };
   }
 
@@ -78,23 +70,16 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
       poolLpMint: accounts[1],
       token0Mint,
       token1Mint,
-      token0Amount: this.adapter.getFormatAmount(
-        token0?.info.tokenAmount.amount || data.readBigUInt64LE(24),
-        token0?.info.tokenAmount.uiAmount,
-        token0Decimals
-      ),
-      token1Amount: this.adapter.getFormatAmount(
-        token1?.info.tokenAmount.amount || data.readBigUInt64LE(16),
-        token1?.info.tokenAmount.uiAmount,
-        token1Decimals
-      ),
+      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(24), token0Decimals),
+      token0AmountRaw: token0?.info.tokenAmount.amount || data.readBigUInt64LE(24).toString(),
+      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(16), token1Decimals),
+      token1AmountRaw: token1?.info.tokenAmount.amount || data.readBigUInt64LE(16).toString(),
       token0Decimals,
       token1Decimals,
-      lpAmount: this.adapter.getFormatAmount(
-        lpToken?.info.tokenAmount.amount || data.readBigUInt64LE(8),
-        lpToken?.info.tokenAmount.uiAmount,
-        this.adapter.getTokenDecimals(accounts[1])
-      ),
+      lpAmount:
+        lpToken?.info.tokenAmount.uiAmount ||
+        convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
+      lpAmountRaw: lpToken?.info.tokenAmount.amount || data.readBigUInt64LE(8).toString(),
     };
   }
 
@@ -122,23 +107,16 @@ export class MeteoraPoolsParser extends MeteoraLiquidityParserBase {
       poolLpMint: accounts[1],
       token0Mint,
       token1Mint,
-      token0Amount: this.adapter.getFormatAmount(
-        token0?.info.tokenAmount.amount || data.readBigUInt64LE(24),
-        token0?.info.tokenAmount.uiAmount,
-        token0Decimals
-      ),
-      token1Amount: this.adapter.getFormatAmount(
-        token1?.info.tokenAmount.amount || data.readBigUInt64LE(16),
-        token1?.info.tokenAmount.uiAmount,
-        token1Decimals
-      ),
+      token0Amount: token0?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(24), token0Decimals),
+      token0AmountRaw: token0?.info.tokenAmount.amount || data.readBigUInt64LE(24).toString(),
+      token1Amount: token1?.info.tokenAmount.uiAmount || convertToUiAmount(data.readBigUInt64LE(16), token1Decimals),
+      token1AmountRaw: token1?.info.tokenAmount.amount || data.readBigUInt64LE(16).toString(),
       token0Decimals,
       token1Decimals,
-      lpAmount: this.adapter.getFormatAmount(
-        lpToken?.info.tokenAmount.amount || data.readBigUInt64LE(8),
-        lpToken?.info.tokenAmount.uiAmount,
-        this.adapter.getTokenDecimals(accounts[1])
-      ),
+      lpAmount:
+        lpToken?.info.tokenAmount.uiAmount ||
+        convertToUiAmount(data.readBigUInt64LE(8), this.adapter.getTokenDecimals(accounts[1])),
+      lpAmountRaw: lpToken?.info.tokenAmount.amount || data.readBigUInt64LE(8).toString(),
     };
   }
 }

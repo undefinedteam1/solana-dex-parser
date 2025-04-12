@@ -228,7 +228,8 @@ export class TransactionUtils {
 
     const tokenInfo: TokenInfo = {
       mint: info.mint || '',
-      amount: this.adapter.getFormatAmount(info.tokenAmount.amount, info.tokenAmount.uiAmount),
+      amount: info.tokenAmount.uiAmount,
+      amountRaw: info.tokenAmount.amount,
       decimals: info.tokenAmount.decimals,
     };
 
@@ -331,11 +332,13 @@ export class TransactionUtils {
     return {
       inputToken: {
         ...inputToken,
-        amount: this.adapter.config?.rawAmount ? amounts.inputAmount.toString() : amounts.inputAmount,
+        amount: amounts.inputAmount,
+        amountRaw: amounts.inputAmountRaw.toString(),
       } as TokenInfo,
       outputToken: {
         ...outputToken,
-        amount: this.adapter.config?.rawAmount ? amounts.outputAmount.toString() : amounts.outputAmount,
+        amount: amounts.outputAmount,
+        amountRaw: amounts.outputAmountRaw.toString(),
       },
     };
   }
@@ -345,8 +348,10 @@ export class TransactionUtils {
    */
   private sumTokenAmounts(transfers: TransferData[], inputMint: string, outputMint: string) {
     const seenTransfers = new Set<string>();
-    let inputAmount: bigint | number = 0;
-    let outputAmount: bigint | number = 0;
+    let inputAmount: number = 0;
+    let outputAmount: number = 0;
+    let inputAmountRaw: bigint = 0n;
+    let outputAmountRaw: bigint = 0n;
 
     transfers.forEach((transfer) => {
       const tokenInfo = this.getTransferTokenInfo(transfer);
@@ -357,22 +362,16 @@ export class TransactionUtils {
       seenTransfers.add(key);
 
       if (tokenInfo.mint === inputMint) {
-        if (this.adapter.config?.rawAmount) {
-          inputAmount = BigInt(inputAmount) + BigInt(tokenInfo.amount);
-        } else {
-          inputAmount = Number(inputAmount) + Number(tokenInfo.amount);
-        }
+        inputAmount += tokenInfo.amount;
+        inputAmountRaw += BigInt(tokenInfo.amountRaw);
       }
       if (tokenInfo.mint === outputMint) {
-        if (this.adapter.config?.rawAmount) {
-          outputAmount = BigInt(outputAmount) + BigInt(tokenInfo.amount);
-        } else {
-          outputAmount = Number(outputAmount) + Number(tokenInfo.amount);
-        }
+        outputAmount += tokenInfo.amount;
+        outputAmountRaw += BigInt(tokenInfo.amountRaw);
       }
     });
 
-    return { inputAmount, outputAmount };
+    return { inputAmount, inputAmountRaw, outputAmount, outputAmountRaw };
   }
 
   /**
@@ -382,11 +381,8 @@ export class TransactionUtils {
     return transfer?.info
       ? {
           mint: transfer.info.mint,
-          amount: this.adapter.getFormatAmount(
-            transfer.info.tokenAmount.amount,
-            transfer.info.tokenAmount.uiAmount,
-            transfer.info.tokenAmount.decimals
-          ),
+          amount: transfer.info.tokenAmount.uiAmount,
+          amountRaw: transfer.info.tokenAmount.amount,
           decimals: transfer.info.tokenAmount.decimals,
           authority: transfer.info.authority,
           destination: transfer.info.destination,
@@ -429,20 +425,12 @@ export class TransactionUtils {
   attachTokenTransferInfo = (trade: TradeInfo, transferActions: Record<string, TransferData[]>): TradeInfo => {
     const inputTransfer = Object.values(transferActions)
       .flat()
-      .find(
-        (it) =>
-          it.info.mint == trade.inputToken.mint &&
-          this.adapter.getFormatAmount(it.info.tokenAmount?.amount, it.info.tokenAmount?.uiAmount) ==
-            trade.inputToken.amount
-      );
+      .find((it) => it.info.mint == trade.inputToken.mint && it.info.tokenAmount?.uiAmount == trade.inputToken.amount);
 
     const outputTransfer = Object.values(transferActions)
       .flat()
       .find(
-        (it) =>
-          it.info.mint == trade.outputToken.mint &&
-          this.adapter.getFormatAmount(it.info.tokenAmount?.amount, it.info.tokenAmount?.uiAmount) ==
-            trade.outputToken.amount
+        (it) => it.info.mint == trade.outputToken.mint && it.info.tokenAmount?.uiAmount == trade.outputToken.amount
       );
 
     if (inputTransfer) {

@@ -71,13 +71,13 @@ export class PumpfunEventParser {
 
     return {
       mint: base58.encode(Buffer.from(reader.readFixedArray(32))),
-      solAmount: this.adapter.getFormatAmount(reader.readU64()),
-      tokenAmount: this.adapter.getFormatAmount(reader.readU64(), undefined, 6),
+      solAmount: reader.readU64(),
+      tokenAmount: reader.readU64(),
       isBuy: reader.readU8() === 1,
       user: base58.encode(reader.readFixedArray(32)),
       timestamp: reader.readI64(),
-      virtualSolReserves: this.adapter.getFormatAmount(reader.readU64()),
-      virtualTokenReserves: this.adapter.getFormatAmount(reader.readU64(), undefined, 6),
+      virtualSolReserves: reader.readU64(),
+      virtualTokenReserves: reader.readU64(),
     };
   }
 

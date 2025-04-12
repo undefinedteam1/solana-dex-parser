@@ -26,26 +26,11 @@ describe('Dex Parser', () => {
       expect(item.user).toEqual(test.user);
       expect(item.inputToken.mint).toEqual(test.inputToken.mint);
       expect(item.inputToken.amount).toEqual(test.inputToken.amount);
+      expect(item.inputToken.amountRaw / Math.pow(10, item.inputToken.decimals)).toEqual(test.inputToken.amount);
       expect(item.inputToken.decimals).toEqual(test.inputToken.decimals);
       expect(item.outputToken.mint).toEqual(test.outputToken.mint);
       expect(item.outputToken.amount).toEqual(test.outputToken.amount);
-      expect(item.outputToken.decimals).toEqual(test.outputToken.decimals);
-      expect(item.amm).toEqual(test.amm);
-      expect(item.route).toEqual(test.route);
-      expect(item.programId).toEqual(test.programId);
-      expect(item.slot).toEqual(test.slot);
-      expect(item.timestamp).toEqual(test.timestamp);
-      expect(item.signature).toEqual(test.signature);
-    }
-
-    const expectItemRawAmount = (item: any, test: any) => {
-      expect(item.type).toEqual(test.type);
-      expect(item.user).toEqual(test.user);
-      expect(item.inputToken.mint).toEqual(test.inputToken.mint);
-      expect(item.inputToken.amount).toEqual((test.inputToken.amount * 10 ** item.inputToken.decimals).toString());
-      expect(item.inputToken.decimals).toEqual(test.inputToken.decimals);
-      expect(item.outputToken.mint).toEqual(test.outputToken.mint);
-      expect(item.outputToken.amount).toEqual((test.outputToken.amount * 10 ** item.outputToken.decimals).toString());
+      expect(item.outputToken.amountRaw / Math.pow(10, item.outputToken.decimals)).toEqual(test.outputToken.amount);
       expect(item.outputToken.decimals).toEqual(test.outputToken.decimals);
       expect(item.amm).toEqual(test.amm);
       expect(item.route).toEqual(test.route);
@@ -70,8 +55,7 @@ describe('Dex Parser', () => {
           fetchTime += s2 - s1;
           const s3 = Date.now();
 
-          const rawAmount = true;
-          const trades = parser.parseTrades(tx, { rawAmount: rawAmount });
+          const trades = parser.parseTrades(tx);
 
           const s4 = Date.now();
           processTime += s4 - s3;
@@ -79,19 +63,10 @@ describe('Dex Parser', () => {
           // console.log('processTime', processTime);
           // console.log('trades', trades);
           expect(trades.length).toBeGreaterThanOrEqual(1);
-          if (rawAmount) {
-            expectItemRawAmount(trades[0], test);
-            if (test.items) {
-              expect(trades.length).toBeGreaterThan(1);
-              expectItemRawAmount(trades[1], test.items[0]);
-            }
-          }
-          else {
-            expectItem(trades[0], test);
-            if (test.items) {
-              expect(trades.length).toBeGreaterThan(1);
-              expectItem(trades[1], test.items[0]);
-            }
+          expectItem(trades[0], test);
+          if (test.items) {
+            expect(trades.length).toBeGreaterThan(1);
+            expectItem(trades[1], test.items[0]);
           }
 
         });

@@ -5,9 +5,9 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 ## 🚀 What's New
 
 ### 2.2.5
-- Added `rawAmount` configuration option
-  - When `rawAmount: true`, amounts will be returned as raw values (string for large numbers)
-  - When `rawAmount: false` (default), amounts will be converted to UI amounts
+- Added `amountRaw` field (raw amount as string)
+- Added token0AmountRaw and token1AmountRaw fields (raw amount as string)
+- Added post and pre balances of the destination and source token accounts (TokenInfo and TransferData)
 
 ### 2.1.9
 - Added destinationOwner field (TransferData, TokenInfo)

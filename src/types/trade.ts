@@ -30,14 +30,6 @@ export interface ParseConfig {
    * @default undefined
    */
   ignoreProgramIds?: string[];
-
-  /**
-   * If true, will return raw amount instead of uiAmount
-   * @note uiAmount is calculated by dividing the amount by 10^decimals
-   * @note rawAmount is the original amount in bigint format
-   * @default false
-   */
-  rawAmount?: boolean;
 }
 
 /**
@@ -54,16 +46,17 @@ export interface DexInfo {
  */
 export interface TokenInfo {
   mint: string; // Token mint address
-  amount: number | string; // Token amount (UI or raw based on config)
+  amount: number; // Token uiAmount
+  amountRaw: string; // Raw token amount
   decimals: number; // Token decimals
   authority?: string; // Token authority (if applicable)
   destination?: string; // Destination token account
   destinationOwner?: string; // Owner of destination account
-  destinationBalance?: number | string; // Balance after transfer
-  destinationPreBalance?: number | string; // Balance before transfer
+  destinationBalance?: TokenAmount; // Balance after transfer
+  destinationPreBalance?: TokenAmount; // Balance before transfer
   source?: string; // Source token account
-  sourceBalance?: number | string; // Source balance after transfer
-  sourcePreBalance?: number | string; // Source balance before transfer
+  sourceBalance?: TokenAmount; // Source balance after transfer
+  sourcePreBalance?: TokenAmount; // Source balance before transfer
 }
 
 /**
@@ -71,7 +64,7 @@ export interface TokenInfo {
  */
 export interface TokenAmount {
   amount: string; // Raw token amount
-  uiAmount: number; // Human-readable amount
+  uiAmount: number | null; // Human-readable amount
   decimals: number; // Token decimals
 }
 
@@ -104,10 +97,10 @@ export interface TransferData {
       decimals: number; // Token decimals
       uiAmount: number; // Human-readable amount
     };
-    sourceBalance?: number | string; // Source balance after transfer
-    sourcePreBalance?: number | string; // Source balance before transfer
-    destinationBalance?: number | string; // Destination balance after transfer
-    destinationPreBalance?: number | string; // Destination balance before transfer
+    sourceBalance?: TokenAmount; // Source balance after transfer
+    sourcePreBalance?: TokenAmount; // Source balance before transfer
+    destinationBalance?: TokenAmount; // Balance after transfer
+    destinationPreBalance?: TokenAmount; // Balance before transfer
   };
   idx: string; // Instruction index
   timestamp: number; // Unix timestamp

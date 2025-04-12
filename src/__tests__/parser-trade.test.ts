@@ -23,7 +23,7 @@ describe('Dex Parser', () => {
   describe('Parse Trades', () => {
     const parser = new DexParser();
 
-    ["648cwSysqKXnb3XLPy577Lu4oBk7jimaY8p95JGfS9QUNabYar5pzfcRdu518TWw3dbopquJnMne9qx22xuf8xqn",
+    ["4MSVpVBwxnYTQSF3bSrAB99a3pVr6P6bgoCRDsrBbDMA77WeQqoBDDDXqEh8WpnUy5U4GeotdCG9xyExjNTjYE1u",
     ]
       .forEach((signature) => {
         it(`${signature} `, async () => {
@@ -35,12 +35,12 @@ describe('Dex Parser', () => {
           const { trades, liquidities, transfers } = parser.parseAll(tx,
             {
               tryUnknowDEX: false,
-              // programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id],
-              rawAmount: false,
+              // programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id]
             });
           console.log('trades', trades);
           console.log('liquidity', liquidities);
           console.log('transfer', transfers);
+        
           expect(trades.length + liquidities.length + transfers.length).toBeGreaterThanOrEqual(1);
         });
       });

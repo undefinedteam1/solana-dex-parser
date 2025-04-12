@@ -28,9 +28,18 @@ export interface PoolEvent extends PoolEventBase {
   token0Mint?: string;
 
   /**
+   * Token A uiAmount (TOKEN)
+   */
+  token0Amount?: number;
+
+  /**
    * Token A amount (TOKEN)
    */
-  token0Amount?: number | string;
+  token0AmountRaw?: string;
+
+  /**
+   * Token A amount (TOKEN)
+   */
 
   token0Decimals?: number;
 
@@ -40,14 +49,21 @@ export interface PoolEvent extends PoolEventBase {
   token1Mint?: string;
 
   /**
+   * Token B uiAmount (SOL/USDC/USDT)
+   */
+  token1Amount?: number;
+
+  /**
    * Token B amount (SOL/USDC/USDT)
    */
-  token1Amount?: number | string;
+  token1AmountRaw?: string;
 
   token1Decimals?: number;
 
   /**
    * Lp amount
    */
-  lpAmount?: number | string;
+  lpAmount?: number;
+
+  lpAmountRaw?: string;
 }

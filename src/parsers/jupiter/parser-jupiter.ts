@@ -1,6 +1,6 @@
 import { deserializeUnchecked } from 'borsh';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
-import { JupiterSwapEventData, JupiterSwapInfo, TradeInfo } from '../../types';
+import { convertToUiAmount, JupiterSwapEventData, JupiterSwapInfo, TradeInfo } from '../../types';
 import { getInstructionData, getProgramName, getTradeType } from '../../utils';
 import { BaseParser } from '../base-parser';
 import { JupiterLayout } from './layout';
@@ -110,12 +110,14 @@ export class JupiterParser extends BaseParser {
       type: getTradeType(inMint, outMint),
       inputToken: {
         mint: inMint,
-        amount: this.adapter.getFormatAmount(inAmount, undefined, inDecimals),
+        amount: convertToUiAmount(inAmount, inDecimals),
+        amountRaw: inAmount.toString(),
         decimals: inDecimals,
       },
       outputToken: {
         mint: outMint,
-        amount: this.adapter.getFormatAmount(outAmount, undefined, outDecimals),
+        amount: convertToUiAmount(outAmount, outDecimals),
+        amountRaw: outAmount.toString(),
         decimals: outDecimals,
       },
       user: signer,

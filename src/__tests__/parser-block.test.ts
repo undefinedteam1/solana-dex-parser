@@ -1,6 +1,7 @@
 import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
 import { DexParser } from '../dex-parser';
+import * as fs from 'fs';
 
 dotenv.config();
 
@@ -12,9 +13,9 @@ describe('Parser', () => {
     if (!rpcUrl) {
       throw new Error('SOLANA_RPC_URL environment variable is not set');
     }
-    connection = new Connection(rpcUrl, { 
+    connection = new Connection(rpcUrl, {
       commitment: 'confirmed',
-     });
+    });
   });
 
   describe('Dex', () => {
@@ -24,7 +25,7 @@ describe('Parser', () => {
         const parser = new DexParser();
 
         const s1 = Date.now();
-        const block = await connection.getBlock(330422976, {
+        const block = await connection.getBlock(333062219, {
           commitment: 'confirmed',
           maxSupportedTransactionVersion: 0,
           transactionDetails: 'full',
@@ -39,8 +40,8 @@ describe('Parser', () => {
           if (tx.meta?.err) {
             return;
           }
-          const {trades,liquidities} = parser.parseAll({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any, { tryUnknowDEX: false});
-         
+          const { trades, liquidities } = parser.parseAll({ ...tx!, slot: (block.parentSlot + 1), blockTime: block.blockTime } as any, { tryUnknowDEX: false });
+
           ts.push(...trades);
           liqs.push(...liquidities);
         })
@@ -49,6 +50,17 @@ describe('Parser', () => {
         console.log(`Fetch block: ${(s2 - s1) / 1000} s > Parser: ${(s3 - s2) / 1000} s > Hits: ${ts.length + liqs.length} / ${block.transactions.length}`);
 
       });
+
+      // it("json-block", async () => {
+      //   const parser = new DexParser();
+      //   const data = fs.readFileSync("./src/__tests__/tx-322594854.json", { encoding: "utf8" });
+      //   const tx = JSON.parse(data);
+
+      //   const { trades, liquidities } = parser.parseAll(tx, { tryUnknowDEX: false });
+
+      //   console.log('trades', trades);
+      //   console.log('liquidities', liquidities);
+      // });
     });
   });
 });

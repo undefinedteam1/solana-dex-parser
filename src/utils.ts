@@ -1,6 +1,7 @@
 import base58 from 'bs58';
 import { DEX_PROGRAMS, TOKENS } from './constants';
-import { TradeType } from './types';
+import { DexInfo, TradeInfo, TradeType } from './types';
+import { PublicKey } from '@solana/web3.js';
 
 /**
  * Get instruction data
@@ -29,10 +30,6 @@ export const getProgramName = (programId: string): string =>
 export const hexToUint8Array = (hex: string): Uint8Array =>
   new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)));
 
-// export const notSystemProgram = (instruction: any): boolean => {
-//   return !SYSTEM_PROGRAMS.includes(instruction.programId.toBase58());
-// };
-
 export const absBigInt = (value: bigint): bigint => {
   return value < 0n ? -value : value;
 };
@@ -60,4 +57,33 @@ export const getTranferTokenMint = (token1?: string, token2?: string): string | 
   if (token1 && token1 != TOKENS.SOL) return token1;
   if (token2 && token2 != TOKENS.SOL) return token2;
   return token1 || token2;
+};
+
+export const getPubkeyString = (value: any): string => {
+  if (typeof value === 'string') return value;
+  if (value instanceof PublicKey) return value.toBase58();
+  return value;
+};
+
+export const getFinalSwap = (trades: TradeInfo[], dexInfo?: DexInfo): TradeInfo | null => {
+  if (trades.length == 1) return trades[0];
+  if (trades.length >= 2) {
+    const inputTrade = trades[0];
+    const outputTrade = trades[trades.length - 1];
+
+    return {
+      type: getTradeType(inputTrade.inputToken.mint, outputTrade.outputToken.mint),
+      inputToken: inputTrade.inputToken,
+      outputToken: outputTrade.outputToken,
+      user: inputTrade.user,
+      programId: inputTrade.programId,
+      amm: dexInfo?.amm || inputTrade.amm,
+      route: dexInfo?.route || inputTrade.route || '',
+      slot: inputTrade.slot,
+      timestamp: inputTrade.timestamp,
+      signature: inputTrade.signature,
+      idx: inputTrade.idx,
+    } as TradeInfo;
+  }
+  return null;
 };

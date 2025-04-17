@@ -105,6 +105,7 @@ export interface TransferData {
   idx: string; // Instruction index
   timestamp: number; // Unix timestamp
   signature: string; // Transaction signature
+  isFee?: boolean; // Whether it's a fee transfer
 }
 
 /**

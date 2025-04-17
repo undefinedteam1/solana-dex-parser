@@ -2,7 +2,7 @@ import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { MessageV0, PublicKey, TokenAmount } from '@solana/web3.js';
 import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
 import { convertToUiAmount, ParseConfig, PoolEventType, SolanaTransaction, TokenInfo } from './types';
-import { getInstructionData, getProgramName } from './utils';
+import { getInstructionData, getProgramName, getPubkeyString } from './utils';
 
 /**
  * Adapter for unified transaction data access
@@ -103,9 +103,9 @@ export class TransactionAdapter {
 
   extractAccountKeys() {
     if (this.isMessageV0) {
-      const keys = this.txMessage.staticAccountKeys.map((it: any) => it.toBase58()) || [];
-      const key2 = this.tx.meta?.loadedAddresses?.writable.map((it) => it.toBase58()) || [];
-      const key3 = this.tx.meta?.loadedAddresses?.readonly.map((it) => it.toBase58()) || [];
+      const keys = this.txMessage.staticAccountKeys.map((it: any) => getPubkeyString(it)) || [];
+      const key2 = this.tx.meta?.loadedAddresses?.writable.map((it) => getPubkeyString(it)) || [];
+      const key3 = this.tx.meta?.loadedAddresses?.readonly.map((it) => getPubkeyString(it)) || [];
       return [...keys, ...key2, ...key3];
     } else if (this.version == 0) {
       const keys = this.getAccountKeys(this.txMessage.accountKeys) || [];
@@ -123,7 +123,7 @@ export class TransactionAdapter {
   getInstruction(instruction: any) {
     const isParsed = !this.isCompiledInstruction(instruction);
     return {
-      programId: isParsed ? instruction.programId.toBase58() : this.accountKeys[instruction.programIdIndex],
+      programId: isParsed ? getPubkeyString(instruction.programId) : this.accountKeys[instruction.programIdIndex],
       accounts: this.getInstructionAccounts(instruction),
       data: 'data' in instruction ? instruction.data : '',
       parsed: 'parsed' in instruction ? instruction.parsed : undefined,
@@ -140,7 +140,7 @@ export class TransactionAdapter {
       if (it instanceof PublicKey) return it.toBase58();
       if (typeof it == 'string') return it;
       if (typeof it == 'number') return this.accountKeys[it];
-      if ('pubkey' in it) return it.pubkey.toBase58();
+      if ('pubkey' in it) return getPubkeyString(it.pubkey);
       return it;
     });
   }
@@ -360,6 +360,38 @@ export class TransactionAdapter {
     });
   }
 
+  private setTokenInfo(source?: string, destination?: string, mint?: string, decimals?: number) {
+    if (source) {
+      if (this.splTokenMap.has(source) && mint && decimals) {
+        this.splTokenMap.set(source, { mint, amount: 0, amountRaw: '0', decimals });
+      } else if (!this.splTokenMap.has(source)) {
+        this.splTokenMap.set(source, {
+          mint: mint || TOKENS.SOL,
+          amount: 0,
+          amountRaw: '0',
+          decimals: decimals || 9,
+        });
+      }
+    }
+
+    if (destination) {
+      if (this.splTokenMap.has(destination) && mint && decimals) {
+        this.splTokenMap.set(destination, { mint, amount: 0, amountRaw: '0', decimals });
+      } else if (!this.splTokenMap.has(destination)) {
+        this.splTokenMap.set(destination, {
+          mint: mint || TOKENS.SOL,
+          amount: 0,
+          amountRaw: '0',
+          decimals: decimals || 9,
+        });
+      }
+    }
+
+    if (mint && decimals && !this.splDecimalsMap.has(mint)) {
+      this.splDecimalsMap.set(mint, decimals);
+    }
+  }
+
   /**
    * Extract token info from parsed transfer instruction
    */
@@ -367,14 +399,10 @@ export class TransactionAdapter {
     if (!ix.parsed || !ix.program) return;
     if (ix.programId != TOKEN_PROGRAM_ID.toBase58() && ix.programId != TOKEN_2022_PROGRAM_ID.toBase58()) return;
 
-    const { source, destination } = ix.parsed?.info || {};
+    const { source, destination, mint, decimals } = ix.parsed?.info || {};
     if (!source && !destination) return;
-    if (source && !this.splTokenMap.has(source)) {
-      this.splTokenMap.set(source, this.defaultSolInfo);
-    }
-    if (destination && !this.splTokenMap.has(destination)) {
-      this.splTokenMap.set(destination, this.defaultSolInfo);
-    }
+
+    this.setTokenInfo(source, destination, mint, decimals);
   }
 
   /**
@@ -431,17 +459,6 @@ export class TransactionAdapter {
         [source, destination] = [this.accountKeys[accounts[0]], this.accountKeys[accounts[1]]]; // account, destination, authority
         break;
     }
-
-    if (source && !this.splTokenMap.has(source)) {
-      this.splTokenMap.set(source, this.defaultSolInfo);
-    }
-
-    if (destination && !this.splTokenMap.has(destination)) {
-      this.splTokenMap.set(destination, this.defaultSolInfo);
-    }
-
-    if (mint && decimals && !this.splDecimalsMap.has(mint)) {
-      this.splDecimalsMap.set(mint, decimals);
-    }
+    this.setTokenInfo(source, destination, mint, decimals);
   }
 }

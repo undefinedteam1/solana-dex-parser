@@ -1,6 +1,6 @@
 {
   "name": "solana-dex-parser",
-  "version": "2.2.7",
+  "version": "2.2.9",
   "description": "Solana Dex Transaction Parser",
   "author": "cxcx",
   "license": "MIT",
@@ -29,7 +29,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist/**/*"
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.js.map",
+    "!dist/**/*.test.*",
+    "!dist/**/__tests__/**"
   ],
   "scripts": {
     "build": "tsc",

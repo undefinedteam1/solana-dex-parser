@@ -1,8 +1,6 @@
-import { DEX_PROGRAMS } from '../../constants';
 import { TransactionAdapter } from '../../transaction-adapter';
 import {
   ClassifiedInstruction,
-  convertToUiAmount,
   DexInfo,
   PumpswapBuyEvent,
   PumpswapEvent,
@@ -12,6 +10,7 @@ import {
 } from '../../types';
 import { BaseParser } from '../base-parser';
 import { PumpswapEventParser } from './parser-pumpswap-event';
+import { getPumpswapBuyInfo, getPumpswapSellInfo } from './util';
 
 export class PumpswapParser extends BaseParser {
   private eventParser: PumpswapEventParser;
@@ -40,35 +39,19 @@ export class PumpswapParser extends BaseParser {
     const inputDecimal = this.adapter.getTokenDecimals(inputMint);
     const outputMint = this.adapter.splTokenMap.get(event.userBaseTokenAccount)!.mint;
     const ouptDecimal = this.adapter.getTokenDecimals(outputMint);
-    const trade: TradeInfo = {
-      type: 'BUY',
-      inputToken: {
-        mint: inputMint,
-        amount: convertToUiAmount(event.quoteAmountInWithLpFee, inputDecimal),
-        amountRaw: event.quoteAmountInWithLpFee.toString(),
-        decimals: inputDecimal,
-      },
-      outputToken: {
-        mint: outputMint,
-        amount: convertToUiAmount(event.baseAmountOut, ouptDecimal),
-        amountRaw: event.baseAmountOut.toString(),
-        decimals: ouptDecimal,
-      },
-      fee: {
-        mint: inputMint,
-        amount: convertToUiAmount(event.protocolFee, inputDecimal),
-        amountRaw: event.protocolFee.toString(),
-        decimals: inputDecimal,
-      },
-      user: event.user,
-      programId: this.dexInfo.programId || DEX_PROGRAMS.PUMP_SWAP.id,
-      amm: DEX_PROGRAMS.PUMP_SWAP.name,
-      route: this.dexInfo.route || '',
-      slot: data.slot,
-      timestamp: data.timestamp,
-      signature: data.signature,
-      idx: data.idx,
-    };
+
+    const trade = getPumpswapBuyInfo(
+      event,
+      { mint: inputMint, decimals: inputDecimal },
+      { mint: outputMint, decimals: ouptDecimal },
+      {
+        slot: data.slot,
+        signature: data.signature,
+        timestamp: data.timestamp,
+        idx: data.idx,
+        dexInfo: this.dexInfo,
+      }
+    );
 
     return this.utils.attachTokenTransferInfo(trade, this.transferActions);
   }
@@ -79,35 +62,19 @@ export class PumpswapParser extends BaseParser {
     const inputDecimal = this.adapter.getTokenDecimals(inputMint);
     const outputMint = this.adapter.splTokenMap.get(event.userQuoteTokenAccount)!.mint;
     const ouptDecimal = this.adapter.getTokenDecimals(outputMint);
-    const trade: TradeInfo = {
-      type: 'SELL',
-      inputToken: {
-        mint: inputMint,
-        amount: convertToUiAmount(event.baseAmountIn, inputDecimal),
-        amountRaw: event.baseAmountIn.toString(),
-        decimals: inputDecimal,
-      },
-      outputToken: {
-        mint: outputMint,
-        amount: convertToUiAmount(event.userQuoteAmountOut, ouptDecimal),
-        amountRaw: event.userQuoteAmountOut.toString(),
-        decimals: ouptDecimal,
-      },
-      fee: {
-        mint: outputMint,
-        amount: convertToUiAmount(event.protocolFee, ouptDecimal),
-        amountRaw: event.protocolFee.toString(),
-        decimals: ouptDecimal,
-      },
-      user: event.user,
-      programId: this.dexInfo.programId || DEX_PROGRAMS.PUMP_SWAP.id,
-      amm: DEX_PROGRAMS.PUMP_SWAP.name,
-      route: this.dexInfo.route || '',
-      slot: data.slot,
-      timestamp: data.timestamp,
-      signature: data.signature,
-      idx: data.idx,
-    };
+
+    const trade = getPumpswapSellInfo(
+      event,
+      { mint: inputMint, decimals: inputDecimal },
+      { mint: outputMint, decimals: ouptDecimal },
+      {
+        slot: data.slot,
+        signature: data.signature,
+        timestamp: data.timestamp,
+        idx: data.idx,
+        dexInfo: this.dexInfo,
+      }
+    );
 
     return this.utils.attachTokenTransferInfo(trade, this.transferActions);
   }

@@ -1,6 +1,5 @@
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { MessageV0, PublicKey, TokenAmount } from '@solana/web3.js';
-import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
+import { SPL_TOKEN_INSTRUCTION_TYPES, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKENS } from './constants';
 import { convertToUiAmount, ParseConfig, PoolEventType, SolanaTransaction, TokenInfo } from './types';
 import { getInstructionData, getProgramName, getPubkeyString } from './utils';
 
@@ -397,7 +396,7 @@ export class TransactionAdapter {
    */
   private extractFromParsedTransfer(ix: any) {
     if (!ix.parsed || !ix.program) return;
-    if (ix.programId != TOKEN_PROGRAM_ID.toBase58() && ix.programId != TOKEN_2022_PROGRAM_ID.toBase58()) return;
+    if (ix.programId != TOKEN_PROGRAM_ID && ix.programId != TOKEN_2022_PROGRAM_ID) return;
 
     const { source, destination, mint, decimals } = ix.parsed?.info || {};
     if (!source && !destination) return;
@@ -412,7 +411,7 @@ export class TransactionAdapter {
     const decoded = getInstructionData(ix);
     if (!decoded) return;
     const programId = this.accountKeys[ix.programIdIndex];
-    if (programId != TOKEN_PROGRAM_ID.toBase58() && programId != TOKEN_2022_PROGRAM_ID.toBase58()) return;
+    if (programId != TOKEN_PROGRAM_ID && programId != TOKEN_2022_PROGRAM_ID) return;
 
     let source, destination, mint, decimals;
     // const amount = decoded.readBigUInt64LE(1);

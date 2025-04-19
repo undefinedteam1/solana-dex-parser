@@ -1,13 +1,11 @@
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { TOKENS } from './constants';
+import { TOKENS, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from './constants';
 import { TransactionAdapter } from './transaction-adapter';
 import { TransferData, convertToUiAmount } from './types';
 import { getTranferTokenMint } from './utils';
 
 export const isTransferCheck = (instruction: any): boolean => {
   return (
-    (instruction.programId == TOKEN_PROGRAM_ID.toBase58() ||
-      instruction.programId == TOKEN_2022_PROGRAM_ID.toBase58()) &&
+    (instruction.programId == TOKEN_PROGRAM_ID || instruction.programId == TOKEN_2022_PROGRAM_ID) &&
     instruction.parsed.type.includes('transferChecked')
   );
 };
@@ -15,7 +13,7 @@ export const isTransferCheck = (instruction: any): boolean => {
 export const isTransfer = (instruction: any): boolean => {
   return (
     (instruction.program === 'spl-token' &&
-      instruction.programId == TOKEN_PROGRAM_ID.toBase58() &&
+      instruction.programId == TOKEN_PROGRAM_ID &&
       instruction.parsed.type === 'transfer') ||
     (instruction.program === 'system' &&
       instruction.programId == TOKENS.NATIVE &&
@@ -117,9 +115,7 @@ export const processTransferCheck = (
 
 export const isExtraAction = (instruction: any, type: string): boolean => {
   return (
-    instruction.program === 'spl-token' &&
-    instruction.programId == TOKEN_PROGRAM_ID.toBase58() &&
-    instruction.parsed.type === type
+    instruction.program === 'spl-token' && instruction.programId == TOKEN_PROGRAM_ID && instruction.parsed.type === type
   );
 };
 

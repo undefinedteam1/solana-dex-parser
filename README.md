@@ -4,6 +4,10 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 
 ## 🚀 What's New
 
+### 2.3.0
+- Added Raydium Launchpad parser support
+- Added Raydium Launchpad events parsing
+
 ### 2.2.5
 - Added `amountRaw` field (raw amount as string)
 - Added token0AmountRaw and token1AmountRaw fields (raw amount as string)
@@ -49,7 +53,7 @@ Major refactoring with enhanced transaction parsing support:
 ## Supported DEX Protocols
 
 - Jupiter
-- Raydium (V4, Route, CPMM, ConcentratedLiquidity)
+- Raydium (V4, Route, CPMM, ConcentratedLiquidity, Lauchpad)
 - Meteora (DLMM and Pools)
 - PumpFun
 - PumpFun AMM (Pumpswap)
@@ -424,6 +428,91 @@ import { decodeRaydiumLog, LogType, parseRaydiumSwapLog } from 'solana-dex-parse
       outputAmount: 386010351n,
       slippageProtection: 192967258n
     }
+```
+
+#### 3.3 Raydium Launchpad events:
+
+```typescript
+import { RaydiumLCPEvent,TransactionAdapter } from 'solana-dex-parser';
+  
+// Setup connection
+const connection = new Connection('https://api.mainnet-beta.solana.com');
+// Get transaction
+const signature = 'your-transaction-signature';
+const tx = await connection.getParsedTransaction(signature, {
+  maxSupportedTransactionVersion: 0,
+});
+
+const parser = new RaydiumLaunchpadEventParser(new TransactionAdapter(tx));
+const events = parser.processEvents(); // RaydiumLCPEvent[]
+
+console.log(events);
+```
+Launchpad Outputs
+```typescript
+// Output (RaydiumLCPCreateEvent, RaydiumLCPTradeEvent,RaydiumLCPCompleteEvent)
+
+// CREATE -> PoolCreateEvent (Initialize)
+{
+  type: 'CREATE',
+  data: {
+    poolState: 'CPTNvVYT7qCzX3HnRRtSRAFpMipVgSP3eynXrW9p9YgD',
+    creator: 'J88snVaNTCW7T6saPvAmYDmjnhPiSpkw8uJ8FFCyfcGA',
+    config: '6s1xP3hpbAfFoNtUNF8mfHsjr2Bd97JxFJRWLbL6aHuX',
+    baseMintParam: [Object],
+    curveParam: [Object],
+    vestingParam: [Object],
+    baseMint: '25phz2ZHEfB81RQXKvNLvkDbK32nyUwFnQdqk6MLcook',
+    quoteMint: 'So11111111111111111111111111111111111111112'
+  },
+  slot: 334260517,
+  timestamp: 1744972806,
+  signature: '4x8k2aQKevA8yuCVX1V8EaH2GBqdbZ1dgYxwtkwZJ7SmCQeng7CCs17AvyjFv6nMoUkBgpBwLHAABdCxGHbAWxo4',
+  idx: '0-7'
+},
+// TRADE -> TradeEvent (buy/sell)
+{
+  type: 'TRADE',
+  data: {
+    poolState: 'GeSSWHbFkeYknLX3edkTP3JcsjHRnCJG3SymEkBzaFDo',
+    totalBaseSell: <BN: 2d79883d20000>,
+    virtualBase: <BN: 3ca20afc2aaaa>,
+    virtualQuote: <BN: 698cc5b55>,
+    realBaseBefore: <BN: 223b2a6f528bb>,
+    realQuoteBefore: <BN: 88d98e8cb>,
+    realBaseAfter: <BN: 22404db66ad1b>,
+    amountIn: <BN: 2faf080>,
+    amountOut: <BN: 5234718460>,
+    protocolFee: <BN: 1e848>,
+    platformFee: <BN: 5b8d8>,
+    shareFee: <BN: 0>,
+    tradeDirection: 0,
+    poolStatus: 0,
+    baseMint: 'Dph84TcDoGzCv43eZzxdDe9Dn7f2eFU4kbJFm3tHEray',
+    quoteMint: 'So11111111111111111111111111111111111111112',
+    user: 'A8BNMXfxCkjuEJ83piEBKdDydk1RVeDQ7jYoUFCTSWuv'
+  },
+  slot: 334244130,
+  timestamp: 1744966356,
+  signature: 'Gi44zBwsd8eUGEVPS1jstts457hKLbm8SSMLrRVHVK2McrhJjosiszb65U1LdrjsF1WfCXoesLMhm8RX3dchx4s',
+  idx: '4-0'
+},
+
+// COMPLETE -> Migrate to AMM / CPSwap
+{
+  type: 'COMPLETE',
+  data: {
+    baseMint: 'Em8DYuvdQ28PNZqSiAvUxjG32XbpFPm9kwu2y5pdTray',
+    quoteMint: 'So11111111111111111111111111111111111111112',
+    poolMint: '9N82SeWs9cFrThpNyU8dngUjRHe9vzVjDnQrgQ115tEy',
+    lpMint: '5Jg51sVNevcDeuzoHcfJFGMcYszuWSqSsZuDjiakXuXq',
+    amm: 'RaydiumCPMM'
+  },
+  slot: 334174234,
+  timestamp: 1744938781,
+  signature: '2gWHLTb1utduUkZCTo9GZpcCZr7hVPXTJajdoVjMURgVG6eJdKJQY6jF954XN15sSmDvsPCmMD7XSRyofLrQWuFv',
+  idx: '2-0'
+}
 ```
 
 ## Note

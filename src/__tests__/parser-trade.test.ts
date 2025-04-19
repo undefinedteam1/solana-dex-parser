@@ -1,7 +1,6 @@
 import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
 import { DexParser } from '../dex-parser';
-import { DEX_PROGRAMS } from '../constants';
 import { getFinalSwap } from '../utils';
 
 dotenv.config();
@@ -25,7 +24,7 @@ describe('Dex Parser', () => {
     const parser = new DexParser();
 
     [
-      "4txewy5B76FNPmogsAaWPTJREgqzCrexCDG6dhFiFh9bq5MYRFmu12icLmQVwujck8yY6DT27QBHiuEXTTJvGJJ4",
+      "fLnFypCuyAtv2MCyhSadg4qZdHjyUW3m56Kvp9skK9tnCke5PFwoYNYYaKp2wNLw6pqEDt3JPpuBY2LNK4ejhxm",
       // "125MRda3h1pwGZpPRwSRdesTPiETaKvy4gdiizyc3SWAik4cECqKGw2gggwyA1sb2uekQVkupA2X9S4vKjbstxx3",
       // "4WGyuUf65j9ojW6zrKf9zBEQsEfW5WiuKjdh6K2dxQAn7ggMkmT1cn1v9GuFs3Ew1d7oMJGh2z1VNvwdLQqJoC9s" // transfer
     ]
@@ -39,7 +38,7 @@ describe('Dex Parser', () => {
           const { trades, liquidities, transfers } = parser.parseAll(tx,
             {
               tryUnknowDEX: false,
-              programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id]
+              // programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id]
             });
           const swap = getFinalSwap(trades);
           console.log('finalSwap', swap);

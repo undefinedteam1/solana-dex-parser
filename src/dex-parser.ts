@@ -15,6 +15,7 @@ import {
   RaydiumCPMMPoolParser,
   RaydiumParser,
   RaydiumV4PoolParser,
+  RaydiumLaunchpadParser,
 } from './parsers';
 import { TransactionAdapter } from './transaction-adapter';
 import { TransactionUtils } from './transaction-utils';
@@ -70,6 +71,7 @@ export class DexParser {
     [DEX_PROGRAMS.RAYDIUM_CL.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_CPMM.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_V4.id]: RaydiumParser,
+    [DEX_PROGRAMS.RAYDIUM_LCP.id]: RaydiumLaunchpadParser,
     [DEX_PROGRAMS.ORCA.id]: OrcaParser,
   };
 
@@ -125,7 +127,6 @@ export class DexParser {
       // Process instructions for each program
       for (const programId of allProgramIds) {
         const classifiedInstructions = classifier.getInstructions(programId);
-
         // Process trades if needed
         if (parseType === 'trades' || parseType === 'all') {
           if (config?.programIds && !config.programIds.some((id) => id == programId)) continue;

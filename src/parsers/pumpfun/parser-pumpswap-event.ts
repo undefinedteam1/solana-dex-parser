@@ -12,7 +12,7 @@ import {
   PumpswapWithdrawEvent,
 } from '../../types';
 import { getInstructionData } from '../../utils';
-import { BinaryReader } from './parser-pumpfun-event';
+import { BinaryReader } from '../binary-reader';
 
 export class PumpswapEventParser {
   constructor(private readonly adapter: TransactionAdapter) {}

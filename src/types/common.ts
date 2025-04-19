@@ -20,3 +20,9 @@ export type EventParser<T> = {
   discriminator: Buffer | Uint8Array;
   decode: (data: Buffer) => T;
 };
+
+export type EventsParser<T> = {
+  discriminators: (Buffer | Uint8Array)[];
+  slice: number;
+  decode: (data: Buffer, options: any) => T;
+};

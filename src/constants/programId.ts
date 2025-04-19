@@ -52,6 +52,11 @@ export const DEX_PROGRAMS = {
     name: 'RaydiumCL',
     tags: ['amm'],
   },
+  RAYDIUM_LCP: {
+    id: 'LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj',
+    name: 'RaydiumLaunchpad',
+    tags: ['amm'],
+  },
   ORCA: {
     id: 'whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc',
     name: 'Orca',
@@ -226,6 +231,11 @@ export const SYSTEM_PROGRAMS = [
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
   'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX', // openbook
 ];
+
+export const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+
+/** Address of the SPL Token 2022 program */
+export const TOKEN_2022_PROGRAM_ID = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 
 export const PUMPFUN_MIGRATORS = ['39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg'];
 

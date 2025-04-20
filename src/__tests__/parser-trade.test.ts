@@ -2,7 +2,7 @@ import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
 import { DexParser } from '../dex-parser';
 import { getFinalSwap } from '../utils';
-
+import * as fs from 'fs';
 dotenv.config();
 
 
@@ -24,7 +24,7 @@ describe('Dex Parser', () => {
     const parser = new DexParser();
 
     [
-      "fLnFypCuyAtv2MCyhSadg4qZdHjyUW3m56Kvp9skK9tnCke5PFwoYNYYaKp2wNLw6pqEDt3JPpuBY2LNK4ejhxm",
+      "4yPr8SPrMQPdPyqM8GaWPmAzgCn2JoSCgiB8rZR3RtkmvoXdPrHShZ1CdEXCdbk4DFezcKAb52ncUqnohVabdNHU",
       // "125MRda3h1pwGZpPRwSRdesTPiETaKvy4gdiizyc3SWAik4cECqKGw2gggwyA1sb2uekQVkupA2X9S4vKjbstxx3",
       // "4WGyuUf65j9ojW6zrKf9zBEQsEfW5WiuKjdh6K2dxQAn7ggMkmT1cn1v9GuFs3Ew1d7oMJGh2z1VNvwdLQqJoC9s" // transfer
     ]
@@ -40,6 +40,7 @@ describe('Dex Parser', () => {
               tryUnknowDEX: false,
               // programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id]
             });
+          // fs.writeFileSync(`./src/__tests__/tx-${signature}.json`, JSON.stringify(tx, null, 2));
           const swap = getFinalSwap(trades);
           console.log('finalSwap', swap);
           console.log('trades', trades);

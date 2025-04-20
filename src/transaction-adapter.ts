@@ -24,7 +24,11 @@ export class TransactionAdapter {
   }
 
   get isMessageV0() {
-    return this.tx.transaction.message instanceof MessageV0;
+    const message = this.tx.transaction.message;
+    return (
+      message instanceof MessageV0 ||
+      ('header' in message && 'staticAccountKeys' in message && 'compiledInstructions' in message)
+    );
   }
   /**
    * Get transaction slot

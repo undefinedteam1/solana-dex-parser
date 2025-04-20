@@ -1,7 +1,7 @@
 import { Connection } from '@solana/web3.js';
 import dotenv from 'dotenv';
-import { DexParser } from '../dex-parser';
 import * as fs from 'fs';
+import { DexParser } from '../dex-parser';
 
 dotenv.config();
 
@@ -53,10 +53,10 @@ describe('Parser', () => {
 
       // it("json-block", async () => {
       //   const parser = new DexParser();
-      //   const data = fs.readFileSync("./src/__tests__/tx-322594854.json", { encoding: "utf8" });
+      //   const data = fs.readFileSync("./src/__tests__/tx.json", { encoding: "utf8" });
       //   const tx = JSON.parse(data);
-
-      //   const { trades, liquidities } = parser.parseAll(tx, { tryUnknowDEX: false });
+      //   // const tx = new TransactionFormatter().formTransactionFromJson(json, Date.now());
+      //   const { trades, liquidities } = parser.parseAll(tx as any, { tryUnknowDEX: true });
 
       //   console.log('trades', trades);
       //   console.log('liquidities', liquidities);

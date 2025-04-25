@@ -1,6 +1,6 @@
 import base58 from 'bs58';
 import { DEX_PROGRAMS, TOKENS } from './constants';
-import { DexInfo, TradeInfo, TradeType } from './types';
+import { convertToUiAmount, DexInfo, TradeInfo, TradeType } from './types';
 import { PublicKey } from '@solana/web3.js';
 
 /**
@@ -71,6 +71,25 @@ export const getFinalSwap = (trades: TradeInfo[], dexInfo?: DexInfo): TradeInfo 
   if (trades.length >= 2) {
     const inputTrade = trades[0];
     const outputTrade = trades[trades.length - 1];
+
+    if (trades.length > 2) {
+      // Merge trades
+      let [inputAmount, outputAmount] = [0n, 0n];
+      for (const trade of trades) {
+        if (trade.inputToken.mint == inputTrade.inputToken.mint) {
+          inputAmount += BigInt(trade.inputToken.amountRaw);
+        }
+        if (trade.outputToken.mint == outputTrade.outputToken.mint) {
+          outputAmount += BigInt(trade.outputToken.amountRaw);
+        }
+      }
+
+      inputTrade.inputToken.amountRaw = inputAmount.toString();
+      inputTrade.inputToken.amount = convertToUiAmount(inputAmount, inputTrade.inputToken.decimals);
+
+      outputTrade.outputToken.amountRaw = outputAmount.toString();
+      outputTrade.outputToken.amount = convertToUiAmount(outputAmount, outputTrade.outputToken.decimals);
+    }
 
     return {
       type: getTradeType(inputTrade.inputToken.mint, outputTrade.outputToken.mint),

@@ -53,7 +53,7 @@ export class TransactionAdapter {
    * Get transaction signature
    */
   get signature() {
-    return this.tx.transaction.signatures[0];
+    return getPubkeyString(this.tx.transaction.signatures[0]);
   }
 
   /**
@@ -117,7 +117,11 @@ export class TransactionAdapter {
       const key3 = this.getAccountKeys(this.tx.meta?.loadedAddresses?.readonly ?? []) || [];
       return [...keys, ...key2, ...key3];
     } else {
-      return this.getAccountKeys(this.txMessage.accountKeys) || [];
+      const meta = this.tx.meta as any;
+      const keys = this.getAccountKeys(this.txMessage.accountKeys) || [];
+      const key2 = this.getAccountKeys(meta?.loadedWritableAddresses ?? []) || [];
+      const key3 = this.getAccountKeys(meta?.loadedReadonlyAddresses ?? []) || [];
+      return [...keys, ...key2, ...key3];
     }
   }
 
@@ -126,6 +130,7 @@ export class TransactionAdapter {
    */
   getInstruction(instruction: any) {
     const isParsed = !this.isCompiledInstruction(instruction);
+
     return {
       programId: isParsed ? getPubkeyString(instruction.programId) : this.accountKeys[instruction.programIdIndex],
       accounts: this.getInstructionAccounts(instruction),
@@ -152,6 +157,9 @@ export class TransactionAdapter {
 
   getInstructionAccounts(instruction: any): string[] {
     const accounts = instruction.accounts || instruction.accountKeyIndexes;
+    if (accounts instanceof Buffer) {
+      return this.getAccountKeys(Array.from(accounts));
+    }
     return this.getAccountKeys(accounts);
   }
 

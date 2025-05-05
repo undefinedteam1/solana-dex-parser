@@ -24,8 +24,8 @@ describe('Dex Parser', () => {
     const parser = new DexParser();
 
     [
-      "2dpTLk6AQQMJUAdhNz3dK8guEDBfR3vogUkgHwDg9praDxthgsz5cAYCL4WHrnKuAWBMG3VNquSJ3W9RNbv1pVoo",
-      // "125MRda3h1pwGZpPRwSRdesTPiETaKvy4gdiizyc3SWAik4cECqKGw2gggwyA1sb2uekQVkupA2X9S4vKjbstxx3",
+      // "2dpTLk6AQQMJUAdhNz3dK8guEDBfR3vogUkgHwDg9praDxthgsz5cAYCL4WHrnKuAWBMG3VNquSJ3W9RNbv1pVoo",
+      "2q9NrgUeQTfbdgmEZMQpX6mV8SFWGnGw4TvioDVaU6k15SmfGVs6nvLHJ3kn7hxSfN1mPYvRm5G1bbBFQR1KH8TF",
       // "4WGyuUf65j9ojW6zrKf9zBEQsEfW5WiuKjdh6K2dxQAn7ggMkmT1cn1v9GuFs3Ew1d7oMJGh2z1VNvwdLQqJoC9s" // transfer
     ]
       .forEach((signature) => {
@@ -40,13 +40,13 @@ describe('Dex Parser', () => {
               tryUnknowDEX: false,
               // programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id]
             });
-            
-          // fs.writeFileSync(`./src/__tests__/tx-${signature}.json`, JSON.stringify(tx, null, 2));
+
+          fs.writeFileSync(`./src/__tests__/tx-${signature}.json`, JSON.stringify(tx, null, 2));
           const swap = getFinalSwap(trades);
-          console.log('finalSwap', swap);
+          console.log('finalSwap', JSON.stringify(swap, null, 2));
           console.log('trades', trades);
           console.log('liquidity', liquidities);
-          console.log('transfer', transfers);
+          console.log('transfer', JSON.stringify(transfers, null, 2));
 
           expect(trades.length + liquidities.length + transfers.length).toBeGreaterThanOrEqual(1);
         });

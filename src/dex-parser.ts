@@ -181,8 +181,10 @@ export class DexParser {
         }
       }
     } catch (error) {
+      if (config.thorwError) {
+        throw error;
+      }
       const msg = `Parse error: ${tx?.transaction?.signatures?.[0]} ${error}`;
-      console.error(error);
       result.state = false;
       result.msg = msg;
     }

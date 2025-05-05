@@ -2,6 +2,7 @@ import { MessageV0, PublicKey, TokenAmount } from '@solana/web3.js';
 import { SPL_TOKEN_INSTRUCTION_TYPES, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKENS } from './constants';
 import { convertToUiAmount, ParseConfig, PoolEventType, SolanaTransaction, TokenInfo } from './types';
 import { getInstructionData, getProgramName, getPubkeyString } from './utils';
+import base58 from 'bs58';
 
 /**
  * Adapter for unified transaction data access
@@ -144,6 +145,7 @@ export class TransactionAdapter {
       if (typeof it == 'string') return it;
       if (typeof it == 'number') return this.accountKeys[it];
       if ('pubkey' in it) return getPubkeyString(it.pubkey);
+      if (it instanceof Buffer) return base58.encode(it);
       return it;
     });
   }

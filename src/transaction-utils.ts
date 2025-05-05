@@ -13,9 +13,11 @@ import {
 } from './transfer-compiled-utils';
 import {
   isExtraAction,
+  isNativeTransfer,
   isTransfer,
   isTransferCheck,
   processExtraAction,
+  processNatvieTransfer,
   processTransfer,
   processTransferCheck,
 } from './transfer-utils';
@@ -140,6 +142,9 @@ export class TransactionUtils {
   parseParsedInstructionAction(instruction: any, idx: string, extraTypes?: string[]): TransferData | null {
     if (isTransfer(instruction)) {
       return processTransfer(instruction, idx, this.adapter);
+    }
+    if (isNativeTransfer(instruction)) {
+      return processNatvieTransfer(instruction, idx, this.adapter);
     }
     if (isTransferCheck(instruction)) {
       return processTransferCheck(instruction, idx, this.adapter);

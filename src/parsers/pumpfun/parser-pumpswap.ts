@@ -35,9 +35,13 @@ export class PumpswapParser extends BaseParser {
 
   private createBuyInfo(data: PumpswapEvent): TradeInfo {
     const event = data.data as PumpswapBuyEvent;
-    const inputMint = this.adapter.splTokenMap.get(event.userQuoteTokenAccount)!.mint;
+
+    const inputMint = this.adapter.splTokenMap.get(event.userQuoteTokenAccount)?.mint;
+    if (!inputMint) throw new Error('inputMint not found');
+    const outputMint = this.adapter.splTokenMap.get(event.userBaseTokenAccount)?.mint;
+    if (!outputMint) throw new Error('outputMint not found');
+
     const inputDecimal = this.adapter.getTokenDecimals(inputMint);
-    const outputMint = this.adapter.splTokenMap.get(event.userBaseTokenAccount)!.mint;
     const ouptDecimal = this.adapter.getTokenDecimals(outputMint);
 
     const trade = getPumpswapBuyInfo(
@@ -58,9 +62,13 @@ export class PumpswapParser extends BaseParser {
 
   private createSellInfo(data: PumpswapEvent): TradeInfo {
     const event = data.data as PumpswapSellEvent;
-    const inputMint = this.adapter.splTokenMap.get(event.userBaseTokenAccount)!.mint;
+
+    const inputMint = this.adapter.splTokenMap.get(event.userBaseTokenAccount)?.mint;
+    if (!inputMint) throw new Error('inputMint not found');
+    const outputMint = this.adapter.splTokenMap.get(event.userQuoteTokenAccount)?.mint;
+    if (!outputMint) throw new Error('outputMint not found');
+
     const inputDecimal = this.adapter.getTokenDecimals(inputMint);
-    const outputMint = this.adapter.splTokenMap.get(event.userQuoteTokenAccount)!.mint;
     const ouptDecimal = this.adapter.getTokenDecimals(outputMint);
 
     const trade = getPumpswapSellInfo(

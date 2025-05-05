@@ -30,6 +30,12 @@ export interface ParseConfig {
    * @default undefined
    */
   ignoreProgramIds?: string[];
+
+  /**
+   * If true, will throw an error if parsing fails
+   * @default false
+   */
+  thorwError?: boolean;
 }
 
 /**

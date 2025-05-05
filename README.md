@@ -2,40 +2,18 @@
 
 A TypeScript library for parsing Solana DEX swap transactions. Supports multiple DEX protocols including Jupiter, Raydium, Meteora, PumpFun, and Moonshot.
 
-## 🚀 What's New
-
-### 2.3.0
-- Added Raydium Launchpad parser support
-- Added Raydium Launchpad events parsing
-
-### 2.2.5
-- Added `amountRaw` field (raw amount as string)
-- Added token0AmountRaw and token1AmountRaw fields (raw amount as string)
-- Added post and pre balances of the destination and source token accounts (TokenInfo and TransferData)
-
-### 2.1.9
-- Added destinationOwner field (TransferData, TokenInfo)
-- Added transfer parser if needed (if no trades and no liquidity)
-
-### 2.0.6
-- Support Pumpfun AMM (Pumpswap)
-- Added Pumpswap events parser (Trade and Liquidity)
-  
-### 2.0.0
-Major refactoring with enhanced transaction parsing support:
-- Support for multiple transaction formats:
-  - `getTransaction`/`getParsedTransaction`
-  - Transactions of `getBlock`/`getParsedBlock` 
-- Unified parsing interface for both parsed and compiled transactions
-- Improved performance with optimized data processing
-- Enhanced error handling and stability
-- Simplified API with better TypeScript support
-
 ## Features
 
 - Parse **Swap** transactions from multiple DEX protocols
   - Support for transfer and transfer-check instructions
   - Detailed swap information extraction
+  - Raw amount fields support (`amountRaw`, `token0AmountRaw`, `token1AmountRaw`)
+  - Token account balance tracking (pre and post balances)
+  - Destination owner field support
+  - Support for multiple transaction formats:
+    - `getTransaction`/`getParsedTransaction`
+    - Transactions of `getBlock`/`getParsedBlock`
+    - gRPC raw data support
 - Parsing methods:
   - Pumpfun and Jupiter: parsing the event data
   - Raydium, Orca, and Meteora: parsing Transfer and TransferChecked methods of the token program
@@ -45,9 +23,11 @@ Major refactoring with enhanced transaction parsing support:
   - Raydium V4
   - Raydium CL
   - Raydium CPMM
+  - Raydium Launchpad (including events parsing)
   - Meteora DLMM
   - Meteora Pools
   - Orca
+- Transfer parser support for non-trade and non-liquidity transactions
 - Comprehensive test coverage
 
 ## Supported DEX Protocols

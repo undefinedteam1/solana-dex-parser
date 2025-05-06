@@ -13,7 +13,7 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
   - Support for multiple transaction formats:
     - `getTransaction`/`getParsedTransaction`
     - Transactions of `getBlock`/`getParsedBlock`
-    - gRPC raw data support
+    - **gRPC** raw data support
 - Parsing methods:
   - Pumpfun and Jupiter: parsing the event data
   - Raydium, Orca, and Meteora: parsing Transfer and TransferChecked methods of the token program
@@ -27,6 +27,7 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
   - Meteora DLMM
   - Meteora Pools
   - Orca
+  - Pumpfun AMM (Pumpswap)
 - Transfer parser support for non-trade and non-liquidity transactions
 - Comprehensive test coverage
 
@@ -555,3 +556,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 This project is a TypeScript port of the original Go implementation [solanaswap-go](https://github.com/franco-bianco/solanaswap-go).
+
+## BUY ME A COFFEE
+If you find this project useful, please consider buying me a coffee. Your support is greatly appreciated!
+
+**SOL**: 879mxY5QKJH1J8x8suzB3rrV2YPVsoauaSJ7nT85YLU7

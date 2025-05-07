@@ -105,6 +105,15 @@ export class TransactionAdapter {
     return this.getAccountKey(0);
   }
 
+  get fee(): TokenAmount {
+    const fee = this.tx.meta?.fee || 0;
+    return {
+      amount: fee.toString(),
+      uiAmount: convertToUiAmount(fee.toString(), 9),
+      decimals: 9,
+    };
+  }
+
   extractAccountKeys() {
     if (this.isMessageV0) {
       const keys = this.txMessage.staticAccountKeys.map((it: any) => getPubkeyString(it)) || [];
@@ -473,5 +482,139 @@ export class TransactionAdapter {
         break;
     }
     this.setTokenInfo(source, destination, mint, decimals);
+  }
+
+  /**
+   * Get SOL balance changes for all accounts in the transaction
+   * @returns Map<string, {pre: TokenAmount; post: TokenAmount; change: TokenAmount}> - A map where:
+   *   - key: account address
+   *   - value: Object containing:
+   *     - pre: TokenAmount for pre-transaction balance, containing:
+   *       - amount: balance in raw lamports
+   *       - uiAmount: balance in SOL
+   *       - decimals: number of decimal places (9 for SOL)
+   *     - post: TokenAmount for post-transaction balance
+   *     - change: TokenAmount for net balance change
+   */
+  getAccountSolBalanceChanges(): Map<string, { pre: TokenAmount; post: TokenAmount; change: TokenAmount }> {
+    const changes = new Map<string, { pre: TokenAmount; post: TokenAmount; change: TokenAmount }>();
+
+    this.accountKeys.forEach((accountKey, index) => {
+      const preBalance = this.preBalances?.[index] || 0;
+      const postBalance = this.postBalances?.[index] || 0;
+      const change = postBalance - preBalance;
+
+      if (change !== 0) {
+        changes.set(accountKey, {
+          pre: {
+            amount: preBalance.toString(),
+            uiAmount: convertToUiAmount(preBalance.toString(), 9),
+            decimals: 9,
+          },
+          post: {
+            amount: postBalance.toString(),
+            uiAmount: convertToUiAmount(postBalance.toString(), 9),
+            decimals: 9,
+          },
+          change: {
+            amount: change.toString(),
+            uiAmount: convertToUiAmount(change.toString(), 9),
+            decimals: 9,
+          },
+        });
+      }
+    });
+
+    return changes;
+  }
+
+  /**
+   * Get token balance changes for all accounts in the transaction
+   * @returns Map<string, Map<string, {pre: TokenAmount; post: TokenAmount; change: TokenAmount}>> - A nested map where:
+   *   - outer key: account address
+   *   - inner key: token mint address
+   *   - value: Object containing:
+   *     - pre: TokenAmount for pre-transaction balance
+   *     - post: TokenAmount for post-transaction balance
+   *     - change: TokenAmount for net balance change
+   */
+  getAccountTokenBalanceChanges(): Map<
+    string,
+    Map<string, { pre: TokenAmount; post: TokenAmount; change: TokenAmount }>
+  > {
+    const changes = new Map<string, Map<string, { pre: TokenAmount; post: TokenAmount; change: TokenAmount }>>();
+
+    // Process pre token balances
+    this.preTokenBalances?.forEach((balance) => {
+      const accountKey = this.accountKeys[balance.accountIndex];
+      const mint = balance.mint;
+      if (!mint) return;
+
+      if (!changes.has(accountKey)) {
+        changes.set(accountKey, new Map());
+      }
+
+      const accountChanges = changes.get(accountKey)!;
+      accountChanges.set(mint, {
+        pre: balance.uiTokenAmount,
+        post: {
+          amount: '0',
+          uiAmount: 0,
+          decimals: balance.uiTokenAmount.decimals,
+        },
+        change: {
+          amount: '0',
+          uiAmount: 0,
+          decimals: balance.uiTokenAmount.decimals,
+        },
+      });
+    });
+
+    // Process post token balances and calculate changes
+    this.postTokenBalances?.forEach((balance) => {
+      const accountKey = this.accountKeys[balance.accountIndex];
+      const mint = balance.mint;
+      if (!mint) return;
+
+      if (!changes.has(accountKey)) {
+        changes.set(accountKey, new Map());
+      }
+
+      const accountChanges = changes.get(accountKey)!;
+      const existingChange = accountChanges.get(mint);
+
+      if (existingChange) {
+        // Update post balance and calculate change
+        existingChange.post = balance.uiTokenAmount;
+        const amountChange = BigInt(balance.uiTokenAmount.amount) - BigInt(existingChange.pre.amount);
+        const uiAmountChange = (balance.uiTokenAmount.uiAmount || 0) - (existingChange.pre.uiAmount || 0);
+
+        existingChange.change = {
+          amount: amountChange.toString(),
+          uiAmount: uiAmountChange,
+          decimals: balance.uiTokenAmount.decimals,
+        };
+
+        if (amountChange === 0n) {
+          accountChanges.delete(mint);
+          if (accountChanges.size === 0) {
+            changes.delete(accountKey);
+          }
+        }
+      } else {
+        // If no pre-balance exists, set pre to zero
+        accountChanges.set(mint, {
+          pre: {
+            amount: '0',
+            uiAmount: 0,
+            decimals: balance.uiTokenAmount.decimals,
+          },
+          post: balance.uiTokenAmount,
+          change: balance.uiTokenAmount,
+        });
+      }
+    });
+
+    return changes;
   }
 }

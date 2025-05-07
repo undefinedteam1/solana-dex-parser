@@ -195,7 +195,7 @@ describe('Liquidity', () => {
       .flat()
       //  .filter((test: any) => test.test == true) // test only
       .forEach((test) => {
-        it(`${test.type} > ${test.name} > ${test.desc} `, async () => {
+        it(`${test.type} > ${test.name} > ${test.desc} > ${test.signature}`, async () => {
           const tx = await connection.getTransaction(test.signature, {
             maxSupportedTransactionVersion: 0,
           });

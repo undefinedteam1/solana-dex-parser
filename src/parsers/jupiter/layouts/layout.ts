@@ -1,5 +1,5 @@
 import { PublicKey } from '@solana/web3.js';
-import { JupiterSwapEvent } from '../../types/jupiter';
+import { JupiterSwapEvent } from '../../../types/jupiter';
 
 export class JupiterLayout {
   amm: Uint8Array;

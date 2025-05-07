@@ -11,13 +11,33 @@ export const DEX_PROGRAMS = {
     tags: ['route'],
   },
   JUPITER_DCA: {
-    id: 'DCAK36VfExkPdAkYUQg6ewgxyinvcEyPLyHjRbmveKFw',
+    id: 'DCA265Vj8a9CEuX1eb1LWRnDT7uK6q1xMipnNyatn23M',
     name: 'JupiterDCA',
+    tags: ['route'],
+  },
+  JUPITER_DCA_KEEPER1: {
+    id: 'DCAKxn5PFNN1mBREPWGdk1RXg5aVH9rPErLfBFEi2Emb',
+    name: 'JupiterDcaKeeper1',
+    tags: ['route'],
+  },
+  JUPITER_DCA_KEEPER2: {
+    id: 'DCAKuApAuZtVNYLk3KTAVW9GLWVvPbnb5CxxRRmVgcTr',
+    name: 'JupiterDcaKeeper2',
+    tags: ['route'],
+  },
+  JUPITER_DCA_KEEPER3: {
+    id: 'DCAK36VfExkPdAkYUQg6ewgxyinvcEyPLyHjRbmveKFw',
+    name: 'JupiterDcaKeeper3',
     tags: ['route'],
   },
   JUPITER_LIMIT_ORDER_V2: {
     id: 'j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X',
     name: 'JupiterLimitV2',
+    tags: ['amm'],
+  },
+  JUPITER_VA: {
+    id: 'VALaaymxQh2mNy2trH9jUqHT1mTow76wpTcGmSWSwJe',
+    name: 'JupiterVA',
     tags: ['amm'],
   },
   OKX_DEX: {
@@ -216,6 +236,11 @@ export const DEX_PROGRAMS = {
   STABBEL_WEIGHT: {
     id: 'swapFpHZwjELNnjvThjajtiVmkz3yPQEHjLtka2fwHW',
     name: 'StabbleWeight',
+    tags: ['amm'],
+  },
+  BOOP_FUN: {
+    id: 'boop8hVGQGqehUK2iVEMEnMrL5RbjywRzHKBmBE7ry4',
+    name: 'Boopfun',
     tags: ['amm'],
   },
 };

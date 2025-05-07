@@ -1,4 +1,4 @@
-import { DEX_PROGRAM_IDS, DEX_PROGRAMS } from './constants';
+import { DEX_PROGRAMS } from './constants';
 import { InstructionClassifier } from './instruction-classifier';
 import {
   JupiterParser,
@@ -13,10 +13,12 @@ import {
   PumpswapParser,
   RaydiumCLPoolParser,
   RaydiumCPMMPoolParser,
+  RaydiumLaunchpadParser,
   RaydiumParser,
   RaydiumV4PoolParser,
-  RaydiumLaunchpadParser,
 } from './parsers';
+import { BoopfunParser } from './parsers/boopfun/parser-boopfun';
+import { JupiterDcaParser } from './parsers/jupiter/parser-jupiter-dca';
 import { TransactionAdapter } from './transaction-adapter';
 import { TransactionUtils } from './transaction-utils';
 import {
@@ -55,13 +57,25 @@ type ParserLiquidityConstructor = new (
 };
 
 /**
+ * Interface for Transfer parsers
+ */
+type ParserTransferConstructor = new (
+  adapter: TransactionAdapter,
+  dexInfo: DexInfo,
+  transferActions: Record<string, TransferData[]>,
+  classifiedInstructions: ClassifiedInstruction[]
+) => {
+  processTransfers(): TransferData[];
+};
+
+/**
  * Main parser class for Solana DEX transactions
  */
 export class DexParser {
   // Trade parser mapping
   private readonly parserMap: Record<string, ParserConstructor> = {
     [DEX_PROGRAMS.JUPITER.id]: JupiterParser,
-    [DEX_PROGRAMS.JUPITER_DCA.id]: JupiterParser,
+    [DEX_PROGRAMS.JUPITER_DCA.id]: JupiterDcaParser,
     [DEX_PROGRAMS.MOONSHOT.id]: MoonshotParser,
     [DEX_PROGRAMS.METEORA.id]: MeteoraParser,
     [DEX_PROGRAMS.METEORA_POOLS.id]: MeteoraParser,
@@ -73,6 +87,7 @@ export class DexParser {
     [DEX_PROGRAMS.RAYDIUM_V4.id]: RaydiumParser,
     [DEX_PROGRAMS.RAYDIUM_LCP.id]: RaydiumLaunchpadParser,
     [DEX_PROGRAMS.ORCA.id]: OrcaParser,
+    [DEX_PROGRAMS.BOOP_FUN.id]: BoopfunParser,
   };
 
   // Liquidity parser mapping
@@ -87,6 +102,11 @@ export class DexParser {
     [DEX_PROGRAMS.PUMP_SWAP.id]: PumpswapLiquidityParser,
   };
 
+  // Transfer parser mapping
+  private readonly parseTransferMap: Record<string, ParserTransferConstructor> = {
+    [DEX_PROGRAMS.JUPITER_DCA.id]: JupiterDcaParser,
+  };
+
   constructor() {}
 
   /**
@@ -99,6 +119,7 @@ export class DexParser {
   ): ParseResult {
     const result: ParseResult = {
       state: true,
+      fee: { amount: '0', uiAmount: 0, decimals: 9 },
       trades: [],
       liquidities: [],
       transfers: [],
@@ -114,14 +135,38 @@ export class DexParser {
       const allProgramIds = classifier.getAllProgramIds();
       const transferActions = utils.getTransferActions(['mintTo', 'burn', 'mintToChecked', 'burnChecked']);
 
+      // Process fee
+      result.fee = adapter.fee;
+
       // Try specific parser first
-      if (dexInfo.programId && [DEX_PROGRAMS.JUPITER.id, DEX_PROGRAMS.JUPITER_DCA.id].includes(dexInfo.programId)) {
+      if (
+        dexInfo.programId &&
+        [
+          DEX_PROGRAMS.JUPITER.id,
+          DEX_PROGRAMS.JUPITER_DCA.id,
+          DEX_PROGRAMS.JUPITER_DCA_KEEPER1.id,
+          DEX_PROGRAMS.JUPITER_DCA_KEEPER2.id,
+          DEX_PROGRAMS.JUPITER_DCA_KEEPER3.id,
+        ].includes(dexInfo.programId)
+      ) {
         if (parseType === 'trades' || parseType === 'all') {
           const jupiterInstructions = classifier.getInstructions(dexInfo.programId);
-          const parser = new JupiterParser(adapter, dexInfo, transferActions, jupiterInstructions);
-          result.trades.push(...parser.processTrades());
+
+          const TradeParserClass = this.parserMap[dexInfo.programId];
+          if (TradeParserClass) {
+            const parser = new TradeParserClass(
+              adapter,
+              { ...dexInfo, programId: dexInfo.programId, amm: getProgramName(dexInfo.programId) },
+              transferActions,
+              jupiterInstructions
+            );
+
+            result.trades.push(...parser.processTrades());
+          }
         }
-        return result;
+        if (result.trades.length > 0) {
+          return result;
+        }
       }
 
       // Process instructions for each program
@@ -175,7 +220,15 @@ export class DexParser {
       // Process transfer if needed (if no trades and no liquidity)
       if (result.trades.length == 0 && result.liquidities.length == 0) {
         if (parseType === 'transfer' || parseType === 'all') {
-          if (!allProgramIds.some((id) => DEX_PROGRAM_IDS.includes(id))) {
+          if (dexInfo.programId) {
+            const classifiedInstructions = classifier.getInstructions(dexInfo.programId);
+            const TransferParserClass = this.parseTransferMap[dexInfo.programId];
+            if (TransferParserClass) {
+              const parser = new TransferParserClass(adapter, dexInfo, transferActions, classifiedInstructions);
+              result.transfers.push(...parser.processTransfers());
+            }
+          }
+          if (result.transfers.length == 0) {
             result.transfers.push(...Object.values(transferActions).flat());
           }
         }

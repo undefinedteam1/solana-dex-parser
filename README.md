@@ -1,6 +1,6 @@
 # Solana Dex Transaction Parser
 
-A TypeScript library for parsing Solana DEX swap transactions. Supports multiple DEX protocols including Jupiter, Raydium, Meteora, PumpFun, and Moonshot.
+A TypeScript library for parsing Solana DEX swap transactions. Supports multiple DEX protocols including Jupiter, Raydium, Meteora, PumpFun, BoopFun and Moonshot.
 
 ## Features
 
@@ -33,7 +33,7 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 
 ## Supported DEX Protocols
 
-- Jupiter
+- Jupiter (Aggregator, DCA)
 - Raydium (V4, Route, CPMM, ConcentratedLiquidity, Lauchpad)
 - Meteora (DLMM and Pools)
 - PumpFun
@@ -44,6 +44,7 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 - Phoenix
 - Lifinity
 - OKX Dex
+- BoopFun
   
 ## Supported Trading Bot Programs
 - BananaGun

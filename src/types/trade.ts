@@ -100,8 +100,8 @@ export interface TransferData {
     source: string; // Source account
     tokenAmount: {
       amount: string; // Raw amount
-      decimals: number; // Token decimals
       uiAmount: number; // Human-readable amount
+      decimals: number; // Token decimals
     };
     sourceBalance?: TokenAmount; // Source balance after transfer
     sourcePreBalance?: TokenAmount; // Source balance before transfer

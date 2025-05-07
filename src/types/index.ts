@@ -5,3 +5,4 @@ export * from './pool';
 export * from './common';
 export * from './jupiter';
 export * from './raydium';
+export * from './boopfun';

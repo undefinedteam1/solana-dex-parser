@@ -3,7 +3,7 @@ import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
 import { convertToUiAmount, JupiterSwapEventData, JupiterSwapInfo, TradeInfo } from '../../types';
 import { getInstructionData, getProgramName, getTradeType } from '../../utils';
 import { BaseParser } from '../base-parser';
-import { JupiterLayout } from './layout';
+import { JupiterLayout } from './layouts/layout';
 
 export class JupiterParser extends BaseParser {
   public processTrades(): TradeInfo[] {
@@ -129,6 +129,17 @@ export class JupiterParser extends BaseParser {
       signature: this.adapter.signature,
       idx: info.idx,
     } as TradeInfo;
+
+    if (this.containsDCAProgram()) {
+      // Jupiter DCA fee 0.1%
+      const feeAmount = BigInt(outAmount) / 1000n;
+      trade.fee = {
+        mint: outMint,
+        amount: convertToUiAmount(feeAmount, outDecimals),
+        amountRaw: feeAmount.toString(),
+        decimals: outDecimals,
+      };
+    }
 
     return this.utils.attachTokenTransferInfo(trade, this.transferActions);
   }

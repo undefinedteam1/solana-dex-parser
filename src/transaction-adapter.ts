@@ -1,8 +1,8 @@
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { MessageV0, PublicKey, TokenAmount } from '@solana/web3.js';
-import { SPL_TOKEN_INSTRUCTION_TYPES, TOKENS } from './constants';
+import { SPL_TOKEN_INSTRUCTION_TYPES, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKENS } from './constants';
 import { convertToUiAmount, ParseConfig, PoolEventType, SolanaTransaction, TokenInfo } from './types';
 import { getInstructionData, getProgramName, getPubkeyString } from './utils';
+import base58 from 'bs58';
 
 /**
  * Adapter for unified transaction data access
@@ -25,7 +25,11 @@ export class TransactionAdapter {
   }
 
   get isMessageV0() {
-    return this.tx.transaction.message instanceof MessageV0;
+    const message = this.tx.transaction.message;
+    return (
+      message instanceof MessageV0 ||
+      ('header' in message && 'staticAccountKeys' in message && 'compiledInstructions' in message)
+    );
   }
   /**
    * Get transaction slot
@@ -49,7 +53,7 @@ export class TransactionAdapter {
    * Get transaction signature
    */
   get signature() {
-    return this.tx.transaction.signatures[0];
+    return getPubkeyString(this.tx.transaction.signatures[0]);
   }
 
   /**
@@ -101,6 +105,15 @@ export class TransactionAdapter {
     return this.getAccountKey(0);
   }
 
+  get fee(): TokenAmount {
+    const fee = this.tx.meta?.fee || 0;
+    return {
+      amount: fee.toString(),
+      uiAmount: convertToUiAmount(fee.toString(), 9),
+      decimals: 9,
+    };
+  }
+
   extractAccountKeys() {
     if (this.isMessageV0) {
       const keys = this.txMessage.staticAccountKeys.map((it: any) => getPubkeyString(it)) || [];
@@ -113,7 +126,11 @@ export class TransactionAdapter {
       const key3 = this.getAccountKeys(this.tx.meta?.loadedAddresses?.readonly ?? []) || [];
       return [...keys, ...key2, ...key3];
     } else {
-      return this.getAccountKeys(this.txMessage.accountKeys) || [];
+      const meta = this.tx.meta as any;
+      const keys = this.getAccountKeys(this.txMessage.accountKeys) || [];
+      const key2 = this.getAccountKeys(meta?.loadedWritableAddresses ?? []) || [];
+      const key3 = this.getAccountKeys(meta?.loadedReadonlyAddresses ?? []) || [];
+      return [...keys, ...key2, ...key3];
     }
   }
 
@@ -122,6 +139,7 @@ export class TransactionAdapter {
    */
   getInstruction(instruction: any) {
     const isParsed = !this.isCompiledInstruction(instruction);
+
     return {
       programId: isParsed ? getPubkeyString(instruction.programId) : this.accountKeys[instruction.programIdIndex],
       accounts: this.getInstructionAccounts(instruction),
@@ -141,12 +159,16 @@ export class TransactionAdapter {
       if (typeof it == 'string') return it;
       if (typeof it == 'number') return this.accountKeys[it];
       if ('pubkey' in it) return getPubkeyString(it.pubkey);
+      if (it instanceof Buffer) return base58.encode(it);
       return it;
     });
   }
 
   getInstructionAccounts(instruction: any): string[] {
     const accounts = instruction.accounts || instruction.accountKeyIndexes;
+    if (accounts instanceof Buffer) {
+      return this.getAccountKeys(Array.from(accounts));
+    }
     return this.getAccountKeys(accounts);
   }
 
@@ -397,7 +419,7 @@ export class TransactionAdapter {
    */
   private extractFromParsedTransfer(ix: any) {
     if (!ix.parsed || !ix.program) return;
-    if (ix.programId != TOKEN_PROGRAM_ID.toBase58() && ix.programId != TOKEN_2022_PROGRAM_ID.toBase58()) return;
+    if (ix.programId != TOKEN_PROGRAM_ID && ix.programId != TOKEN_2022_PROGRAM_ID) return;
 
     const { source, destination, mint, decimals } = ix.parsed?.info || {};
     if (!source && !destination) return;
@@ -412,7 +434,7 @@ export class TransactionAdapter {
     const decoded = getInstructionData(ix);
     if (!decoded) return;
     const programId = this.accountKeys[ix.programIdIndex];
-    if (programId != TOKEN_PROGRAM_ID.toBase58() && programId != TOKEN_2022_PROGRAM_ID.toBase58()) return;
+    if (programId != TOKEN_PROGRAM_ID && programId != TOKEN_2022_PROGRAM_ID) return;
 
     let source, destination, mint, decimals;
     // const amount = decoded.readBigUInt64LE(1);
@@ -460,5 +482,139 @@ export class TransactionAdapter {
         break;
     }
     this.setTokenInfo(source, destination, mint, decimals);
+  }
+
+  /**
+   * Get SOL balance changes for all accounts in the transaction
+   * @returns Map<string, {pre: TokenAmount; post: TokenAmount; change: TokenAmount}> - A map where:
+   *   - key: account address
+   *   - value: Object containing:
+   *     - pre: TokenAmount for pre-transaction balance, containing:
+   *       - amount: balance in raw lamports
+   *       - uiAmount: balance in SOL
+   *       - decimals: number of decimal places (9 for SOL)
+   *     - post: TokenAmount for post-transaction balance
+   *     - change: TokenAmount for net balance change
+   */
+  getAccountSolBalanceChanges(): Map<string, { pre: TokenAmount; post: TokenAmount; change: TokenAmount }> {
+    const changes = new Map<string, { pre: TokenAmount; post: TokenAmount; change: TokenAmount }>();
+
+    this.accountKeys.forEach((accountKey, index) => {
+      const preBalance = this.preBalances?.[index] || 0;
+      const postBalance = this.postBalances?.[index] || 0;
+      const change = postBalance - preBalance;
+
+      if (change !== 0) {
+        changes.set(accountKey, {
+          pre: {
+            amount: preBalance.toString(),
+            uiAmount: convertToUiAmount(preBalance.toString(), 9),
+            decimals: 9,
+          },
+          post: {
+            amount: postBalance.toString(),
+            uiAmount: convertToUiAmount(postBalance.toString(), 9),
+            decimals: 9,
+          },
+          change: {
+            amount: change.toString(),
+            uiAmount: convertToUiAmount(change.toString(), 9),
+            decimals: 9,
+          },
+        });
+      }
+    });
+
+    return changes;
+  }
+
+  /**
+   * Get token balance changes for all accounts in the transaction
+   * @returns Map<string, Map<string, {pre: TokenAmount; post: TokenAmount; change: TokenAmount}>> - A nested map where:
+   *   - outer key: account address
+   *   - inner key: token mint address
+   *   - value: Object containing:
+   *     - pre: TokenAmount for pre-transaction balance
+   *     - post: TokenAmount for post-transaction balance
+   *     - change: TokenAmount for net balance change
+   */
+  getAccountTokenBalanceChanges(): Map<
+    string,
+    Map<string, { pre: TokenAmount; post: TokenAmount; change: TokenAmount }>
+  > {
+    const changes = new Map<string, Map<string, { pre: TokenAmount; post: TokenAmount; change: TokenAmount }>>();
+
+    // Process pre token balances
+    this.preTokenBalances?.forEach((balance) => {
+      const accountKey = this.accountKeys[balance.accountIndex];
+      const mint = balance.mint;
+      if (!mint) return;
+
+      if (!changes.has(accountKey)) {
+        changes.set(accountKey, new Map());
+      }
+
+      const accountChanges = changes.get(accountKey)!;
+      accountChanges.set(mint, {
+        pre: balance.uiTokenAmount,
+        post: {
+          amount: '0',
+          uiAmount: 0,
+          decimals: balance.uiTokenAmount.decimals,
+        },
+        change: {
+          amount: '0',
+          uiAmount: 0,
+          decimals: balance.uiTokenAmount.decimals,
+        },
+      });
+    });
+
+    // Process post token balances and calculate changes
+    this.postTokenBalances?.forEach((balance) => {
+      const accountKey = this.accountKeys[balance.accountIndex];
+      const mint = balance.mint;
+      if (!mint) return;
+
+      if (!changes.has(accountKey)) {
+        changes.set(accountKey, new Map());
+      }
+
+      const accountChanges = changes.get(accountKey)!;
+      const existingChange = accountChanges.get(mint);
+
+      if (existingChange) {
+        // Update post balance and calculate change
+        existingChange.post = balance.uiTokenAmount;
+        const amountChange = BigInt(balance.uiTokenAmount.amount) - BigInt(existingChange.pre.amount);
+        const uiAmountChange = (balance.uiTokenAmount.uiAmount || 0) - (existingChange.pre.uiAmount || 0);
+
+        existingChange.change = {
+          amount: amountChange.toString(),
+          uiAmount: uiAmountChange,
+          decimals: balance.uiTokenAmount.decimals,
+        };
+
+        if (amountChange === 0n) {
+          accountChanges.delete(mint);
+          if (accountChanges.size === 0) {
+            changes.delete(accountKey);
+          }
+        }
+      } else {
+        // If no pre-balance exists, set pre to zero
+        accountChanges.set(mint, {
+          pre: {
+            amount: '0',
+            uiAmount: 0,
+            decimals: balance.uiTokenAmount.decimals,
+          },
+          post: balance.uiTokenAmount,
+          change: balance.uiTokenAmount,
+        });
+      }
+    });
+
+    return changes;
   }
 }

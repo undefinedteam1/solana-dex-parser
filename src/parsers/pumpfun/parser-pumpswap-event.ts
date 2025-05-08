@@ -12,7 +12,7 @@ import {
   PumpswapWithdrawEvent,
 } from '../../types';
 import { getInstructionData } from '../../utils';
-import { BinaryReader } from './parser-pumpfun-event';
+import { BinaryReader } from '../binary-reader';
 
 export class PumpswapEventParser {
   constructor(private readonly adapter: TransactionAdapter) {}
@@ -57,7 +57,7 @@ export class PumpswapEventParser {
               const eventData = parser.decode(data.slice(16));
               if (!eventData) return null;
 
-              return {
+              const event = {
                 type: type as 'CREATE' | 'ADD' | 'REMOVE' | 'BUY' | 'SELL',
                 data: eventData,
                 slot: this.adapter.slot,
@@ -65,6 +65,7 @@ export class PumpswapEventParser {
                 signature: this.adapter.signature,
                 idx: `${outerIndex}-${innerIndex ?? 0}`,
               };
+              return event;
             }
           }
         } catch (error) {

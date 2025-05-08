@@ -3,6 +3,12 @@ export const DISCRIMINATORS = {
   JUPITER: {
     ROUTE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 64, 198, 205, 232, 38, 8, 113, 226]),
   },
+  JUPITER_DCA: {
+    FILLED: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 134, 4, 17, 63, 221, 45, 177, 173]), //FulfillFlashFill
+    CLOSE_DCA: new Uint8Array([22, 7, 33, 98, 168, 183, 34, 243]), // closeDca
+    OPEN_DCA: new Uint8Array([36, 65, 185, 54, 1, 210, 100, 163]), // openDca
+    OPEN_DCA_V2: new Uint8Array([142, 119, 43, 109, 162, 52, 11, 177]), // openDcaV2
+  },
   PUMPFUN: {
     TRADE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 189, 219, 127, 211, 78, 230, 97, 238]),
     CREATE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 27, 114, 169, 77, 222, 235, 99, 118]),
@@ -46,6 +52,16 @@ export const DISCRIMINATORS = {
     ADD_LIQUIDITY: new Uint8Array([242, 35, 198, 137, 82, 225, 242, 182]), // deposit
     REMOVE_LIQUIDITY: new Uint8Array([183, 18, 70, 156, 148, 109, 161, 34]), // withdraw
   },
+  RAYDIUM_LCP: {
+    CREATE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 151, 215, 226, 9, 118, 161, 115, 174]), // PoolCreateEvent
+    TRADE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 189, 219, 127, 211, 78, 230, 97, 238]), // TradeEvent
+    MIGRATE_TO_AMM: new Uint8Array([207, 82, 192, 145, 254, 207, 145, 223]), // complete: migrate_to_amm
+    MIGRATE_TO_CPSWAP: new Uint8Array([136, 92, 200, 103, 28, 218, 144, 140]), // complete: migrate_to_cpswap
+    BUY_EXACT_IN: new Uint8Array([250, 234, 13, 123, 213, 156, 19, 236]), // buyExactIn
+    BUY_EXACT_OUT: new Uint8Array([24, 211, 116, 40, 105, 3, 153, 56]), // buyExactOut
+    SELL_EXACT_IN: new Uint8Array([149, 39, 222, 155, 211, 124, 152, 26]), // sellExactIn
+    SELL_EXACT_OUT: new Uint8Array([95, 200, 71, 34, 8, 9, 11, 166]), // sellExactOut
+  },
   METEORA_DLMM: {
     ADD_LIQUIDITY: {
       addLiquidity: new Uint8Array([181, 157, 89, 67, 143, 182, 52, 72]), //addLiquidity
@@ -77,5 +93,12 @@ export const DISCRIMINATORS = {
     REMOVE_LIQUIDITY: new Uint8Array([160, 38, 208, 111, 104, 91, 44, 1]), // decreaseLiquidity
     OTHER1: new Uint8Array([164, 152, 207, 99, 30, 186, 19, 182]), // collectFees
     OTHER2: new Uint8Array([70, 5, 132, 87, 86, 235, 177, 34]), //collectReward
+  },
+  BOOPFUN: {
+    CREATE: new Uint8Array([84, 52, 204, 228, 24, 140, 234, 75]),
+    DEPLOY: new Uint8Array([180, 89, 199, 76, 168, 236, 217, 138]), //deploy_bonding_curve
+    COMPLETE: new Uint8Array([45, 235, 225, 181, 17, 218, 64, 130]),
+    BUY: new Uint8Array([138, 127, 14, 91, 38, 87, 115, 105]),
+    SELL: new Uint8Array([109, 61, 40, 187, 230, 176, 135, 174]),
   },
 } as const;

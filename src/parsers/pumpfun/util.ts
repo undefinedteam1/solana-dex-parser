@@ -8,6 +8,7 @@ import {
   TradeType,
   convertToUiAmount,
 } from '../../types';
+import { getTradeType } from '../../utils';
 
 export const getPumpfunTradeInfo = (
   event: PumpfunTradeEvent,
@@ -66,8 +67,9 @@ export const getPumpswapBuyInfo = (
 ): TradeInfo => {
   const { mint: inputMint, decimals: inputDecimal } = inputToken;
   const { mint: outputMint, decimals: ouptDecimal } = outputToken;
+
   return {
-    type: 'BUY',
+    type: getTradeType(inputMint, outputMint),
     inputToken: {
       mint: inputMint,
       amount: convertToUiAmount(event.quoteAmountInWithLpFee, inputDecimal),
@@ -118,7 +120,7 @@ export const getPumpswapSellInfo = (
   const { mint: inputMint, decimals: inputDecimal } = inputToken;
   const { mint: outputMint, decimals: ouptDecimal } = outputToken;
   return {
-    type: 'SELL',
+    type: getTradeType(inputMint, outputMint),
     inputToken: {
       mint: inputMint,
       amount: convertToUiAmount(event.baseAmountIn, inputDecimal),

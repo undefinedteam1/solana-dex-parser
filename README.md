@@ -1,37 +1,19 @@
 # Solana Dex Transaction Parser
 
-A TypeScript library for parsing Solana DEX swap transactions. Supports multiple DEX protocols including Jupiter, Raydium, Meteora, PumpFun, and Moonshot.
-
-## 🚀 What's New
-
-### 2.2.5
-- Added `amountRaw` field (raw amount as string)
-- Added token0AmountRaw and token1AmountRaw fields (raw amount as string)
-- Added post and pre balances of the destination and source token accounts (TokenInfo and TransferData)
-
-### 2.1.9
-- Added destinationOwner field (TransferData, TokenInfo)
-- Added transfer parser if needed (if no trades and no liquidity)
-
-### 2.0.6
-- Support Pumpfun AMM (Pumpswap)
-- Added Pumpswap events parser (Trade and Liquidity)
-  
-### 2.0.0
-Major refactoring with enhanced transaction parsing support:
-- Support for multiple transaction formats:
-  - `getTransaction`/`getParsedTransaction`
-  - Transactions of `getBlock`/`getParsedBlock` 
-- Unified parsing interface for both parsed and compiled transactions
-- Improved performance with optimized data processing
-- Enhanced error handling and stability
-- Simplified API with better TypeScript support
+A TypeScript library for parsing Solana DEX swap transactions. Supports multiple DEX protocols including Jupiter, Raydium, Meteora, PumpFun, BoopFun and Moonshot.
 
 ## Features
 
 - Parse **Swap** transactions from multiple DEX protocols
   - Support for transfer and transfer-check instructions
   - Detailed swap information extraction
+  - Raw amount fields support (`amountRaw`, `token0AmountRaw`, `token1AmountRaw`)
+  - Token account balance tracking (pre and post balances)
+  - Destination owner field support
+  - Support for multiple transaction formats:
+    - `getTransaction`/`getParsedTransaction`
+    - Transactions of `getBlock`/`getParsedBlock`
+    - **gRPC** raw data support
 - Parsing methods:
   - Pumpfun and Jupiter: parsing the event data
   - Raydium, Orca, and Meteora: parsing Transfer and TransferChecked methods of the token program
@@ -41,15 +23,18 @@ Major refactoring with enhanced transaction parsing support:
   - Raydium V4
   - Raydium CL
   - Raydium CPMM
+  - Raydium Launchpad (including events parsing)
   - Meteora DLMM
   - Meteora Pools
   - Orca
+  - Pumpfun AMM (Pumpswap)
+- Transfer parser support for non-trade and non-liquidity transactions
 - Comprehensive test coverage
 
 ## Supported DEX Protocols
 
-- Jupiter
-- Raydium (V4, Route, CPMM, ConcentratedLiquidity)
+- Jupiter (Aggregator, DCA)
+- Raydium (V4, Route, CPMM, ConcentratedLiquidity, Lauchpad)
 - Meteora (DLMM and Pools)
 - PumpFun
 - PumpFun AMM (Pumpswap)
@@ -59,6 +44,7 @@ Major refactoring with enhanced transaction parsing support:
 - Phoenix
 - Lifinity
 - OKX Dex
+- BoopFun
   
 ## Supported Trading Bot Programs
 - BananaGun
@@ -426,6 +412,91 @@ import { decodeRaydiumLog, LogType, parseRaydiumSwapLog } from 'solana-dex-parse
     }
 ```
 
+#### 3.3 Raydium Launchpad events:
+
+```typescript
+import { RaydiumLCPEvent,TransactionAdapter } from 'solana-dex-parser';
+  
+// Setup connection
+const connection = new Connection('https://api.mainnet-beta.solana.com');
+// Get transaction
+const signature = 'your-transaction-signature';
+const tx = await connection.getParsedTransaction(signature, {
+  maxSupportedTransactionVersion: 0,
+});
+
+const parser = new RaydiumLaunchpadEventParser(new TransactionAdapter(tx));
+const events = parser.processEvents(); // RaydiumLCPEvent[]
+
+console.log(events);
+```
+Launchpad Outputs
+```typescript
+// Output (RaydiumLCPCreateEvent, RaydiumLCPTradeEvent,RaydiumLCPCompleteEvent)
+
+// CREATE -> PoolCreateEvent (Initialize)
+{
+  type: 'CREATE',
+  data: {
+    poolState: 'CPTNvVYT7qCzX3HnRRtSRAFpMipVgSP3eynXrW9p9YgD',
+    creator: 'J88snVaNTCW7T6saPvAmYDmjnhPiSpkw8uJ8FFCyfcGA',
+    config: '6s1xP3hpbAfFoNtUNF8mfHsjr2Bd97JxFJRWLbL6aHuX',
+    baseMintParam: [Object],
+    curveParam: [Object],
+    vestingParam: [Object],
+    baseMint: '25phz2ZHEfB81RQXKvNLvkDbK32nyUwFnQdqk6MLcook',
+    quoteMint: 'So11111111111111111111111111111111111111112'
+  },
+  slot: 334260517,
+  timestamp: 1744972806,
+  signature: '4x8k2aQKevA8yuCVX1V8EaH2GBqdbZ1dgYxwtkwZJ7SmCQeng7CCs17AvyjFv6nMoUkBgpBwLHAABdCxGHbAWxo4',
+  idx: '0-7'
+},
+// TRADE -> TradeEvent (buy/sell)
+{
+  type: 'TRADE',
+  data: {
+    poolState: 'GeSSWHbFkeYknLX3edkTP3JcsjHRnCJG3SymEkBzaFDo',
+    totalBaseSell: <BN: 2d79883d20000>,
+    virtualBase: <BN: 3ca20afc2aaaa>,
+    virtualQuote: <BN: 698cc5b55>,
+    realBaseBefore: <BN: 223b2a6f528bb>,
+    realQuoteBefore: <BN: 88d98e8cb>,
+    realBaseAfter: <BN: 22404db66ad1b>,
+    amountIn: <BN: 2faf080>,
+    amountOut: <BN: 5234718460>,
+    protocolFee: <BN: 1e848>,
+    platformFee: <BN: 5b8d8>,
+    shareFee: <BN: 0>,
+    tradeDirection: 0,
+    poolStatus: 0,
+    baseMint: 'Dph84TcDoGzCv43eZzxdDe9Dn7f2eFU4kbJFm3tHEray',
+    quoteMint: 'So11111111111111111111111111111111111111112',
+    user: 'A8BNMXfxCkjuEJ83piEBKdDydk1RVeDQ7jYoUFCTSWuv'
+  },
+  slot: 334244130,
+  timestamp: 1744966356,
+  signature: 'Gi44zBwsd8eUGEVPS1jstts457hKLbm8SSMLrRVHVK2McrhJjosiszb65U1LdrjsF1WfCXoesLMhm8RX3dchx4s',
+  idx: '4-0'
+},
+
+// COMPLETE -> Migrate to AMM / CPSwap
+{
+  type: 'COMPLETE',
+  data: {
+    baseMint: 'Em8DYuvdQ28PNZqSiAvUxjG32XbpFPm9kwu2y5pdTray',
+    quoteMint: 'So11111111111111111111111111111111111111112',
+    poolMint: '9N82SeWs9cFrThpNyU8dngUjRHe9vzVjDnQrgQ115tEy',
+    lpMint: '5Jg51sVNevcDeuzoHcfJFGMcYszuWSqSsZuDjiakXuXq',
+    amm: 'RaydiumCPMM'
+  },
+  slot: 334174234,
+  timestamp: 1744938781,
+  signature: '2gWHLTb1utduUkZCTo9GZpcCZr7hVPXTJajdoVjMURgVG6eJdKJQY6jF954XN15sSmDvsPCmMD7XSRyofLrQWuFv',
+  idx: '2-0'
+}
+```
+
 ## Note
 - Jupiter Swap outputs aggregated transaction records
 - Other aggregators (e.g., OKX) output multiple swap transaction records per AMM
@@ -486,3 +557,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 This project is a TypeScript port of the original Go implementation [solanaswap-go](https://github.com/franco-bianco/solanaswap-go).
+
+## BUY ME A COFFEE
+If you find this project useful, please consider buying me a coffee. Your support is greatly appreciated!
+
+**SOL**: 879mxY5QKJH1J8x8suzB3rrV2YPVsoauaSJ7nT85YLU7

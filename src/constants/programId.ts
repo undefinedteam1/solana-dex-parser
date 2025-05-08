@@ -11,13 +11,33 @@ export const DEX_PROGRAMS = {
     tags: ['route'],
   },
   JUPITER_DCA: {
-    id: 'DCAK36VfExkPdAkYUQg6ewgxyinvcEyPLyHjRbmveKFw',
+    id: 'DCA265Vj8a9CEuX1eb1LWRnDT7uK6q1xMipnNyatn23M',
     name: 'JupiterDCA',
+    tags: ['route'],
+  },
+  JUPITER_DCA_KEEPER1: {
+    id: 'DCAKxn5PFNN1mBREPWGdk1RXg5aVH9rPErLfBFEi2Emb',
+    name: 'JupiterDcaKeeper1',
+    tags: ['route'],
+  },
+  JUPITER_DCA_KEEPER2: {
+    id: 'DCAKuApAuZtVNYLk3KTAVW9GLWVvPbnb5CxxRRmVgcTr',
+    name: 'JupiterDcaKeeper2',
+    tags: ['route'],
+  },
+  JUPITER_DCA_KEEPER3: {
+    id: 'DCAK36VfExkPdAkYUQg6ewgxyinvcEyPLyHjRbmveKFw',
+    name: 'JupiterDcaKeeper3',
     tags: ['route'],
   },
   JUPITER_LIMIT_ORDER_V2: {
     id: 'j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X',
     name: 'JupiterLimitV2',
+    tags: ['amm'],
+  },
+  JUPITER_VA: {
+    id: 'VALaaymxQh2mNy2trH9jUqHT1mTow76wpTcGmSWSwJe',
+    name: 'JupiterVA',
     tags: ['amm'],
   },
   OKX_DEX: {
@@ -50,6 +70,11 @@ export const DEX_PROGRAMS = {
   RAYDIUM_CL: {
     id: 'CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK',
     name: 'RaydiumCL',
+    tags: ['amm'],
+  },
+  RAYDIUM_LCP: {
+    id: 'LanMV9sAd7wArD4vJFi2qDdfnVhFxYSUg6eADduJ3uj',
+    name: 'RaydiumLaunchpad',
     tags: ['amm'],
   },
   ORCA: {
@@ -213,6 +238,11 @@ export const DEX_PROGRAMS = {
     name: 'StabbleWeight',
     tags: ['amm'],
   },
+  BOOP_FUN: {
+    id: 'boop8hVGQGqehUK2iVEMEnMrL5RbjywRzHKBmBE7ry4',
+    name: 'Boopfun',
+    tags: ['amm'],
+  },
 };
 
 export const DEX_PROGRAM_IDS = Object.values(DEX_PROGRAMS).map((dex) => dex.id);
@@ -226,6 +256,11 @@ export const SYSTEM_PROGRAMS = [
   'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s',
   'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX', // openbook
 ];
+
+export const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
+
+/** Address of the SPL Token 2022 program */
+export const TOKEN_2022_PROGRAM_ID = 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb';
 
 export const PUMPFUN_MIGRATORS = ['39azUYFWPz3VHgKCf3VChUwbpURdCHRxjWVowf5jUJjg'];
 

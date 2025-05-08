@@ -24,7 +24,7 @@ describe('Dex Parser', () => {
 
     [
       // "2dpTLk6AQQMJUAdhNz3dK8guEDBfR3vogUkgHwDg9praDxthgsz5cAYCL4WHrnKuAWBMG3VNquSJ3W9RNbv1pVoo",
-      "2BhdRHDAtPY4Cb8qSFHZTeQXKKenTQjuoCGCBe6y45pPbEDKKPRmLo2rxiTEssU7wXMJFztRWcUQUF5s8E8XD4Wi",
+      "4mxr44yo5Qi7Rabwbknkh8MNUEWAMKmzFQEmqUVdx5JpHEEuh59TrqiMCjZ7mgZMozRK1zW8me34w8Myi8Qi1tWP",
       // "4WGyuUf65j9ojW6zrKf9zBEQsEfW5WiuKjdh6K2dxQAn7ggMkmT1cn1v9GuFs3Ew1d7oMJGh2z1VNvwdLQqJoC9s" // transfer
     ]
       .forEach((signature) => {
@@ -36,7 +36,7 @@ describe('Dex Parser', () => {
           if (!tx) { throw new Error(`Transaction not found > ${signature}`); }
           const { fee, trades, liquidities, transfers } = parser.parseAll(tx,
             {
-              tryUnknowDEX: false,
+              tryUnknowDEX: true,
               // programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id]
             });
 

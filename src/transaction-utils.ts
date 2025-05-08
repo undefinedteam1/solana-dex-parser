@@ -270,7 +270,8 @@ export class TransactionUtils {
 
     const uniqueTokens = this.extractUniqueTokens(transfers);
     if (uniqueTokens.length < 2) {
-      throw `Insufficient unique tokens for swap`;
+      return null;
+      // throw `Insufficient unique tokens for swap`;
     }
 
     const signer = this.getSwapSigner();

@@ -3,7 +3,7 @@ import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
 import { convertToUiAmount, JupiterSwapEventData, JupiterSwapInfo, TradeInfo } from '../../types';
 import { getInstructionData, getProgramName, getTradeType } from '../../utils';
 import { BaseParser } from '../base-parser';
-import { JupiterLayout } from './layouts/layout';
+import { JupiterLayout } from './layouts/jupiter-v6.layout';
 
 export class JupiterParser extends BaseParser {
   public processTrades(): TradeInfo[] {

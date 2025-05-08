@@ -9,6 +9,13 @@ export const DISCRIMINATORS = {
     OPEN_DCA: new Uint8Array([36, 65, 185, 54, 1, 210, 100, 163]), // openDca
     OPEN_DCA_V2: new Uint8Array([142, 119, 43, 109, 162, 52, 11, 177]), // openDcaV2
   },
+  JUPITER_LIMIT_ORDER_V2: {
+    TRADE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 189, 219, 127, 211, 78, 230, 97, 238]), //TradeEvent
+  },
+  JUPITER_VA: {
+    FILL_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 78, 225, 199, 154, 86, 219, 224, 169]), //fill event
+    WITHDRAW_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 192, 241, 201, 217, 70, 150, 90, 247]), //withdraw
+  },
   PUMPFUN: {
     TRADE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 189, 219, 127, 211, 78, 230, 97, 238]),
     CREATE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 27, 114, 169, 77, 222, 235, 99, 118]),

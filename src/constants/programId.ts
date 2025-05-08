@@ -33,12 +33,12 @@ export const DEX_PROGRAMS = {
   JUPITER_LIMIT_ORDER_V2: {
     id: 'j1o2qRpjcyUwEvwtcfhEQefh773ZgjxcVRry7LDqg5X',
     name: 'JupiterLimitV2',
-    tags: ['amm'],
+    tags: ['route'],
   },
   JUPITER_VA: {
     id: 'VALaaymxQh2mNy2trH9jUqHT1mTow76wpTcGmSWSwJe',
     name: 'JupiterVA',
-    tags: ['amm'],
+    tags: ['route'],
   },
   OKX_DEX: {
     id: '6m2CDdhRgxpH4WjvdzxAYbGxwdGUz5MziiL5jek2kBma',

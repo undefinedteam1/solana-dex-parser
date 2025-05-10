@@ -289,11 +289,7 @@ export class TransactionAdapter {
   }
 
   getTokenDecimals(mint: string): number {
-    return (
-      this.preTokenBalances?.find((b) => b.mint === mint)?.uiTokenAmount?.decimals ||
-      this.postTokenBalances?.find((b) => b.mint === mint)?.uiTokenAmount?.decimals ||
-      9
-    );
+    return this.splDecimalsMap.get(mint) || 0;
   }
 
   /**

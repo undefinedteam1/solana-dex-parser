@@ -1,7 +1,7 @@
 import { PublicKey } from '@solana/web3.js';
 import { JupiterSwapEvent } from '../../../types/jupiter';
 
-export class JupiterLayout {
+export class JupiterSwapLayout {
   amm: Uint8Array;
   inputMint: Uint8Array;
   inputAmount: bigint;
@@ -24,7 +24,7 @@ export class JupiterLayout {
 
   static schema = new Map([
     [
-      JupiterLayout,
+      JupiterSwapLayout,
       {
         kind: 'struct',
         fields: [

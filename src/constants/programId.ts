@@ -112,6 +112,11 @@ export const DEX_PROGRAMS = {
     name: 'MeteoraPools',
     tags: ['amm'],
   },
+  METEORA_DAMM: {
+    id: 'cpamdpZCGKUy5JxQXB4dcpGPiikHawvSWAd6mEn1sGG',
+    name: 'MeteoraDammV2',
+    tags: ['amm'],
+  },
 
   // Vault Programs
   METEORA_VAULT: {

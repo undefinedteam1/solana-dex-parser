@@ -112,7 +112,7 @@ export class JupiterVAParser extends BaseParser {
     const decimals = this.adapter.getTokenDecimals(event.mint);
     return [
       {
-        type: 'Withdraw',
+        type: 'withdraw',
         programId: programId,
         info: {
           authority: this.adapter.getTokenAccountOwner(source),

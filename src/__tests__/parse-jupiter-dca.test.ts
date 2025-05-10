@@ -113,8 +113,8 @@ const tests = [
     "signature": "4vL1piuminnprE9PJ7eXkxAnsvH2fQTxSya1yBdAkx6mq5M9DeeZiLwsTP565pYXoQxQziPwRzL53MDAybRVsD2A"
   },
   {
-    "type": "transfer",
-    "programId": "11111111111111111111111111111111",
+    "type": "withdraw",
+    "programId": "VALaaymxQh2mNy2trH9jUqHT1mTow76wpTcGmSWSwJe",
     "info": {
       "destination": "E4qe2XfHQ5AKVdPU33MugNPD2T6RgnzqH2QFP9b7J1Wy",
       "mint": "So11111111111111111111111111111111111111112",
@@ -145,7 +145,7 @@ const tests = [
         "decimals": 9
       }
     },
-    "idx": "0-1",
+    "idx": "0-9",
     "timestamp": 1733762197,
     "signature": "2BhdRHDAtPY4Cb8qSFHZTeQXKKenTQjuoCGCBe6y45pPbEDKKPRmLo2rxiTEssU7wXMJFztRWcUQUF5s8E8XD4Wi"
   }

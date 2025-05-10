@@ -16,9 +16,14 @@ export abstract class BaseParser {
 
   abstract processTrades(): TradeInfo[];
 
-  protected getTransfersForInstruction(programId: string, outerIndex: number, innerIndex?: number): TransferData[] {
+  protected getTransfersForInstruction(
+    programId: string,
+    outerIndex: number,
+    innerIndex?: number,
+    extraTypes?: string[]
+  ): TransferData[] {
     const key = `${programId}:${outerIndex}${innerIndex == undefined ? '' : `-${innerIndex}`}`;
     const transfers = this.transferActions[key] || [];
-    return transfers.filter((t) => ['transfer', 'transferChecked'].includes(t.type));
+    return transfers.filter((t) => ['transfer', 'transferChecked', ...(extraTypes || [])].includes(t.type));
   }
 }

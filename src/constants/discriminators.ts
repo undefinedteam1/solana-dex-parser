@@ -10,6 +10,8 @@ export const DISCRIMINATORS = {
     OPEN_DCA_V2: new Uint8Array([142, 119, 43, 109, 162, 52, 11, 177]), // openDcaV2
   },
   JUPITER_LIMIT_ORDER_V2: {
+    CANCEL_ORDER: new Uint8Array([95, 129, 237, 240, 8, 49, 223, 132]), // CancelOrder
+    CREATE_ORDER_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 49, 142, 72, 166, 230, 29, 84, 84]), // CreateOrderEvent
     TRADE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 189, 219, 127, 211, 78, 230, 97, 238]), //TradeEvent
   },
   JUPITER_VA: {
@@ -91,6 +93,15 @@ export const DISCRIMINATORS = {
     CREATE: new Uint8Array([7, 166, 138, 171, 206, 171, 236, 244]), // initializePermissionlessConstantProductPoolWithConfig
     ADD_LIQUIDITY: new Uint8Array([168, 227, 50, 62, 189, 171, 84, 176]), // addBalanceLiquidity
     REMOVE_LIQUIDITY: new Uint8Array([133, 109, 44, 179, 56, 238, 114, 33]), // removeBalanceLiquidity
+  },
+  METEORA_DAMM: {
+    INITIALIZE_POOL: new Uint8Array([95, 180, 10, 172, 84, 174, 232, 40]), // initialize_pool
+    INITIALIZE_CUSTOM_POOL: new Uint8Array([20, 161, 241, 24, 189, 221, 180, 2]), // initialize_customizable_pool
+    ADD_LIQUIDITY: new Uint8Array([181, 157, 89, 67, 143, 182, 52, 72]), // add_liquidity
+    CLAIM_POSITION_FEE: new Uint8Array([180, 38, 154, 17, 133, 33, 162, 211]), // claim_position_fee
+    REMOVE_LIQUIDITY: new Uint8Array([80, 85, 209, 72, 24, 206, 177, 108]), //remove_liquidity
+    REMOVE_ALL_LIQUIDITY: new Uint8Array([10, 51, 61, 35, 112, 105, 24, 85]), // remove_all_liquidity
+    CREATE_POSITION_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 156, 15, 119, 198, 29, 181, 221, 55]), // EvtCreatePosition
   },
   ORCA: {
     CREATE: new Uint8Array([242, 29, 134, 48, 58, 110, 14, 60]), // openPositionWithMetadata

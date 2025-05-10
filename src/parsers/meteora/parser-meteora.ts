@@ -9,7 +9,7 @@ export class MeteoraParser extends BaseParser {
 
     this.classifiedInstructions.forEach(({ instruction, programId, outerIndex, innerIndex }) => {
       if (
-        [DEX_PROGRAMS.METEORA.id, DEX_PROGRAMS.METEORA_POOLS.id].includes(programId) &&
+        [DEX_PROGRAMS.METEORA.id, DEX_PROGRAMS.METEORA_POOLS.id, DEX_PROGRAMS.METEORA_DAMM.id].includes(programId) &&
         this.notLiquidityEvent(instruction)
       ) {
         const transfers = this.getTransfersForInstruction(programId, outerIndex, innerIndex);
@@ -33,11 +33,15 @@ export class MeteoraParser extends BaseParser {
     if (!data) return true;
 
     const instructionType = data.slice(0, 8);
+
     const isDLMMLiquidity = Object.values(DISCRIMINATORS.METEORA_DLMM)
       .flatMap((it) => Object.values(it))
       .some((it) => instructionType.equals(it));
+
     const isPoolsLiquidity = Object.values(DISCRIMINATORS.METEORA_POOLS).some((it) => instructionType.equals(it));
 
-    return !isDLMMLiquidity && !isPoolsLiquidity;
+    const isDAMMLiquidity = Object.values(DISCRIMINATORS.METEORA_DAMM).some((it) => instructionType.equals(it));
+
+    return !isDLMMLiquidity && !isPoolsLiquidity && !isDAMMLiquidity;
   }
 }

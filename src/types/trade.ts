@@ -144,5 +144,6 @@ export interface TradeInfo {
  * @returns Human-readable amount as number
  */
 export const convertToUiAmount = (amount: bigint | string, decimals?: number) => {
+  if (decimals === 0) return Number(amount);
   return Number(amount) / Math.pow(10, decimals || 9);
 };

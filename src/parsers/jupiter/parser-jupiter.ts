@@ -1,9 +1,9 @@
 import { deserializeUnchecked } from 'borsh';
 import { DEX_PROGRAMS, DISCRIMINATORS } from '../../constants';
 import { convertToUiAmount, JupiterSwapEventData, JupiterSwapInfo, TradeInfo } from '../../types';
-import { getInstructionData, getProgramName, getTradeType } from '../../utils';
+import { getFinalSwap, getInstructionData, getProgramName, getTradeType } from '../../utils';
 import { BaseParser } from '../base-parser';
-import { JupiterLayout } from './layouts/jupiter-v6.layout';
+import { JupiterSwapLayout } from './layouts/jupiter-v6.layout';
 
 export class JupiterParser extends BaseParser {
   public processTrades(): TradeInfo[] {
@@ -21,7 +21,9 @@ export class JupiterParser extends BaseParser {
       }
     });
 
-    return trades;
+    const finalTrade = getFinalSwap(trades);
+
+    return finalTrade ? [finalTrade] : [];
   }
 
   private isJupiterRouteEventInstruction(instruction: any, programId: string): boolean {
@@ -39,7 +41,7 @@ export class JupiterParser extends BaseParser {
       if (!data || data.length < 16) return null;
 
       const eventData = data.slice(16);
-      const layout = deserializeUnchecked(JupiterLayout.schema, JupiterLayout, Buffer.from(eventData));
+      const layout = deserializeUnchecked(JupiterSwapLayout.schema, JupiterSwapLayout, Buffer.from(eventData));
       const swapEvent = layout.toSwapEvent();
 
       return {

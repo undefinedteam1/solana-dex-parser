@@ -58,7 +58,7 @@ export abstract class RaydiumLiquidityParserBase extends BaseLiquidityParser {
       return this.parseEvent(instruction, outerIndex, data, transfers, config);
     } catch (error) {
       console.error('parseRaydiumInstruction error:', error);
-      return null;
+      throw error;
     }
   }
 

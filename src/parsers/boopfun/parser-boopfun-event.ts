@@ -79,6 +79,7 @@ export class BoopfunEventParser {
           }
         } catch (error) {
           console.error('Failed to parse Boopfun event:', error);
+          throw error;
         }
         return null;
       })

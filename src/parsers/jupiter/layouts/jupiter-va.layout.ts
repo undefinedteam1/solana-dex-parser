@@ -102,9 +102,9 @@ export class JupiterVAOpenLayout {
   inputMint: Uint8Array;
   outputMint: Uint8Array;
   referralFeeAccount: Uint8Array;
-  orderInterval: number;
+  orderInterval: bigint;
   incrementUsdcValue: bigint;
-  createdAt: number;
+  createdAt: bigint;
 
   constructor(fields: {
     user: Uint8Array;
@@ -113,9 +113,9 @@ export class JupiterVAOpenLayout {
     inputMint: Uint8Array;
     outputMint: Uint8Array;
     referralFeeAccount: Uint8Array;
-    orderInterval: number;
+    orderInterval: bigint;
     incrementUsdcValue: bigint;
-    createdAt: number;
+    createdAt: bigint;
   }) {
     this.user = fields.user;
     this.valueAverage = fields.valueAverage;
@@ -147,6 +147,32 @@ export class JupiterVAOpenLayout {
       },
     ],
   ]);
+
+  static deserialize(data: Buffer): JupiterVAOpenLayout {
+    const reader = new BinaryReader(data);
+
+    const user = reader.readFixedArray(32);
+    const valueAverage = reader.readFixedArray(32);
+    const deposit = reader.readU64();
+    const inputMint = reader.readFixedArray(32);
+    const outputMint = reader.readFixedArray(32);
+    const referralFeeAccount = reader.readFixedArray(32);
+    const orderInterval = reader.readI64();
+    const incrementUsdcValue = reader.readU64();
+    const createdAt = reader.readI64();
+
+    return new JupiterVAOpenLayout({
+      user,
+      valueAverage,
+      deposit,
+      inputMint,
+      outputMint,
+      referralFeeAccount,
+      orderInterval,
+      incrementUsdcValue,
+      createdAt,
+    });
+  }
 
   toObject() {
     return {

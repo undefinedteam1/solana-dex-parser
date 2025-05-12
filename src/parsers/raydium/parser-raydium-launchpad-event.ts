@@ -75,6 +75,7 @@ export class RaydiumLaunchpadEventParser {
           }
         } catch (error) {
           console.error('Failed to parse RaydiumLCP event:', error);
+          throw error;
         }
         return null;
       })

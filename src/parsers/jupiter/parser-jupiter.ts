@@ -52,7 +52,7 @@ export class JupiterParser extends BaseParser {
       };
     } catch (error) {
       console.error('Parse Jupiter route event error:', error);
-      return null;
+      throw error;
     }
   }
 

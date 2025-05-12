@@ -61,6 +61,7 @@ export class PumpfunEventParser {
           }
         } catch (error) {
           console.error('Failed to parse Pumpfun event:', error);
+          throw error;
         }
         return null;
       })

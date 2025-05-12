@@ -40,10 +40,16 @@ export class JupiterLimitOrderV2Parser extends BaseParser {
 
     // get outer instruction accounts
     const accounts = this.adapter.getInstructionAccounts(eventInstruction);
-    const [inputToken, outputToken] = [
-      this.adapter.splTokenMap.get(accounts[3]),
-      this.adapter.splTokenMap.get(accounts[5]),
-    ];
+    const outerData = getInstructionData(eventInstruction);
+    const [inputToken, outputToken] = outerData.slice(0, 8).equals(DISCRIMINATORS.JUPITER_LIMIT_ORDER_V2.UNKNOWN)
+      ? [
+          this.adapter.splTokenMap.get(accounts[3]),
+          this.adapter.splTokenMap.get(accounts[10]), // Unknown instruction
+        ]
+      : [
+          this.adapter.splTokenMap.get(accounts[3]),
+          this.adapter.splTokenMap.get(accounts[5]), // FlashFillOrder instruction
+        ];
 
     if (!inputToken || !outputToken) {
       throw new Error('inputToken or outputToken not found');

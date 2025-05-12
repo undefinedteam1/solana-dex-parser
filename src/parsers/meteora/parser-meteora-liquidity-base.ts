@@ -40,10 +40,9 @@ export abstract class MeteoraLiquidityParserBase extends BaseLiquidityParser {
         case 'REMOVE':
           return this.parseRemoveLiquidityEvent(instruction, outerIndex, data, transfers);
       }
-      return null;
     } catch (error) {
       console.error('parseInstruction error:', error);
-      return null;
+      throw error;
     }
   }
 

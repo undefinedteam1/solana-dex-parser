@@ -13,10 +13,15 @@ export const DISCRIMINATORS = {
     CANCEL_ORDER: new Uint8Array([95, 129, 237, 240, 8, 49, 223, 132]), // CancelOrder
     CREATE_ORDER_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 49, 142, 72, 166, 230, 29, 84, 84]), // CreateOrderEvent
     TRADE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 189, 219, 127, 211, 78, 230, 97, 238]), //TradeEvent
+    UNKNOWN: new Uint8Array([232, 122, 115, 25, 199, 143, 136, 162]), // Unknown
+    FLASH_FILL_ORDER: new Uint8Array([252, 104, 18, 134, 164, 78, 18, 140]), // FlashFillOrder
   },
   JUPITER_VA: {
     FILL_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 78, 225, 199, 154, 86, 219, 224, 169]), //fill event
-    WITHDRAW_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 192, 241, 201, 217, 70, 150, 90, 247]), //withdraw
+    OPEN_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 104, 220, 224, 191, 87, 241, 132, 61]), //open event
+    CLOSE_EVENT: new Uint8Array([]), // TODO: close event
+    DEPOSIT_EVENT: new Uint8Array([]), // TODO: Deposit event
+    WITHDRAW_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 192, 241, 201, 217, 70, 150, 90, 247]), //withdraw event
   },
   PUMPFUN: {
     TRADE_EVENT: new Uint8Array([228, 69, 165, 46, 81, 203, 154, 29, 189, 219, 127, 211, 78, 230, 97, 238]),
@@ -75,6 +80,7 @@ export const DISCRIMINATORS = {
     ADD_LIQUIDITY: {
       addLiquidity: new Uint8Array([181, 157, 89, 67, 143, 182, 52, 72]), //addLiquidity
       addLiquidityByStrategy: new Uint8Array([7, 3, 150, 127, 148, 40, 61, 200]), // addLiquidityByStrategy
+      addLiquidityByStrategy2: new Uint8Array([3, 221, 149, 218, 111, 141, 118, 213]), // addLiquidityByStrategy2
       addLiquidityByStrategyOneSide: new Uint8Array([41, 5, 238, 175, 100, 225, 6, 205]), //addLiquidityByStrategyOneSide
       addLiquidityOneSide: new Uint8Array([94, 155, 103, 151, 70, 95, 220, 165]), //addLiquidityOneSide
       addLiquidityOneSidePrecise: new Uint8Array([161, 194, 103, 84, 171, 71, 250, 154]), //addLiquidityOneSidePrecise

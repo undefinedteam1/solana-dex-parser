@@ -1,7 +1,10 @@
 import { DEX_PROGRAMS } from './constants';
 import { InstructionClassifier } from './instruction-classifier';
 import {
+  JupiterLimitOrderV2Parser,
   JupiterParser,
+  JupiterVAParser,
+  MeteoraDAMMPoolParser,
   MeteoraDLMMPoolParser,
   MeteoraParser,
   MeteoraPoolsParser,
@@ -76,9 +79,12 @@ export class DexParser {
   private readonly parserMap: Record<string, ParserConstructor> = {
     [DEX_PROGRAMS.JUPITER.id]: JupiterParser,
     [DEX_PROGRAMS.JUPITER_DCA.id]: JupiterDcaParser,
+    [DEX_PROGRAMS.JUPITER_VA.id]: JupiterVAParser,
+    [DEX_PROGRAMS.JUPITER_LIMIT_ORDER_V2.id]: JupiterLimitOrderV2Parser,
     [DEX_PROGRAMS.MOONSHOT.id]: MoonshotParser,
     [DEX_PROGRAMS.METEORA.id]: MeteoraParser,
     [DEX_PROGRAMS.METEORA_POOLS.id]: MeteoraParser,
+    [DEX_PROGRAMS.METEORA_DAMM.id]: MeteoraParser,
     [DEX_PROGRAMS.PUMP_FUN.id]: PumpfunParser,
     [DEX_PROGRAMS.PUMP_SWAP.id]: PumpswapParser,
     [DEX_PROGRAMS.RAYDIUM_ROUTE.id]: RaydiumParser,
@@ -94,6 +100,7 @@ export class DexParser {
   private readonly parseLiquidityMap: Record<string, ParserLiquidityConstructor> = {
     [DEX_PROGRAMS.METEORA.id]: MeteoraDLMMPoolParser,
     [DEX_PROGRAMS.METEORA_POOLS.id]: MeteoraPoolsParser,
+    [DEX_PROGRAMS.METEORA_DAMM.id]: MeteoraDAMMPoolParser,
     [DEX_PROGRAMS.RAYDIUM_V4.id]: RaydiumV4PoolParser,
     [DEX_PROGRAMS.RAYDIUM_CPMM.id]: RaydiumCPMMPoolParser,
     [DEX_PROGRAMS.RAYDIUM_CL.id]: RaydiumCLPoolParser,
@@ -105,6 +112,8 @@ export class DexParser {
   // Transfer parser mapping
   private readonly parseTransferMap: Record<string, ParserTransferConstructor> = {
     [DEX_PROGRAMS.JUPITER_DCA.id]: JupiterDcaParser,
+    [DEX_PROGRAMS.JUPITER_VA.id]: JupiterVAParser,
+    [DEX_PROGRAMS.JUPITER_LIMIT_ORDER_V2.id]: JupiterLimitOrderV2Parser,
   };
 
   constructor() {}
@@ -147,6 +156,8 @@ export class DexParser {
           DEX_PROGRAMS.JUPITER_DCA_KEEPER1.id,
           DEX_PROGRAMS.JUPITER_DCA_KEEPER2.id,
           DEX_PROGRAMS.JUPITER_DCA_KEEPER3.id,
+          DEX_PROGRAMS.JUPITER_VA.id,
+          DEX_PROGRAMS.JUPITER_LIMIT_ORDER_V2.id,
         ].includes(dexInfo.programId)
       ) {
         if (parseType === 'trades' || parseType === 'all') {

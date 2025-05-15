@@ -1,6 +1,6 @@
 {
   "name": "solana-dex-parser",
-  "version": "2.3.6",
+  "version": "2.3.9",
   "description": "Solana Dex Transaction Parser",
   "author": "cxcx",
   "license": "MIT",
@@ -25,6 +25,7 @@
     "orca",
     "pumpfun",
     "pumpswap",
+    "boopfun",
     "okx"
   ],
   "main": "dist/index.js",

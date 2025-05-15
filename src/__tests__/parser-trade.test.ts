@@ -24,7 +24,7 @@ describe('Dex Parser', () => {
 
     [
       // "2dpTLk6AQQMJUAdhNz3dK8guEDBfR3vogUkgHwDg9praDxthgsz5cAYCL4WHrnKuAWBMG3VNquSJ3W9RNbv1pVoo",
-      "2BhdRHDAtPY4Cb8qSFHZTeQXKKenTQjuoCGCBe6y45pPbEDKKPRmLo2rxiTEssU7wXMJFztRWcUQUF5s8E8XD4Wi",
+      "4k5fiYG5na7842EB8VMntHX2uQyKecWf19We8bmcefrWQ1G9oXwuP8VUbXpBqy4t5NipLTxhQNrqa66BGSftjpUE",
       // "4WGyuUf65j9ojW6zrKf9zBEQsEfW5WiuKjdh6K2dxQAn7ggMkmT1cn1v9GuFs3Ew1d7oMJGh2z1VNvwdLQqJoC9s" // transfer
     ]
       .forEach((signature) => {
@@ -34,12 +34,7 @@ describe('Dex Parser', () => {
             maxSupportedTransactionVersion: 0,
           });
           if (!tx) { throw new Error(`Transaction not found > ${signature}`); }
-          const { fee, trades, liquidities, transfers } = parser.parseAll(tx,
-            {
-              tryUnknowDEX: false,
-              // programIds: [DEX_PROGRAMS.PUMP_FUN.id, DEX_PROGRAMS.PUMP_SWAP.id]
-            });
-
+          const { fee, trades, liquidities, transfers } = parser.parseAll(tx);
           // fs.writeFileSync(`./src/__tests__/tx-${signature}.json`, JSON.stringify(tx, null, 2));
           const swap = getFinalSwap(trades);
           console.log('fee', fee);

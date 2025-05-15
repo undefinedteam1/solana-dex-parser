@@ -70,6 +70,7 @@ export class PumpswapEventParser {
           }
         } catch (error) {
           console.error('Failed to parse Pumpswap event:', error);
+          throw error;
         }
         return null;
       })

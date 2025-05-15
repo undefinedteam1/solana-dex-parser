@@ -1,6 +1,7 @@
 import { TransactionAdapter } from '../transaction-adapter';
 import { TransactionUtils } from '../transaction-utils';
 import { ClassifiedInstruction, PoolEvent, TransferData } from '../types';
+import { getInstructionData } from '../utils';
 
 export abstract class BaseLiquidityParser {
   protected readonly utils: TransactionUtils;
@@ -28,5 +29,13 @@ export abstract class BaseLiquidityParser {
       return transfers.filter((t) => filterTypes.includes(t.type));
     }
     return transfers;
+  }
+
+  protected getInstructionByDiscriminator(discriminator: Uint8Array, slice: number): ClassifiedInstruction | undefined {
+    const instruction = this.classifiedInstructions.find((i) => {
+      const data = getInstructionData(i.instruction);
+      return data.slice(0, slice).equals(discriminator);
+    });
+    return instruction;
   }
 }

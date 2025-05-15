@@ -73,7 +73,7 @@ export class MoonshotParser extends BaseParser {
       return this.utils.attachTokenTransferInfo(trade, this.transferActions);
     } catch (error) {
       console.error('Failed to parse Moonshot trade:', error);
-      return null;
+      throw error;
     }
   }
 

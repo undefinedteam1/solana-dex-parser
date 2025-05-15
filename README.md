@@ -33,7 +33,7 @@ A TypeScript library for parsing Solana DEX swap transactions. Supports multiple
 
 ## Supported DEX Protocols
 
-- Jupiter (Aggregator, DCA)
+- Jupiter (Aggregator, DCA, VA, LimitOrderV2)
 - Raydium (V4, Route, CPMM, ConcentratedLiquidity, Lauchpad)
 - Meteora (DLMM and Pools)
 - PumpFun
